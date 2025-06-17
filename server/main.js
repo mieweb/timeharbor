@@ -1,6 +1,4 @@
 import { Meteor } from 'meteor/meteor';
-import { Mongo } from 'meteor/mongo';
-import { countAsync } from 'meteor/mongo';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
@@ -42,18 +40,18 @@ Meteor.publish('teamDetails', function (teamId) {
   return Teams.find({ _id: teamId, members: this.userId });
 });
 
-Meteor.publish('teamMembers', function (teamIds) {
+Meteor.publish('teamMembers', async function (teamIds) {
   check(teamIds, [String]);
   // Only allow if user is a member of all requested teams
-  const teams = Teams.find({ _id: { $in: teamIds }, members: this.userId }).fetch();
+  const teams = await Teams.find({ _id: { $in: teamIds }, members: this.userId }).fetchAsync();
   const userIds = Array.from(new Set(teams.flatMap(team => team.members)));
   return Meteor.users.find({ _id: { $in: userIds } }, { fields: { username: 1 } });
 });
 
-Meteor.publish('teamTickets', function (teamId) {
-  check(teamId, String);
+Meteor.publish('teamTickets', function (teamIds) {
+  check(teamIds, [String]);
   // Only publish tickets for this team that were created by the current user
-  return Tickets.find({ teamId, createdBy: this.userId });
+  return Tickets.find({ teamId: { $in: teamIds }, createdBy: this.userId });
 });
 
 Meteor.publish('clockEventsForUser', function () {
@@ -62,18 +60,18 @@ Meteor.publish('clockEventsForUser', function () {
   return ClockEvents.find({ userId: this.userId });
 });
 
-Meteor.publish('clockEventsForTeams', function (teamIds) {
+Meteor.publish('clockEventsForTeams', async function (teamIds) {
   check(teamIds, [String]);
   // Only publish clock events for teams the user leads
-  const leaderTeams = Teams.find({ leader: this.userId, _id: { $in: teamIds } }).fetch();
+  const leaderTeams = await Teams.find({ leader: this.userId, _id: { $in: teamIds } }).fetchAsync();
   const allowedTeamIds = leaderTeams.map(t => t._id);
   return ClockEvents.find({ teamId: { $in: allowedTeamIds } });
 });
 
-Meteor.publish('usersByIds', function (userIds) {
+Meteor.publish('usersByIds', async function (userIds) {
   check(userIds, [String]);
   // Only publish users that are in teams the current user is a member or leader of
-  const userTeams = Teams.find({ $or: [{ members: this.userId }, { leader: this.userId }] }).fetch();
+  const userTeams = await Teams.find({ $or: [{ members: this.userId }, { leader: this.userId }] }).fetchAsync();
   const allowedUserIds = Array.from(new Set(userTeams.flatMap(team => team.members.concat([team.leader]))));
   const filteredUserIds = userIds.filter(id => allowedUserIds.includes(id));
   return Meteor.users.find({ _id: { $in: filteredUserIds } }, { fields: { username: 1 } });
@@ -147,7 +145,9 @@ Meteor.methods({
     // Only allow creating a ticket if the user is a member of the team
     const team = await Teams.findOneAsync({ _id: teamId, members: this.userId });
     if (!team) throw new Meteor.Error('not-authorized', 'You are not a member of this team');
-    return await Tickets.insertAsync({
+    
+    // Create the ticket
+    const ticketId = await Tickets.insertAsync({
       teamId,
       title,
       github,
@@ -155,6 +155,31 @@ Meteor.methods({
       createdBy: this.userId,
       createdAt: new Date(),
     });
+
+    // If there's an active clock event for this team, add the ticket to it
+    const activeClockEvent = await ClockEvents.findOneAsync({ 
+      userId: this.userId, 
+      teamId, 
+      endTime: null 
+    });
+    
+    if (activeClockEvent) {
+      const currentAccumulatedTime = activeClockEvent.accumulatedTime || 0;
+      await ClockEvents.updateAsync(activeClockEvent._id, {
+        $push: {
+          tickets: {
+            ticketId,
+            startTimestamp: Date.now(),
+            accumulatedTime // Include initial time in clock event
+          }
+        },
+        $set: {
+          accumulatedTime: currentAccumulatedTime + accumulatedTime // Add initial time to clock event total
+        }
+      });
+    }
+
+    return ticketId;
   },
   incrementTicketTime(ticketId, seconds) {
     check(ticketId, String);
@@ -193,6 +218,7 @@ Meteor.methods({
       teamId,
       startTimestamp: Date.now(),
       accumulatedTime: 0,
+      tickets: [], // Initialize empty tickets array
       endTime: null
     });
     return clockEventId;
@@ -201,13 +227,39 @@ Meteor.methods({
     check(teamId, String);
     if (!this.userId) throw new Meteor.Error('not-authorized');
     const clockEvent = await ClockEvents.findOneAsync({ userId: this.userId, teamId, endTime: null });
-    if (clockEvent && clockEvent.startTimestamp) {
+    if (clockEvent) {
       const now = Date.now();
-      const elapsed = Math.floor((now - clockEvent.startTimestamp) / 1000);
-      const prev = clockEvent.accumulatedTime || 0;
+
+      // Calculate and update accumulated time for the clock event
+      if (clockEvent.startTimestamp) {
+        const elapsed = Math.floor((now - clockEvent.startTimestamp) / 1000);
+        const prev = clockEvent.accumulatedTime || 0;
+        await ClockEvents.updateAsync(clockEvent._id, {
+          $set: { accumulatedTime: prev + elapsed }
+        });
+      }
+
+      // Stop all running tickets in this clock event
+      if (clockEvent.tickets) {
+        const updates = clockEvent.tickets
+          .filter(t => t.startTimestamp)
+          .map(async (ticket) => {
+            const elapsed = Math.floor((now - ticket.startTimestamp) / 1000);
+            const prev = ticket.accumulatedTime || 0;
+            return ClockEvents.updateAsync(
+              { _id: clockEvent._id, 'tickets.ticketId': ticket.ticketId },
+              {
+                $set: { 'tickets.$.accumulatedTime': prev + elapsed },
+                $unset: { 'tickets.$.startTimestamp': '' }
+              }
+            );
+          });
+        await Promise.all(updates);
+      }
+
+      // Mark clock event as ended
       await ClockEvents.updateAsync(clockEvent._id, {
-        $set: { accumulatedTime: prev + elapsed, endTime: new Date() },
-        $unset: { startTimestamp: '' }
+        $set: { endTime: new Date() },
       });
     }
   },
@@ -227,14 +279,24 @@ Meteor.methods({
         { $set: { 'tickets.$.startTimestamp': now } }
       );
     } else {
-      // Otherwise, add a new ticket entry
+      // Get the ticket's initial accumulated time
+      const ticket = await Tickets.findOneAsync(ticketId);
+      const initialTime = ticket ? (ticket.accumulatedTime || 0) : 0;
+      
+      // Add new ticket entry with initial accumulated time
+      const clockEventData = await ClockEvents.findOneAsync(clockEventId);
+      const currentAccumulatedTime = clockEventData.accumulatedTime || 0;
+      
       await ClockEvents.updateAsync(clockEventId, {
         $push: {
           tickets: {
             ticketId,
             startTimestamp: now,
-            accumulatedTime: 0
+            accumulatedTime: initialTime // Include initial time from ticket
           }
+        },
+        $set: {
+          accumulatedTime: currentAccumulatedTime + initialTime // Add initial time to clock event total
         }
       });
     }

@@ -3,25 +3,25 @@
   <link rel="stylesheet" href="/client/tailwind.generated.css">
 </head>
 
-<body class="bg-base-200 min-h-screen">
+<body class="bg-base-100 min-h-screen">
   {{> Template.dynamic template=currentScreen}}
 </body>
 
 <template name="mainLayout">
-  <header class="navbar bg-base-100 shadow mb-6">
+  <header class="navbar bg-primary text-primary-content shadow mb-6">
     <div class="flex-1">
       <h2 class="text-2xl font-bold">TimeHarbor</h2>
     </div>
     <nav class="flex gap-4">
-      <a href="/" class="btn btn-ghost">Home</a>
-      <a href="/teams" class="btn btn-ghost">Teams</a>
-      <a href="/tickets" class="btn btn-ghost">Projects</a>
+      <a href="/" class="btn btn-ghost hover:bg-primary-focus">Home</a>
+      <a href="/teams" class="btn btn-ghost hover:bg-primary-focus">Teams</a>
+      <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Projects</a>
     </nav>
   </header>
   <main class="container mx-auto px-4">
     {{> Template.dynamic template=main}}
   </main>
-  <footer class="footer p-4 bg-base-100 text-base-content mt-8">
+  <footer class="footer p-4 bg-base-200 text-base-content mt-8">
     <p>&copy; 2025 TimeHarbor - Your Personal Time Tracking Assistant</p>
   </footer>
 </template>
@@ -33,14 +33,37 @@
       <li class="card bg-base-100 shadow p-4">
         <div class="mb-2"><span class="font-bold">Project:</span> {{teamName teamId}}</div>
         <div class="mb-2"><span class="font-bold">User:</span> {{userName userId}}</div>
-        <div class="mb-2"><span class="font-bold">Total Time:</span> <span class="badge badge-primary">{{formatTime (clockEventTotalTime this)}}</span></div>
-        <ul class="ml-4 list-disc">
-          {{#each tickets}}
-            <li>
-              <span class="font-semibold">Time:</span> <span class="badge badge-secondary">{{formatTime (ticketTotalTime this)}}</span>
-            </li>
-          {{/each}}
-        </ul>
+        <div class="mb-2">
+          <span class="font-bold">Clock-in Period:</span>
+          {{#if endTime}}
+            {{formatDate startTimestamp}} - {{formatDate endTime}}
+          {{else}}
+            Started {{formatDate startTimestamp}} (Active)
+          {{/if}}
+        </div>
+        <div class="mb-2">
+          <span class="font-bold">Total Clock-in Time:</span>
+          <span class="badge badge-primary">{{formatTime (clockEventTotalTime this)}}</span>
+          {{#unless endTime}}
+            <span class="text-success ml-2">(Running)</span>
+          {{/unless}}
+        </div>
+        <div class="mt-4">
+          <div class="font-bold mb-2">Tickets worked on:</div>
+          <ul class="ml-4 list-disc space-y-2">
+            {{#each tickets}}
+              <li class="flex items-center justify-between">
+                <div>
+                  <span class="font-semibold">{{ticketTitle ticketId}}</span>
+                  {{#if startTimestamp}}
+                    <span class="text-success">(Active)</span>
+                  {{/if}}
+                </div>
+                <span class="badge" style="background-color: #4A5568; color: white;">{{formatTime (ticketTotalTime this)}}</span>
+              </li>
+            {{/each}}
+          </ul>
+        </div>
       </li>
     {{/each}}
   </ul>
@@ -53,8 +76,8 @@
       <button id="backToTeams" class="btn btn-outline mb-4">&larr; Back to Projects</button>
       <h4 class="text-lg font-bold mb-2">{{selectedTeam.name}}</h4>
       <div class="flex items-center gap-2 mb-4">
-        <span class="badge badge-info">Join Code: {{selectedTeam.code}}</span>
-        <button id="copyTeamCode" class="btn btn-sm btn-outline">Copy Code</button>
+        <span class="badge bg-neutral text-neutral-content">Join Code: {{selectedTeam.code}}</span>
+        <button id="copyTeamCode" class="btn btn-sm btn-outline btn-neutral">Copy Code</button>
       </div>
       <h5 class="font-semibold mb-2">Collaborators:</h5>
       <div class="flex flex-wrap gap-2">
@@ -65,8 +88,8 @@
     </div>
   {{else}}
     <div class="flex gap-4 mb-4">
-      <button id="showCreateTeamForm" class="btn btn-primary">Create Project</button>
-      <button id="showJoinTeamForm" class="btn btn-secondary">Join Project</button>
+      <button id="showCreateTeamForm" class="btn bg-primary hover:bg-primary-focus text-primary-content">Create Project</button>
+      <button id="showJoinTeamForm" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Join Project</button>
     </div>
     {{#if showCreateTeam}}
       <form id="createTeamForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
@@ -81,8 +104,8 @@
       <form id="joinTeamForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
         <input type="text" name="teamCode" placeholder="Enter Project Code" class="input input-bordered" required />
         <div class="flex gap-2">
-          <button type="submit" class="btn btn-secondary">Join Project</button>
-          <button type="button" id="cancelJoinTeam" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Join Project</button>
+          <button type="button" id="cancelJoinTeam" class="btn btn-outline btn-neutral">Cancel</button>
         </div>
       </form>
     {{/if}}
@@ -108,11 +131,11 @@
       </select>
       <button id="showCreateTicketForm" class="btn btn-primary">Create Activity</button>
     </div>
-    <div class="mb-4">
+    <div class="mb-4 flex items-center gap-4">
       {{#if isClockedInForTeam selectedTeamId}}
-        <button id="clockOutBtn" class="btn btn-error">Stop Session</button>
+        <button id="clockOutBtn" class="btn bg-neutral hover:bg-neutral-focus text-neutral-content">Stop Session</button>
       {{else}}
-        <button id="clockInBtn" class="btn btn-success">Start Session</button>
+        <button id="clockInBtn" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Start Session</button>
       {{/if}}
     </div>
     {{#if showCreateTicketForm}}
@@ -132,13 +155,13 @@
     {{/if}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {{#each tickets}}
-        <div class="card bg-base-100 shadow p-4 {{#if isActive _id}}border-2 border-primary{{/if}}">
+        <div class="card bg-base-100 shadow-md p-4 {{#if isActive _id}}border border-slate-600{{/if}}">
           <div class="ticket-title text-lg font-bold mb-2">{{title}}</div>
-          <div class="ticket-time mb-2"><span class="badge badge-primary">{{formatTime displayTime}}</span></div>
+          <div class="ticket-time mb-2"><span class="badge" style="background-color: #4A5568; color: white;">{{formatTime displayTime}}</span></div>
           {{#if github}}
-            <a href="{{githubLink github}}" target="_blank" class="link link-info">Reference</a>
+            <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">Reference</a>
           {{/if}}
-          <button class="activate-ticket btn btn-outline mt-2 w-full" data-id="{{_id}}">
+          <button class="activate-ticket btn btn-outline btn-neutral mt-2 w-full" data-id="{{_id}}">
             {{#if isActive _id}}
               Stop
             {{else}}
@@ -159,7 +182,7 @@
   <h3 class="text-xl font-semibold mb-4">Join a Project</h3>
   <form id="joinTeamForm" class="card bg-base-100 shadow p-4 flex flex-col gap-2">
     <input type="text" name="teamCode" placeholder="Enter Project Code" class="input input-bordered" required />
-    <button type="submit" class="btn btn-secondary">Join</button>
+    <button type="submit" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Join</button>
   </form>
 </template>
 
@@ -194,7 +217,7 @@
       <h4 class="text-lg font-semibold mb-2">Create an Account</h4>
       <input type="text" name="username" placeholder="Username" class="input input-bordered" required />
       <input type="password" name="password" placeholder="Password" class="input input-bordered" required />
-      <button type="submit" class="btn btn-secondary">Sign Up</button>
+      <button type="submit" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Sign Up</button>
     </form>
   </div>
 </template>
