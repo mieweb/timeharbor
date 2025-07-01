@@ -31,6 +31,22 @@ Template.mainLayout.helpers({
 });
 
 Template.mainLayout.events({
+  'click #mobileMenuToggle'(e) {
+    e.preventDefault();
+    document.getElementById('mobileMenuOverlay').classList.remove('hidden');
+  },
+  'click #closeMobileMenu'(e) {
+    e.preventDefault();
+    document.getElementById('mobileMenuOverlay').classList.add('hidden');
+  },
+  'click #mobileMenuOverlay'(e) {
+    if (e.target.id === 'mobileMenuOverlay') {
+      document.getElementById('mobileMenuOverlay').classList.add('hidden');
+    }
+  }
+});
+
+Template.mainLayout.events({
   'click nav a'(event) {
     event.preventDefault();
     const target = event.currentTarget.getAttribute('href').substring(1);
@@ -665,6 +681,12 @@ Template.body.events({
   'click a[href]'(e) {
     e.preventDefault();
     const href = e.currentTarget.getAttribute('href');
+    
+    // Close mobile menu if open
+    const mobileMenu = document.getElementById('mobileMenuOverlay');
+    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+      mobileMenu.classList.add('hidden');
+    }
     
     switch (href) {
       case '/':

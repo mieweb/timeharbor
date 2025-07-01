@@ -77,6 +77,41 @@ Meteor.publish('usersByIds', async function (userIds) {
   return Meteor.users.find({ _id: { $in: filteredUserIds } }, { fields: { username: 1 } });
 });
 
+// Helper function to send time logging notifications
+async function sendTimeLoggingNotification(teamId, userId, action, ticketTitle) {
+  const team = await Teams.findOneAsync(teamId);
+  if (!team) return;
+
+  // Find all team members who want to receive time logging notifications
+  const teamMembers = team.members || [];
+  const preferences = await NotificationPreferences.find({
+    userId: { $in: teamMembers },
+    projectNotifications: teamId,
+    eventTypes: 'time_logging',
+    enabled: true
+  }).fetchAsync();
+
+  const user = await Meteor.users.findOneAsync(userId);
+  const username = user?.username || 'Someone';
+
+  for (const pref of preferences) {
+    if (pref.userId !== userId) { // Don't notify the person who performed the action
+      await Meteor.call('sendNotification', 
+        pref.userId,
+        `Time Logging - ${team.name}`,
+        `${username} ${action} time on "${ticketTitle}"`,
+        {
+          type: 'time_logging',
+          teamId,
+          ticketTitle,
+          action,
+          userId
+        }
+      );
+    }
+  }
+}
+
 Meteor.methods({
   async joinTeamWithCode(teamCode) {
     check(teamCode, String);
@@ -456,41 +491,3 @@ Meteor.methods({
     });
   }
 });
-
-// Helper function to send time logging notifications
-async function sendTimeLoggingNotification(teamId, userId, action, ticketTitle) {
-  const team = await Teams.findOneAsync(teamId);
-  if (!team) return;
-
-  // Find all team members who want to receive time logging notifications
-  const teamMembers = team.members || [];
-  const preferences = await NotificationPreferences.find({
-    userId: { $in: teamMembers },
-    projectNotifications: teamId,
-    eventTypes: 'time_logging',
-    enabled: true
-  }).fetchAsync();
-
-  const user = await Meteor.users.findOneAsync(userId);
-  const username = user?.username || 'Someone';
-
-  for (const pref of preferences) {
-    if (pref.userId !== userId) { // Don't notify the person who performed the action
-      await Meteor.call('sendNotification', 
-        pref.userId,
-        `Time Logging - ${team.name}`,
-        `${username} ${action} time on "${ticketTitle}"`,
-        {
-          type: 'time_logging',
-          teamId,
-          ticketTitle,
-          action,
-          userId
-        }
-      );
-    }
-  }
-}
-
-// Export the helper function for use in other methods
-export { sendTimeLoggingNotification };

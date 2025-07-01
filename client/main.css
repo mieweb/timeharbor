@@ -69,6 +69,37 @@
   body {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  
+  /* Bottom navigation safe area */
+  nav[class*="bottom"] {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Mobile bottom navigation styling */
+@media (max-width: 768px) {
+  .fixed.bottom-0 nav {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .fixed.bottom-0 nav .btn {
+    border-radius: 0;
+    font-size: 0.75rem;
+  }
+}
+
+/* Mobile menu overlay */
+#mobileMenuOverlay {
+  z-index: 9999;
+}
+
+#mobileMenuOverlay > div {
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+}
+
+#mobileMenuOverlay:not(.hidden) > div {
+  transform: translateX(0);
 }
 
 /* Custom styles for notification preferences */

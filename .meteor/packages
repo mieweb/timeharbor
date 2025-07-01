@@ -19,8 +19,6 @@ ecmascript@0.16.10              # Enable ECMAScript2015+ syntax in app code
 typescript@5.6.3              # Enable TypeScript syntax in .ts and .tsx modules
 shell-server@0.6.1            # Server-side component of the `meteor shell` command
 
-
-
 hot-module-replacement@0.5.4  # Update code in development without reloading the page
 blaze-hot               # Update files using Blaze's API with HMR
 accounts-base
@@ -31,6 +29,5 @@ push
 raix:push
 
 # Mobile/Cordova support
-mobile-experience@1.1.2
 mobile-status-bar
 launch-screen
