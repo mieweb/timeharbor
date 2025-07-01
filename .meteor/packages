@@ -25,3 +25,12 @@ hot-module-replacement@0.5.4  # Update code in development without reloading the
 blaze-hot               # Update files using Blaze's API with HMR
 accounts-base
 accounts-password
+
+# Push notifications for mobile
+push
+raix:push
+
+# Mobile/Cordova support
+mobile-experience@1.1.2
+mobile-status-bar
+launch-screen

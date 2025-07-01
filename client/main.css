@@ -2,4 +2,91 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-/* You can add custom styles below if needed */
+/* Mobile-specific enhancements */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.5rem 1rem;
+  }
+  
+  .navbar .flex-1 h2 {
+    font-size: 1.5rem;
+  }
+  
+  .navbar nav {
+    gap: 0.5rem;
+  }
+  
+  .navbar nav .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  /* Improve touch targets for mobile */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .input {
+    min-height: 44px;
+  }
+  
+  .checkbox {
+    min-height: 20px;
+    min-width: 20px;
+  }
+  
+  /* Better spacing for mobile forms */
+  .form-control {
+    margin-bottom: 1rem;
+  }
+  
+  /* Improve readability */
+  .text-xl {
+    font-size: 1.25rem;
+  }
+  
+  .text-2xl {
+    font-size: 1.5rem;
+  }
+}
+
+/* iOS safe area support */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .navbar {
+    padding-top: calc(0.5rem + env(safe-area-inset-top));
+  }
+  
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Custom styles for notification preferences */
+.notification-settings {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.notification-settings .checkbox {
+  margin-right: 0.75rem;
+}
+
+.notification-settings .label {
+  align-items: flex-start;
+  padding: 0.5rem 0;
+}
+
+/* Ensure proper touch scrolling on iOS */
+.overflow-auto {
+  -webkit-overflow-scrolling: touch;
+}

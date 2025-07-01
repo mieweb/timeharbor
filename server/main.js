@@ -1,7 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
-import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
+import { Tickets, Teams, Sessions, ClockEvents, NotificationPreferences } from '../collections.js';
 
 function generateTeamCode() {
   // Simple random code, can be improved for production
@@ -186,26 +186,35 @@ Meteor.methods({
     check(seconds, Number);
     Tickets.update(ticketId, { $inc: { timeSpent: seconds } });
   },
-  updateTicketStart(ticketId, now) {
+  async updateTicketStart(ticketId, now) {
     check(ticketId, String);
     check(now, Number);
     if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (ticket) {
+      await sendTimeLoggingNotification(ticket.teamId, this.userId, 'started', ticket.title);
+    }
+    
     return Tickets.updateAsync(ticketId, { $set: { startTimestamp: now } });
   },
-  updateTicketStop(ticketId, now) {
+  async updateTicketStop(ticketId, now) {
     check(ticketId, String);
     check(now, Number);
     if (!this.userId) throw new Meteor.Error('not-authorized');
-    return Tickets.findOneAsync(ticketId).then(ticket => {
-      if (ticket && ticket.startTimestamp) {
-        const elapsed = Math.floor((now - ticket.startTimestamp) / 1000);
-        const prev = ticket.accumulatedTime || 0;
-        return Tickets.updateAsync(ticketId, {
-          $set: { accumulatedTime: prev + elapsed },
-          $unset: { startTimestamp: '' }
-        });
-      }
-    });
+    
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (ticket && ticket.startTimestamp) {
+      const elapsed = Math.floor((now - ticket.startTimestamp) / 1000);
+      const prev = ticket.accumulatedTime || 0;
+      
+      await sendTimeLoggingNotification(ticket.teamId, this.userId, 'stopped', ticket.title);
+      
+      return Tickets.updateAsync(ticketId, {
+        $set: { accumulatedTime: prev + elapsed },
+        $unset: { startTimestamp: '' }
+      });
+    }
   },
   async clockEventStart(teamId) {
     check(teamId, String);
@@ -327,3 +336,161 @@ Meteor.methods({
     }
   },
 });
+
+// Push notification configuration
+Meteor.startup(() => {
+  // Configure push notifications for production
+  if (Meteor.isProduction) {
+    Push.Configure({
+      apn: {
+        passphrase: process.env.APN_PASSPHRASE,
+        key: process.env.APN_KEY,
+        cert: process.env.APN_CERT,
+        production: true
+      }
+    });
+  } else {
+    // Development configuration
+    Push.Configure({
+      apn: {
+        passphrase: 'password',
+        key: 'apn-dev-key.pem',
+        cert: 'apn-dev-cert.pem',
+        production: false
+      }
+    });
+  }
+});
+
+// Publish notification preferences for the current user
+Meteor.publish('notificationPreferences', function () {
+  if (!this.userId) return this.ready();
+  return NotificationPreferences.find({ userId: this.userId });
+});
+
+// Notification-related methods
+Meteor.methods({
+  async updateNotificationPreferences(preferences) {
+    check(preferences, {
+      projectNotifications: [String],
+      eventTypes: [String],
+      enabled: Boolean
+    });
+
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const existingPrefs = await NotificationPreferences.findOneAsync({ userId: this.userId });
+    
+    if (existingPrefs) {
+      await NotificationPreferences.updateAsync(
+        { userId: this.userId },
+        { $set: preferences }
+      );
+    } else {
+      await NotificationPreferences.insertAsync({
+        userId: this.userId,
+        ...preferences,
+        createdAt: new Date()
+      });
+    }
+  },
+
+  async subscribeToProjectNotifications(teamId, eventTypes) {
+    check(teamId, String);
+    check(eventTypes, [String]);
+
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    // Verify user is a member of the team
+    const team = await Teams.findOneAsync({ _id: teamId, members: this.userId });
+    if (!team) {
+      throw new Meteor.Error('not-authorized', 'You are not a member of this team');
+    }
+
+    const preferences = await NotificationPreferences.findOneAsync({ userId: this.userId }) || {
+      projectNotifications: [],
+      eventTypes: [],
+      enabled: true
+    };
+
+    // Add team to project notifications if not already present
+    if (!preferences.projectNotifications.includes(teamId)) {
+      preferences.projectNotifications.push(teamId);
+    }
+
+    // Add event types
+    eventTypes.forEach(eventType => {
+      if (!preferences.eventTypes.includes(eventType)) {
+        preferences.eventTypes.push(eventType);
+      }
+    });
+
+    await Meteor.call('updateNotificationPreferences', preferences);
+  },
+
+  async sendNotification(userId, title, message, data = {}) {
+    check(userId, String);
+    check(title, String);
+    check(message, String);
+    check(data, Object);
+
+    // Check if user has notifications enabled
+    const preferences = await NotificationPreferences.findOneAsync({ userId });
+    if (!preferences || !preferences.enabled) {
+      return;
+    }
+
+    // Send push notification
+    Push.send({
+      from: 'TimeHarbor',
+      title: title,
+      text: message,
+      badge: 1,
+      sound: 'default',
+      payload: data,
+      query: { userId: userId }
+    });
+  }
+});
+
+// Helper function to send time logging notifications
+async function sendTimeLoggingNotification(teamId, userId, action, ticketTitle) {
+  const team = await Teams.findOneAsync(teamId);
+  if (!team) return;
+
+  // Find all team members who want to receive time logging notifications
+  const teamMembers = team.members || [];
+  const preferences = await NotificationPreferences.find({
+    userId: { $in: teamMembers },
+    projectNotifications: teamId,
+    eventTypes: 'time_logging',
+    enabled: true
+  }).fetchAsync();
+
+  const user = await Meteor.users.findOneAsync(userId);
+  const username = user?.username || 'Someone';
+
+  for (const pref of preferences) {
+    if (pref.userId !== userId) { // Don't notify the person who performed the action
+      await Meteor.call('sendNotification', 
+        pref.userId,
+        `Time Logging - ${team.name}`,
+        `${username} ${action} time on "${ticketTitle}"`,
+        {
+          type: 'time_logging',
+          teamId,
+          ticketTitle,
+          action,
+          userId
+        }
+      );
+    }
+  }
+}
+
+// Export the helper function for use in other methods
+export { sendTimeLoggingNotification };

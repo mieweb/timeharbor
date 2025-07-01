@@ -16,6 +16,7 @@
       <a href="/" class="btn btn-ghost hover:bg-primary-focus">Home</a>
       <a href="/teams" class="btn btn-ghost hover:bg-primary-focus">Teams</a>
       <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Projects</a>
+      <a href="/notifications" class="btn btn-ghost hover:bg-primary-focus">Notifications</a>
     </nav>
   </header>
   <main class="container mx-auto px-4">
@@ -219,5 +220,75 @@
       <input type="password" name="password" placeholder="Password" class="input input-bordered" required />
       <button type="submit" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Sign Up</button>
     </form>
+  </div>
+</template>
+
+<template name="notificationSettings">
+  <div class="card bg-base-100 shadow p-4 md:p-6 mb-6 notification-settings">
+    <h3 class="text-lg md:text-xl font-semibold mb-4">📱 Notification Settings</h3>
+    
+    <!-- Enable/Disable Notifications -->
+    <div class="form-control mb-4">
+      <label class="label cursor-pointer flex-col sm:flex-row">
+        <span class="label-text text-base mb-2 sm:mb-0">Enable Push Notifications</span>
+        <input type="checkbox" id="enableNotifications" class="toggle toggle-primary" {{#if notificationsEnabled}}checked{{/if}} />
+      </label>
+    </div>
+
+    {{#if notificationsEnabled}}
+      <!-- Project Notifications -->
+      <div class="mb-6">
+        <h4 class="text-base md:text-lg font-medium mb-3">🔔 Project Notifications</h4>
+        <p class="text-sm text-gray-600 mb-3">Choose which projects you want to receive notifications for:</p>
+        <div class="space-y-3">
+          {{#each userTeams}}
+            <label class="label cursor-pointer justify-start p-3 bg-base-200 rounded-lg">
+              <input type="checkbox" class="checkbox checkbox-primary mr-3" value="{{_id}}" {{#if isProjectSelected _id}}checked{{/if}} />
+              <span class="label-text flex-1">{{name}}</span>
+            </label>
+          {{/each}}
+          {{#unless userTeams}}
+            <p class="text-sm text-gray-500 italic">No projects available. Join or create a project first.</p>
+          {{/unless}}
+        </div>
+      </div>
+
+      <!-- Event Types -->
+      <div class="mb-6">
+        <h4 class="text-base md:text-lg font-medium mb-3">⚡ Notification Types</h4>
+        <p class="text-sm text-gray-600 mb-3">Choose what types of activities you want to be notified about:</p>
+        <div class="space-y-3">
+          <label class="label cursor-pointer justify-start p-3 bg-base-200 rounded-lg">
+            <input type="checkbox" class="checkbox checkbox-primary mr-3" value="time_logging" {{#if isEventTypeSelected 'time_logging'}}checked{{/if}} />
+            <div class="flex-1">
+              <span class="label-text font-medium">Time Logging</span>
+              <div class="text-xs text-gray-500">When team members start/stop activities</div>
+            </div>
+          </label>
+          <label class="label cursor-pointer justify-start p-3 bg-base-200 rounded-lg">
+            <input type="checkbox" class="checkbox checkbox-primary mr-3" value="project_updates" {{#if isEventTypeSelected 'project_updates'}}checked{{/if}} />
+            <div class="flex-1">
+              <span class="label-text font-medium">Project Updates</span>
+              <div class="text-xs text-gray-500">When projects are modified</div>
+            </div>
+          </label>
+          <label class="label cursor-pointer justify-start p-3 bg-base-200 rounded-lg">
+            <input type="checkbox" class="checkbox checkbox-primary mr-3" value="new_tickets" {{#if isEventTypeSelected 'new_tickets'}}checked{{/if}} />
+            <div class="flex-1">
+              <span class="label-text font-medium">New Activities</span>
+              <div class="text-xs text-gray-500">When new activities are created</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <button id="saveNotificationSettings" class="btn btn-primary w-full">💾 Save Settings</button>
+    {{else}}
+      <div class="alert alert-info">
+        <div class="flex-1">
+          <p>Enable notifications above to configure your preferences.</p>
+        </div>
+      </div>
+    {{/if}}
   </div>
 </template>
