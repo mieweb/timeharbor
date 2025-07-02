@@ -2,6 +2,9 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
+import express from 'express';
+import axios from 'axios';
+import { JSDOM } from 'jsdom';
 
 function generateTeamCode() {
   // Simple random code, can be improved for production
@@ -327,3 +330,27 @@ Meteor.methods({
     }
   },
 });
+
+// Set up Express app for custom API endpoints
+const app = express();
+app.use(express.json());
+
+app.post('/api/fetch-title', async (req, res) => {
+  const { url } = req.body;
+  try {
+    const response = await axios.get(url);
+    const html = response.data;
+    const dom = new JSDOM(html);
+    const title = dom.window.document.querySelector('title')?.textContent?.trim();
+    const h1 = dom.window.document.querySelector('h1')?.textContent?.trim();
+    const metaDesc = dom.window.document.querySelector('meta[name="description"]')?.getAttribute('content');
+    // Prefer h1, then title, then meta description
+    const suggestion = h1 || title || metaDesc || '';
+    res.json({ suggestion });
+  } catch (e) {
+    res.json({ suggestion: '' });
+  }
+});
+
+// Bind Express to Meteor
+WebApp.connectHandlers.use(app);

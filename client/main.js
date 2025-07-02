@@ -339,35 +339,98 @@ Template.tickets.helpers({
   },
 });
 
+// Utility function to fetch title suggestion from backend
+async function fetchTitleSuggestion(url) {
+  try {
+    const res = await fetch('/api/fetch-title', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    return data.suggestion;
+  } catch (e) {
+    return '';
+  }
+}
+
+// Safe URL validation function
+function isValidUrl(string) {
+  try {
+    new URL(string);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 Template.tickets.events({
   'change #teamSelect'(e, t) {
     t.selectedTeamId.set(e.target.value);
   },
   'click #showCreateTicketForm'(e, t) {
     t.showCreateTicketForm.set(true);
-    // Add paste event listener to the Reference Link or Notes input after the form is shown
     setTimeout(() => {
       const input = document.querySelector('input[name="github"]');
+      const titleInput = document.querySelector('input[name="title"]');
       if (input && !input._hasPasteListener) {
-        input.addEventListener('paste', function(event) {
-          // Get pasted text
+        // Create or select the message element for URL validation
+        let msg = document.getElementById('url-validation-msg');
+        if (!msg) {
+          msg = document.createElement('div');
+          msg.id = 'url-validation-msg';
+          msg.style.marginTop = '4px';
+          msg.style.fontSize = '0.95em';
+          input.parentNode.insertBefore(msg, input.nextSibling);
+        }
+        // Create or select the suggestion element for activity title
+        let suggestionDiv = document.getElementById('activity-title-suggestion');
+        if (!suggestionDiv) {
+          suggestionDiv = document.createElement('div');
+          suggestionDiv.id = 'activity-title-suggestion';
+          suggestionDiv.style.marginTop = '4px';
+          suggestionDiv.style.fontSize = '0.95em';
+          suggestionDiv.style.color = '#4A5568';
+          titleInput.parentNode.insertBefore(suggestionDiv, titleInput.nextSibling);
+        }
+        input.addEventListener('paste', async function(event) {
+          event.preventDefault();
           let pastedText = '';
           if (event.clipboardData && event.clipboardData.getData) {
             pastedText = event.clipboardData.getData('text');
           } else if (window.clipboardData && window.clipboardData.getData) {
             pastedText = window.clipboardData.getData('Text');
           }
-          // URL validation regex
-          const urlPattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-            '((([a-zA-Z\\d]([a-zA-Z\\d-]*[a-zA-Z\\d])*)\\.)+[a-zA-Z]{2,}|'+ // domain name
-            '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-            '(\\:\\d+)?(\\/[-a-zA-Z\\d%_.~+]*)*'+ // port and path
-            '(\\?[;&a-zA-Z\\d%_.~+=-]*)?'+ // query string
-            '(\\#[-a-zA-Z\\d_]*)?$','i'); // fragment locator
-          if (urlPattern.test(pastedText)) {
-            alert('Valid URL');
+          // Insert the pasted text manually
+          const start = input.selectionStart;
+          const end = input.selectionEnd;
+          const value = input.value;
+          input.value = value.slice(0, start) + pastedText + value.slice(end);
+          input.setSelectionRange(start + pastedText.length, start + pastedText.length);
+          // Use isValidUrl for validation
+          if (isValidUrl(pastedText)) {
+            msg.textContent = 'Valid URL';
+            msg.style.color = 'green';
+            // Show loading for suggestion
+            suggestionDiv.textContent = 'Fetching activity title suggestion...';
+            suggestionDiv.style.color = '#4A5568';
+            // Fetch suggestion from backend
+            const suggestion = await fetchTitleSuggestion(pastedText);
+            if (suggestion) {
+              suggestionDiv.innerHTML = `Suggested Activity Title: <span style=\"color: #2563eb; cursor: pointer; text-decoration: underline;\">${suggestion}</span>`;
+              // Make suggestion clickable to autofill title
+              const span = suggestionDiv.querySelector('span');
+              span.onclick = () => {
+                titleInput.value = suggestion;
+              };
+            } else {
+              suggestionDiv.textContent = 'No suggestion found for this URL.';
+              suggestionDiv.style.color = '#b91c1c';
+            }
           } else {
-            alert('Invalid URL');
+            msg.textContent = 'Invalid URL';
+            msg.style.color = 'red';
+            suggestionDiv.textContent = '';
           }
         });
         input._hasPasteListener = true;
