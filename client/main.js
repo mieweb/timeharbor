@@ -345,6 +345,34 @@ Template.tickets.events({
   },
   'click #showCreateTicketForm'(e, t) {
     t.showCreateTicketForm.set(true);
+    // Add paste event listener to the Reference Link or Notes input after the form is shown
+    setTimeout(() => {
+      const input = document.querySelector('input[name="github"]');
+      if (input && !input._hasPasteListener) {
+        input.addEventListener('paste', function(event) {
+          // Get pasted text
+          let pastedText = '';
+          if (event.clipboardData && event.clipboardData.getData) {
+            pastedText = event.clipboardData.getData('text');
+          } else if (window.clipboardData && window.clipboardData.getData) {
+            pastedText = window.clipboardData.getData('Text');
+          }
+          // URL validation regex
+          const urlPattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+            '((([a-zA-Z\\d]([a-zA-Z\\d-]*[a-zA-Z\\d])*)\\.)+[a-zA-Z]{2,}|'+ // domain name
+            '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+            '(\\:\\d+)?(\\/[-a-zA-Z\\d%_.~+]*)*'+ // port and path
+            '(\\?[;&a-zA-Z\\d%_.~+=-]*)?'+ // query string
+            '(\\#[-a-zA-Z\\d_]*)?$','i'); // fragment locator
+          if (urlPattern.test(pastedText)) {
+            alert('Valid URL');
+          } else {
+            alert('Invalid URL');
+          }
+        });
+        input._hasPasteListener = true;
+      }
+    }, 0);
   },
   'click #cancelCreateTicket'(e, t) {
     t.showCreateTicketForm.set(false);
