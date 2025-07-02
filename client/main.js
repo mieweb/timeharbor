@@ -1,6 +1,6 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
-import { Teams, Tickets, ClockEvents } from '../collections.js';
+import { Teams, Tickets, ClockEvents, NotificationPreferences } from '../collections.js';
 
 import './main.html';
 
@@ -28,6 +28,22 @@ Template.mainLayout.helpers({
   main() {
     return currentTemplate.get(); // Ensure it returns the current template
   },
+});
+
+Template.mainLayout.events({
+  'click #mobileMenuToggle'(e) {
+    e.preventDefault();
+    document.getElementById('mobileMenuOverlay').classList.remove('hidden');
+  },
+  'click #closeMobileMenu'(e) {
+    e.preventDefault();
+    document.getElementById('mobileMenuOverlay').classList.add('hidden');
+  },
+  'click #mobileMenuOverlay'(e) {
+    if (e.target.id === 'mobileMenuOverlay') {
+      document.getElementById('mobileMenuOverlay').classList.add('hidden');
+    }
+  }
 });
 
 Template.mainLayout.events({
@@ -578,4 +594,113 @@ Template.home.helpers({
     const s = t % 60;
     return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   },
+});
+
+// Notification Settings Template
+Template.notificationSettings.onCreated(function () {
+  this.subscribe('notificationPreferences');
+  this.subscribe('userTeams');
+});
+
+Template.notificationSettings.helpers({
+  notificationsEnabled() {
+    const prefs = NotificationPreferences.findOne({ userId: Meteor.userId() });
+    return prefs ? prefs.enabled : false;
+  },
+  userTeams() {
+    return Teams.find({ members: Meteor.userId() });
+  },
+  isProjectSelected(teamId) {
+    const prefs = NotificationPreferences.findOne({ userId: Meteor.userId() });
+    return prefs && prefs.projectNotifications && prefs.projectNotifications.includes(teamId);
+  },
+  isEventTypeSelected(eventType) {
+    const prefs = NotificationPreferences.findOne({ userId: Meteor.userId() });
+    return prefs && prefs.eventTypes && prefs.eventTypes.includes(eventType);
+  }
+});
+
+Template.notificationSettings.events({
+  'change #enableNotifications'(e, t) {
+    const enabled = e.target.checked;
+    const prefs = NotificationPreferences.findOne({ userId: Meteor.userId() }) || {
+      projectNotifications: [],
+      eventTypes: [],
+      enabled: false
+    };
+    
+    prefs.enabled = enabled;
+    Meteor.call('updateNotificationPreferences', prefs);
+  },
+  
+  'click #saveNotificationSettings'(e, t) {
+    e.preventDefault();
+    
+    // Get selected projects
+    const selectedProjects = [];
+    t.$('input[type="checkbox"][value]').each(function() {
+      if (this.checked && this.value.length > 5) { // Team IDs are longer
+        selectedProjects.push(this.value);
+      }
+    });
+    
+    // Get selected event types
+    const selectedEventTypes = [];
+    const eventTypeInputs = ['time_logging', 'project_updates', 'new_tickets'];
+    eventTypeInputs.forEach(eventType => {
+      if (t.$(`input[value="${eventType}"]`).is(':checked')) {
+        selectedEventTypes.push(eventType);
+      }
+    });
+    
+    const preferences = {
+      projectNotifications: selectedProjects,
+      eventTypes: selectedEventTypes,
+      enabled: t.$('#enableNotifications').is(':checked')
+    };
+    
+    Meteor.call('updateNotificationPreferences', preferences, (error) => {
+      if (error) {
+        alert('Error saving preferences: ' + error.reason);
+      } else {
+        alert('Notification preferences saved successfully!');
+      }
+    });
+  }
+});
+
+// Simple router for handling different screens
+Template.body.helpers({
+  currentScreen() {
+    return currentScreen.get();
+  }
+});
+
+// Handle navigation
+Template.body.events({
+  'click a[href]'(e) {
+    e.preventDefault();
+    const href = e.currentTarget.getAttribute('href');
+    
+    // Close mobile menu if open
+    const mobileMenu = document.getElementById('mobileMenuOverlay');
+    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+      mobileMenu.classList.add('hidden');
+    }
+    
+    switch (href) {
+      case '/':
+        currentTemplate.set('home');
+        break;
+      case '/teams':
+        currentTemplate.set('teams');
+        break;
+      case '/tickets':
+        currentTemplate.set('tickets');
+        break;
+      case '/notifications':
+        currentTemplate.set('notificationSettings');
+        break;
+    }
+  }
 });

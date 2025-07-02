@@ -1,1 +1,24 @@
 node_modules/
+.meteor/local/
+.meteor/meteorite/
+
+# Build artifacts
+*.ipa
+*.app
+*.xcarchive
+build/
+
+# iOS specific
+ios/
+cordova-platforms/
+cordova-plugins/
+
+# Development files
+.DS_Store
+*.log
+
+# Certificates and keys (never commit these!)
+*.p12
+*.pem
+*.mobileprovision
+*.certSigningRequest
