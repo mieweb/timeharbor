@@ -141,19 +141,6 @@
     {{#if showCreateTicketForm}}
       <form id="createTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
         <input type="text" name="title" placeholder="Activity Title (e.g., 'Math Homework', 'Robot Assembly')" class="input input-bordered" required />
-        {{#if suggestedTitleLoading}}
-          <div class="suggested-title-tooltip bg-base-200 p-2 rounded shadow mt-1 text-sm">Loading title...</div>
-        {{/if}}
-        {{#if suggestedTitle}}
-          <div class="suggested-title-tooltip bg-base-200 p-2 rounded shadow mt-1 flex items-center gap-2">
-            <span>Suggested title: <span class="font-semibold">{{suggestedTitle}}</span></span>
-            <button type="button" class="btn btn-xs btn-primary accept-suggestion">Accept</button>
-            <button type="button" class="btn btn-xs btn-outline reject-suggestion">Dismiss</button>
-          </div>
-        {{/if}}
-        {{#if suggestedTitleError}}
-          <div class="suggested-title-tooltip bg-red-100 text-red-700 p-2 rounded shadow mt-1 text-sm">{{suggestedTitleError}}</div>
-        {{/if}}
         <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered" />
         <div class="flex gap-2">
           <input type="number" name="hours" min="0" placeholder="Hours" class="input input-bordered w-24" />
