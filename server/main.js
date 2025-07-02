@@ -2,6 +2,13 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
+import { JSDOM } from 'jsdom';
+import dns from 'dns/promises';
+import net from 'net';
+import { URL } from 'url';
+import fetch from 'node-fetch';
+import express from 'express';
+import bodyParser from 'body-parser';
 
 function generateTeamCode() {
   // Simple random code, can be improved for production
@@ -326,4 +333,162 @@ Meteor.methods({
       );
     }
   },
+  async fetchPageTitle(url) {
+    check(url, String);
+    // Validate URL
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(url);
+      if (!/^https?:$/.test(parsedUrl.protocol)) throw new Error('Invalid protocol');
+    } catch (e) {
+      throw new Meteor.Error('invalid-url', 'Invalid URL');
+    }
+
+    // SSRF protection: block local/internal IPs
+    const hostname = parsedUrl.hostname;
+    let addresses;
+    try {
+      addresses = await dns.lookup(hostname, { all: true });
+    } catch (e) {
+      throw new Meteor.Error('dns-fail', 'Could not resolve host');
+    }
+    for (const addr of addresses) {
+      if (isPrivateIP(addr.address)) {
+        throw new Meteor.Error('ssrf-blocked', 'Blocked internal IP');
+      }
+    }
+
+    // Fetch page with timeout and size limit
+    let controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+    let res;
+    try {
+      res = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0 (TimeHarbor Title Fetcher)' },
+      });
+    } catch (e) {
+      throw new Meteor.Error('fetch-fail', 'Failed to fetch URL');
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!res.ok) throw new Meteor.Error('fetch-fail', 'Failed to fetch URL');
+    // Limit response size to 256KB
+    const maxSize = 256 * 1024;
+    let html = '';
+    let reader = res.body.getReader();
+    let received = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.length;
+      if (received > maxSize) {
+        throw new Meteor.Error('too-large', 'Response too large');
+      }
+      html += Buffer.from(value).toString('utf8');
+      // Stop reading if <title> is found
+      if (/<title>(.*?)<\/title>/i.test(html)) break;
+    }
+    // Extract <title>
+    let title = null;
+    try {
+      const dom = new JSDOM(html);
+      title = dom.window.document.title || null;
+    } catch (e) {
+      title = null;
+    }
+    return title;
+  },
 });
+
+// Helper: check if IP is private/internal
+function isPrivateIP(ip) {
+  if (net.isIPv4(ip)) {
+    const parts = ip.split('.').map(Number);
+    if (parts[0] === 10) return true;
+    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+    if (parts[0] === 192 && parts[1] === 168) return true;
+    if (parts[0] === 127) return true;
+    if (parts[0] === 169 && parts[1] === 254) return true;
+  } else if (net.isIPv6(ip)) {
+    if (ip === '::1') return true;
+    if (ip.startsWith('fd') || ip.startsWith('fc')) return true;
+  }
+  return false;
+}
+
+// Express REST API for title fetching
+const app = express();
+app.use(bodyParser.json());
+
+app.get('/api/fetch-title', async (req, res) => {
+  const url = req.query.url;
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'Missing or invalid url parameter' });
+  }
+  // Validate URL
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+    if (!/^https?:$/.test(parsedUrl.protocol)) throw new Error('Invalid protocol');
+  } catch (e) {
+    return res.status(400).json({ error: 'Invalid URL' });
+  }
+  // SSRF protection: block local/internal IPs
+  const hostname = parsedUrl.hostname;
+  let addresses;
+  try {
+    addresses = await dns.lookup(hostname, { all: true });
+  } catch (e) {
+    return res.status(400).json({ error: 'Could not resolve host' });
+  }
+  for (const addr of addresses) {
+    if (isPrivateIP(addr.address)) {
+      return res.status(403).json({ error: 'Blocked internal IP' });
+    }
+  }
+  // Fetch page with timeout and size limit
+  let controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+  let pageRes;
+  try {
+    pageRes = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (TimeHarbor Title Fetcher)' },
+    });
+  } catch (e) {
+    clearTimeout(timeout);
+    return res.status(500).json({ error: 'Failed to fetch URL' });
+  }
+  clearTimeout(timeout);
+  if (!pageRes.ok) return res.status(500).json({ error: 'Failed to fetch URL' });
+  // Limit response size to 256KB
+  const maxSize = 256 * 1024;
+  let html = '';
+  let reader = pageRes.body.getReader();
+  let received = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    received += value.length;
+    if (received > maxSize) {
+      return res.status(413).json({ error: 'Response too large' });
+    }
+    html += Buffer.from(value).toString('utf8');
+    // Stop reading if <title> is found
+    if (/<title>(.*?)<\/title>/i.test(html)) break;
+  }
+  // Extract <title>
+  let title = null;
+  try {
+    const dom = new JSDOM(html);
+    title = dom.window.document.title || null;
+  } catch (e) {
+    title = null;
+  }
+  if (!title) return res.status(404).json({ error: 'No title found' });
+  return res.json({ title });
+});
+
+// Attach Express to Meteor
+WebApp.connectHandlers.use(app);

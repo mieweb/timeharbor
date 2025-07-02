@@ -230,6 +230,9 @@ Template.tickets.onCreated(function () {
   // Restore last active ticket if it is still running
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
+  this.suggestedTitle = new ReactiveVar(null);
+  this.suggestedTitleLoading = new ReactiveVar(false);
+  this.suggestedTitleError = new ReactiveVar(null);
   this.autorun(() => {
     this.subscribe('userTeams');
     this.subscribe('clockEventsForUser');
@@ -336,6 +339,15 @@ Template.tickets.helpers({
       total += Math.max(0, Math.floor((now - clockEvent.startTimestamp) / 1000));
     }
     return total;
+  },
+  suggestedTitle() {
+    return Template.instance().suggestedTitle.get();
+  },
+  suggestedTitleLoading() {
+    return Template.instance().suggestedTitleLoading.get();
+  },
+  suggestedTitleError() {
+    return Template.instance().suggestedTitleError.get();
   },
 });
 
@@ -503,7 +515,82 @@ Template.tickets.events({
       }
     });
   },
+  'paste input[name="title"]'(e, t) {
+    // On paste, check if the pasted value is a URL
+    setTimeout(() => {
+      const value = e.target.value;
+      handleUrlTitleSuggestion(value, t);
+    }, 0);
+  },
+  'blur input[name="title"]'(e, t) {
+    // On blur, check if the value is a URL
+    const value = e.target.value;
+    handleUrlTitleSuggestion(value, t);
+  },
+  'input input[name="title"]'(e, t) {
+    // On input, if the value is a URL and not already suggested, debounce
+    const value = e.target.value;
+    if (isLikelyUrl(value)) {
+      if (t._debounceTimer) clearTimeout(t._debounceTimer);
+      t._debounceTimer = setTimeout(() => {
+        handleUrlTitleSuggestion(value, t);
+      }, 400);
+    }
+  },
+  'click .suggested-title-tooltip .accept-suggestion'(e, t) {
+    e.preventDefault();
+    const suggestion = t.suggestedTitle.get();
+    if (suggestion) {
+      const input = t.find('input[name="title"]');
+      input.value = suggestion;
+      t.suggestedTitle.set(null);
+    }
+  },
+  'click .suggested-title-tooltip .reject-suggestion'(e, t) {
+    e.preventDefault();
+    t.suggestedTitle.set(null);
+  },
 });
+
+function isLikelyUrl(str) {
+  // Simple regex for http(s) URLs
+  return /^https?:\/\/.+\..+/.test(str.trim());
+}
+
+function handleUrlTitleSuggestion(value, t) {
+  if (!isLikelyUrl(value)) {
+    t.suggestedTitle.set(null);
+    t.suggestedTitleLoading.set(false);
+    t.suggestedTitleError.set(null);
+    return;
+  }
+  t.suggestedTitle.set(null);
+  t.suggestedTitleLoading.set(true);
+  t.suggestedTitleError.set(null);
+  fetch(`/api/fetch-title?url=${encodeURIComponent(value.trim())}`)
+    .then(async (res) => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to fetch title');
+      }
+      return res.json();
+    })
+    .then((data) => {
+      t.suggestedTitleLoading.set(false);
+      if (data && data.title) {
+        t.suggestedTitle.set(data.title);
+        t.suggestedTitleError.set(null);
+      } else {
+        t.suggestedTitleError.set('No title found');
+        t.suggestedTitle.set(null);
+      }
+    })
+    .catch((err) => {
+      t.suggestedTitleLoading.set(false);
+      t.suggestedTitleError.set(err.message || 'No title found');
+      t.suggestedTitle.set(null);
+    });
+}
 
 Template.home.onCreated(function () {
   this.autorun(() => {
