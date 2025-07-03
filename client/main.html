@@ -16,6 +16,7 @@
       <a href="/" class="btn btn-ghost hover:bg-primary-focus">Home</a>
       <a href="/teams" class="btn btn-ghost hover:bg-primary-focus">Teams</a>
       <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Projects</a>
+      <a href="/admin" class="btn btn-ghost hover:bg-primary-focus">Admin Review</a>
     </nav>
   </header>
   <main class="container mx-auto px-4">
@@ -219,5 +220,164 @@
       <input type="password" name="password" placeholder="Password" class="input input-bordered" required />
       <button type="submit" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Sign Up</button>
     </form>
+  </div>
+</template>
+
+<template name="admin">
+  <div class="flex flex-col gap-4">
+    <h3 class="text-xl font-semibold">Administrative Time Entry Review</h3>
+    
+    <!-- Project Selection -->
+    <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+      <label for="adminTeamSelect" class="label">Select Project to Review:</label>
+      <select id="adminTeamSelect" class="select select-bordered">
+        <option value="">Choose a project...</option>
+        {{#each adminTeams}}
+          <option value="{{_id}}" {{isSelectedAdminTeam _id}}>{{name}}</option>
+        {{/each}}
+      </select>
+    </div>
+
+    {{#if selectedAdminTeamId}}
+      {{#if adminTickets}}
+        <!-- Filter and Sort Controls -->
+        <div class="card bg-base-100 shadow p-4 mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="label">Filter by Title:</label>
+              <input type="text" id="titleFilter" placeholder="Filter by title..." class="input input-bordered w-full" />
+            </div>
+            <div>
+              <label class="label">Filter by Status:</label>
+              <select id="statusFilter" class="select select-bordered w-full">
+                <option value="">All Statuses</option>
+                <option value="open">Open</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="closed">Closed</option>
+                <option value="deleted">Deleted</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Filter by Creator:</label>
+              <select id="creatorFilter" class="select select-bordered w-full">
+                <option value="">All Creators</option>
+                {{#each uniqueCreators}}
+                  <option value="{{_id}}">{{username}}</option>
+                {{/each}}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Batch Actions -->
+        <div class="card bg-base-100 shadow p-4 mb-4">
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="label">
+              <input type="checkbox" id="selectAll" class="checkbox" />
+              <span class="label-text ml-2">Select All</span>
+            </label>
+            <div class="flex gap-2">
+              <button id="batchReviewed" class="btn btn-primary btn-sm" disabled>Mark as Reviewed</button>
+              <button id="batchClosed" class="btn btn-success btn-sm" disabled>Mark as Closed</button>
+              <button id="batchDeleted" class="btn btn-error btn-sm" disabled>Mark as Deleted</button>
+            </div>
+            <span id="selectedCount" class="text-sm text-gray-600">0 items selected</span>
+            <!-- Help tip -->
+            <div class="tooltip tooltip-right" data-tip="Closed status indicates the entry is finalized. For volunteer projects, this means complete. For paid projects, this may indicate compensation is processed.">
+              <button class="btn btn-circle btn-ghost btn-xs">?</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="table table-zebra w-full">
+            <thead>
+              <tr>
+                <th>
+                  <input type="checkbox" id="headerSelectAll" class="checkbox" />
+                </th>
+                <th class="cursor-pointer sortable" data-sort="title">
+                  Title 
+                  <span class="sort-indicator">↕</span>
+                </th>
+                <th class="cursor-pointer sortable" data-sort="createdAt">
+                  Created 
+                  <span class="sort-indicator">↕</span>
+                </th>
+                <th class="cursor-pointer sortable" data-sort="accumulatedTime">
+                  Time 
+                  <span class="sort-indicator">↕</span>
+                </th>
+                <th class="cursor-pointer sortable" data-sort="status">
+                  Status 
+                  <span class="sort-indicator">↕</span>
+                </th>
+                <th class="cursor-pointer sortable" data-sort="createdBy">
+                  Creator 
+                  <span class="sort-indicator">↕</span>
+                </th>
+                <th class="cursor-pointer sortable" data-sort="reviewedAt">
+                  Reviewed 
+                  <span class="sort-indicator">↕</span>
+                </th>
+                <th>Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each filteredAndSortedTickets}}
+                <tr>
+                  <td>
+                    <input type="checkbox" class="checkbox ticket-checkbox" data-ticket-id="{{_id}}" />
+                  </td>
+                  <td class="font-medium">{{title}}</td>
+                  <td>{{formatDate createdAt}}</td>
+                  <td>
+                    <span class="badge" style="background-color: #4A5568; color: white;">
+                      {{formatTime accumulatedTime}}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge {{statusBadgeClass status}}">
+                      {{capitalizeStatus status}}
+                    </span>
+                  </td>
+                  <td>{{creatorName createdBy}}</td>
+                  <td>
+                    {{#if reviewedAt}}
+                      {{formatDate reviewedAt}}<br>
+                      <small class="text-gray-500">by {{reviewerName reviewedBy}}</small>
+                    {{else}}
+                      —
+                    {{/if}}
+                  </td>
+                  <td>
+                    {{#if github}}
+                      <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">View</a>
+                    {{else}}
+                      —
+                    {{/if}}
+                  </td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+
+        {{#unless filteredAndSortedTickets}}
+          <div class="alert alert-info">
+            <p>No time entries match the current filters.</p>
+          </div>
+        {{/unless}}
+      {{else}}
+        <div class="alert alert-info">
+          <p>No time entries found for this project.</p>
+        </div>
+      {{/if}}
+    {{else}}
+      <div class="alert alert-warning">
+        <p>Please select a project to review time entries. You can only review projects where you are an admin or leader.</p>
+      </div>
+    {{/if}}
   </div>
 </template>

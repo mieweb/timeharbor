@@ -77,6 +77,26 @@ Meteor.publish('usersByIds', async function (userIds) {
   return Meteor.users.find({ _id: { $in: filteredUserIds } }, { fields: { username: 1 } });
 });
 
+// Publish all tickets for a team for admin review (only for team leaders/admins)
+Meteor.publish('adminTeamTickets', async function (teamId) {
+  check(teamId, String);
+  if (!this.userId) return this.ready();
+  
+  // Check if user is admin/leader of the team
+  const team = await Teams.findOneAsync({ 
+    _id: teamId, 
+    $or: [
+      { leader: this.userId },
+      { admins: this.userId }
+    ]
+  });
+  
+  if (!team) return this.ready();
+  
+  // Return all tickets for this team (not just user's own tickets)
+  return Tickets.find({ teamId });
+});
+
 Meteor.methods({
   async joinTeamWithCode(teamCode) {
     check(teamCode, String);
@@ -325,5 +345,55 @@ Meteor.methods({
         }
       );
     }
+  },
+  // Batch operations for admin review
+  async batchUpdateTicketStatus({ ticketIds, status, teamId }) {
+    check(ticketIds, [String]);
+    check(status, String);
+    check(teamId, String);
+    
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    // Verify user is admin/leader of the team
+    const team = await Teams.findOneAsync({ 
+      _id: teamId, 
+      $or: [
+        { leader: this.userId },
+        { admins: this.userId }
+      ]
+    });
+    
+    if (!team) throw new Meteor.Error('not-authorized', 'You are not authorized to perform this operation');
+    
+    // Validate status
+    const validStatuses = ['open', 'reviewed', 'deleted', 'closed'];
+    if (!validStatuses.includes(status)) {
+      throw new Meteor.Error('invalid-status', 'Invalid status value');
+    }
+    
+    // Build update object
+    const updateFields = { 
+      status,
+      updatedAt: new Date(),
+      updatedBy: this.userId
+    };
+    
+    // If marking as reviewed, track reviewer info
+    if (status === 'reviewed') {
+      updateFields.reviewedBy = this.userId;
+      updateFields.reviewedAt = new Date();
+    }
+    
+    // Update all specified tickets that belong to this team
+    const result = await Tickets.updateAsync(
+      { 
+        _id: { $in: ticketIds },
+        teamId: teamId
+      },
+      { $set: updateFields },
+      { multi: true }
+    );
+    
+    return result;
   },
 });

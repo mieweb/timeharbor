@@ -3,3 +3,34 @@
 @plugin "daisyui";
 
 /* You can add custom styles below if needed */
+
+/* Admin Review Table Styles */
+.sortable {
+  user-select: none;
+}
+
+.sortable:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sort-indicator {
+  font-size: 0.8em;
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+/* Improve checkbox alignment in table */
+.table td input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Status badge styling improvements */
+.badge {
+  font-weight: 500;
+}
+
+/* Help tooltip improvements */
+.tooltip:before {
+  max-width: 300px;
+  white-space: normal;
+}
