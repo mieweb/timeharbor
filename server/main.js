@@ -1,11 +1,72 @@
 import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
+import { HTTP } from 'meteor/http';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
 
 function generateTeamCode() {
   // Simple random code, can be improved for production
   return Math.random().toString(36).substr(2, 8).toUpperCase();
+}
+
+// Security function to check if a URL is safe to fetch
+function isUrlSafe(url) {
+  try {
+    const urlObj = new URL(url);
+    
+    // Only allow http and https protocols
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return false;
+    }
+    
+    // Block local/private IP ranges
+    const hostname = urlObj.hostname.toLowerCase();
+    
+    // Block localhost variations
+    if (['localhost', '127.0.0.1', '::1'].includes(hostname)) {
+      return false;
+    }
+    
+    // Block private IP ranges (simplified check)
+    if (hostname.match(/^10\./) || 
+        hostname.match(/^192\.168\./) || 
+        hostname.match(/^172\.(1[6-9]|2\d|3[01])\./) ||
+        hostname.match(/^169\.254\./) ||
+        hostname.match(/^fe80:/)) {
+      return false;
+    }
+    
+    // Block other local addresses
+    if (hostname.match(/\.local$/) || hostname.match(/\.localhost$/)) {
+      return false;
+    }
+    
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Function to extract title from HTML content
+function extractTitleFromHtml(html) {
+  try {
+    // Simple regex to extract title - in production, consider using a proper HTML parser
+    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+      // Decode HTML entities and clean up
+      return titleMatch[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .trim();
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
 }
 
 Meteor.startup(async () => {
@@ -324,6 +385,50 @@ Meteor.methods({
           }
         }
       );
+    }
+  },
+
+  async fetchUrlTitle(url) {
+    check(url, String);
+    
+    // Validate URL format
+    if (!url || typeof url !== 'string') {
+      throw new Meteor.Error('invalid-url', 'Invalid URL provided');
+    }
+    
+    // Check if URL is safe to fetch
+    if (!isUrlSafe(url)) {
+      throw new Meteor.Error('unsafe-url', 'URL is not safe to fetch');
+    }
+    
+    try {
+      // Fetch the URL with security restrictions
+      const response = await HTTP.call('GET', url, {
+        timeout: 10000, // 10 second timeout
+        followRedirects: true,
+        maxRedirects: 5,
+        headers: {
+          'User-Agent': 'TimeHarbor-Bot/1.0 (URL Title Fetcher)'
+        },
+        npmRequestOptions: {
+          maxResponseSize: 1048576 // 1MB limit
+        }
+      });
+      
+      // Extract title from the response
+      if (response && response.content) {
+        const title = extractTitleFromHtml(response.content);
+        if (title && title.length > 0) {
+          // Limit title length for safety
+          return title.substring(0, 200);
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      // Log error but don't expose details to client
+      console.error('Error fetching URL title:', error);
+      throw new Meteor.Error('fetch-failed', 'Failed to fetch URL title');
     }
   },
 });
