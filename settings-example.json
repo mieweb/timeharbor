@@ -1,0 +1,11 @@
+{
+  "urlTitleProxy": {
+    "enabled": true,
+    "timeout": 10,
+    "maxResponseSize": 1048576,
+    "maxTitleLength": 200,
+    "requireAuth": true,
+    "allowedDomains": [],
+    "blockPrivateNetworks": true
+  }
+}

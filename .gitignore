@@ -1,1 +1,4 @@
 node_modules/
+settings.json
+settings-*.json
+!settings-example.json

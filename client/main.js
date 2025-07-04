@@ -14,6 +14,51 @@ const currentScreen = new ReactiveVar('authPage');
 const currentTime = new ReactiveVar(Date.now());
 setInterval(() => currentTime.set(Date.now()), 1000);
 
+// URL detection and title fetching utilities
+let titleFetchTimeout = null;
+
+function isValidUrl(string) {
+  try {
+    const url = new URL(string);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
+function showTitleFetchStatus(show = true) {
+  const statusEl = document.getElementById('titleFetchStatus');
+  if (statusEl) {
+    if (show) {
+      statusEl.classList.remove('hidden');
+    } else {
+      statusEl.classList.add('hidden');
+    }
+  }
+}
+
+function fetchAndSetTitle(url, inputElement) {
+  showTitleFetchStatus(true);
+  
+  Meteor.call('fetchUrlTitle', url, (error, title) => {
+    showTitleFetchStatus(false);
+    
+    if (error) {
+      console.warn('Failed to fetch URL title:', error.reason);
+      return;
+    }
+    
+    if (title && title.trim()) {
+      // Only set title if the input is still focused on the URL or is empty/unchanged
+      const currentValue = inputElement.value.trim();
+      if (currentValue === url || currentValue === '') {
+        inputElement.value = title;
+        inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+  });
+}
+
 Template.mainLayout.onCreated(function () {
   this.autorun(() => {
     if (Meteor.userId()) {
@@ -347,10 +392,67 @@ Template.tickets.events({
     t.showCreateTicketForm.set(true);
   },
   'click #cancelCreateTicket'(e, t) {
+    // Clear any pending title fetch timeout
+    if (titleFetchTimeout) {
+      clearTimeout(titleFetchTimeout);
+      titleFetchTimeout = null;
+    }
+    showTitleFetchStatus(false);
     t.showCreateTicketForm.set(false);
+  },
+  'paste #activityTitle'(e) {
+    // Handle paste events for URL detection
+    setTimeout(() => {
+      const input = e.target;
+      const value = input.value.trim();
+      
+      if (isValidUrl(value)) {
+        // Clear any existing timeout
+        if (titleFetchTimeout) {
+          clearTimeout(titleFetchTimeout);
+        }
+        
+        // Debounce the request by 300ms
+        titleFetchTimeout = setTimeout(() => {
+          fetchAndSetTitle(value, input);
+        }, 300);
+      }
+    }, 10); // Small delay to ensure paste content is available
+  },
+  'input #activityTitle'(e) {
+    // Handle typing for URL detection
+    const input = e.target;
+    const value = input.value.trim();
+    
+    // Clear any existing timeout
+    if (titleFetchTimeout) {
+      clearTimeout(titleFetchTimeout);
+    }
+    
+    // Hide status if no longer a URL
+    if (!isValidUrl(value)) {
+      showTitleFetchStatus(false);
+      return;
+    }
+    
+    // Only trigger for complete URLs (basic heuristic)
+    if (value.length > 10 && (value.includes('.com') || value.includes('.org') || value.includes('.net') || value.includes('.edu') || value.includes('.gov'))) {
+      // Debounce the request by 300ms
+      titleFetchTimeout = setTimeout(() => {
+        fetchAndSetTitle(value, input);
+      }, 300);
+    }
   },
   'submit #createTicketForm'(e, t) {
     e.preventDefault();
+    
+    // Clear any pending title fetch timeout
+    if (titleFetchTimeout) {
+      clearTimeout(titleFetchTimeout);
+      titleFetchTimeout = null;
+    }
+    showTitleFetchStatus(false);
+    
     const teamId = t.selectedTeamId.get();
     const title = e.target.title.value.trim();
     const github = e.target.github.value.trim();

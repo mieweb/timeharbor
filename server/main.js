@@ -1,11 +1,115 @@
 import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
+import axios from 'axios';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
+
+// Server configuration for URL title proxy service
+const UrlTitleConfig = {
+  // Enable/disable the URL title fetching service
+  enabled: Meteor.settings.urlTitleProxy?.enabled ?? true,
+  
+  // Maximum timeout for requests (seconds)
+  timeout: Meteor.settings.urlTitleProxy?.timeout ?? 10,
+  
+  // Maximum response size (bytes)
+  maxResponseSize: Meteor.settings.urlTitleProxy?.maxResponseSize ?? 1048576, // 1MB
+  
+  // Maximum title length (characters)
+  maxTitleLength: Meteor.settings.urlTitleProxy?.maxTitleLength ?? 200,
+  
+  // Allow only authenticated users
+  requireAuth: Meteor.settings.urlTitleProxy?.requireAuth ?? true,
+  
+  // Allowed domains (empty array means all external domains allowed)
+  allowedDomains: Meteor.settings.urlTitleProxy?.allowedDomains ?? [],
+  
+  // Block private/internal networks
+  blockPrivateNetworks: Meteor.settings.urlTitleProxy?.blockPrivateNetworks ?? true
+};
 
 function generateTeamCode() {
   // Simple random code, can be improved for production
   return Math.random().toString(36).substr(2, 8).toUpperCase();
+}
+
+// Enhanced security function to check if a URL is safe to fetch
+function isUrlSafe(url) {
+  try {
+    const urlObj = new URL(url);
+    
+    // Only allow http and https protocols
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return false;
+    }
+    
+    const hostname = urlObj.hostname.toLowerCase();
+    
+    // If allowedDomains is configured, only allow those domains
+    if (UrlTitleConfig.allowedDomains.length > 0) {
+      const isAllowed = UrlTitleConfig.allowedDomains.some(domain => {
+        return hostname === domain.toLowerCase() || hostname.endsWith('.' + domain.toLowerCase());
+      });
+      if (!isAllowed) {
+        return false;
+      }
+    }
+    
+    // Block private/internal networks if configured
+    if (UrlTitleConfig.blockPrivateNetworks) {
+      // Block localhost variations
+      if (['localhost', '127.0.0.1', '::1'].includes(hostname)) {
+        return false;
+      }
+      
+      // Block private IP ranges
+      if (hostname.match(/^10\./) || 
+          hostname.match(/^192\.168\./) || 
+          hostname.match(/^172\.(1[6-9]|2\d|3[01])\./) ||
+          hostname.match(/^169\.254\./) ||
+          hostname.match(/^fe80:/)) {
+        return false;
+      }
+      
+      // Block other local addresses
+      if (hostname.match(/\.local$/) || hostname.match(/\.localhost$/)) {
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Safe HTML title extraction function
+function extractTitleFromHtml(html) {
+  try {
+    // Simple regex to extract title - using established approach for security
+    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+      // Decode common HTML entities and clean up
+      let title = titleMatch[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .trim();
+      
+      // Limit title length for safety
+      if (title.length > UrlTitleConfig.maxTitleLength) {
+        title = title.substring(0, UrlTitleConfig.maxTitleLength).trim();
+      }
+      
+      return title;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
 }
 
 Meteor.startup(async () => {
@@ -324,6 +428,81 @@ Meteor.methods({
           }
         }
       );
+    }
+  },
+
+  async fetchUrlTitle(url) {
+    check(url, String);
+    
+    // Check if the service is enabled
+    if (!UrlTitleConfig.enabled) {
+      throw new Meteor.Error('service-disabled', 'URL title proxy service is disabled');
+    }
+    
+    // Check authentication if required
+    if (UrlTitleConfig.requireAuth && !this.userId) {
+      throw new Meteor.Error('not-authorized', 'Authentication required to use URL title proxy service');
+    }
+    
+    // Validate URL format
+    if (!url || typeof url !== 'string') {
+      throw new Meteor.Error('invalid-url', 'Invalid URL provided');
+    }
+    
+    // Check if URL is safe to fetch
+    if (!isUrlSafe(url)) {
+      throw new Meteor.Error('unsafe-url', 'URL is not allowed by security policy');
+    }
+    
+    try {
+      // Create axios instance with security configurations
+      const axiosInstance = axios.create({
+        timeout: UrlTitleConfig.timeout * 1000, // Convert to milliseconds
+        maxRedirects: 5,
+        maxContentLength: UrlTitleConfig.maxResponseSize,
+        maxBodyLength: UrlTitleConfig.maxResponseSize,
+        headers: {
+          'User-Agent': 'TimeHarbor-URLProxy/1.0 (URL Title Fetcher)',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate',
+          'Cache-Control': 'no-cache',
+          'Connection': 'close'
+        },
+        validateStatus: (status) => status >= 200 && status < 400
+      });
+      
+      // Fetch the URL with security restrictions
+      const response = await axiosInstance.get(url);
+      
+      // Extract title from the response
+      if (response && response.data) {
+        const title = extractTitleFromHtml(response.data);
+        if (title && title.length > 0) {
+          return title;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      // Log error for debugging but don't expose details to client
+      console.error('URL title fetch error:', {
+        url: url,
+        error: error.message,
+        code: error.code,
+        userId: this.userId
+      });
+      
+      // Return user-friendly error messages
+      if (error.code === 'ENOTFOUND') {
+        throw new Meteor.Error('url-not-found', 'URL could not be reached');
+      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+        throw new Meteor.Error('request-timeout', 'Request timed out');
+      } else if (error.response?.status >= 400) {
+        throw new Meteor.Error('http-error', 'Server returned an error');
+      } else {
+        throw new Meteor.Error('fetch-failed', 'Failed to fetch URL title');
+      }
     }
   },
 });

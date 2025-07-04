@@ -140,7 +140,11 @@
     </div>
     {{#if showCreateTicketForm}}
       <form id="createTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="title" placeholder="Activity Title (e.g., 'Math Homework', 'Robot Assembly')" class="input input-bordered" required />
+        <input type="text" id="activityTitle" name="title" placeholder="Activity Title (e.g., 'Math Homework', 'Robot Assembly')" class="input input-bordered" required />
+        <div id="titleFetchStatus" class="text-sm mt-1 hidden">
+          <span class="loading loading-spinner loading-xs"></span>
+          <span class="ml-2">Fetching page title...</span>
+        </div>
         <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered" />
         <div class="flex gap-2">
           <input type="number" name="hours" min="0" placeholder="Hours" class="input input-bordered w-24" />
