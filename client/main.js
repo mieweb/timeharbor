@@ -373,16 +373,8 @@ Template.tickets.events({
     setTimeout(() => {
       const input = document.querySelector('input[name="github"]');
       const titleInput = document.querySelector('input[name="title"]');
+      let lastSuggestedUrl = '';
       if (input && !input._hasPasteListener) {
-        // Create or select the message element for URL validation
-        let msg = document.getElementById('url-validation-msg');
-        if (!msg) {
-          msg = document.createElement('div');
-          msg.id = 'url-validation-msg';
-          msg.style.marginTop = '4px';
-          msg.style.fontSize = '0.95em';
-          input.parentNode.insertBefore(msg, input.nextSibling);
-        }
         // Create or select the suggestion element for activity title
         let suggestionDiv = document.getElementById('activity-title-suggestion');
         if (!suggestionDiv) {
@@ -393,6 +385,28 @@ Template.tickets.events({
           suggestionDiv.style.color = '#4A5568';
           titleInput.parentNode.insertBefore(suggestionDiv, titleInput.nextSibling);
         }
+        // Helper to fetch and show suggestion if valid URL
+        async function handleUrlSuggestion(url) {
+          if (isValidUrl(url) && url !== lastSuggestedUrl) {
+            lastSuggestedUrl = url;
+            suggestionDiv.textContent = 'Fetching activity title suggestion...';
+            suggestionDiv.style.color = '#4A5568';
+            const suggestion = await fetchTitleSuggestion(url);
+            if (suggestion) {
+              suggestionDiv.innerHTML = `Suggested Activity Title: <span style=\"color: #2563eb; cursor: pointer; text-decoration: underline;\">${suggestion}</span>`;
+              const span = suggestionDiv.querySelector('span');
+              span.onclick = () => {
+                titleInput.value = suggestion;
+              };
+            } else {
+              suggestionDiv.textContent = '';
+            }
+          } else if (!isValidUrl(url)) {
+            suggestionDiv.textContent = '';
+            lastSuggestedUrl = '';
+          }
+        }
+        // Paste event
         input.addEventListener('paste', async function(event) {
           event.preventDefault();
           let pastedText = '';
@@ -407,30 +421,17 @@ Template.tickets.events({
           const value = input.value;
           input.value = value.slice(0, start) + pastedText + value.slice(end);
           input.setSelectionRange(start + pastedText.length, start + pastedText.length);
-          // Use isValidUrl for validation
-          if (isValidUrl(pastedText)) {
-            msg.textContent = 'Valid URL';
-            msg.style.color = 'green';
-            // Show loading for suggestion
-            suggestionDiv.textContent = 'Fetching activity title suggestion...';
-            suggestionDiv.style.color = '#4A5568';
-            // Fetch suggestion from backend
-            const suggestion = await fetchTitleSuggestion(pastedText);
-            if (suggestion) {
-              suggestionDiv.innerHTML = `Suggested Activity Title: <span style=\"color: #2563eb; cursor: pointer; text-decoration: underline;\">${suggestion}</span>`;
-              // Make suggestion clickable to autofill title
-              const span = suggestionDiv.querySelector('span');
-              span.onclick = () => {
-                titleInput.value = suggestion;
-              };
-            } else {
-              suggestionDiv.textContent = 'No suggestion found for this URL.';
-              suggestionDiv.style.color = '#b91c1c';
-            }
-          } else {
-            msg.textContent = 'Invalid URL';
-            msg.style.color = 'red';
-            suggestionDiv.textContent = '';
+          await handleUrlSuggestion(pastedText);
+        });
+        // Blur event (when user leaves the input)
+        input.addEventListener('blur', function() {
+          handleUrlSuggestion(input.value.trim());
+        });
+        // Enter key event (when user presses Enter in the input)
+        input.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent form submission
+            handleUrlSuggestion(input.value.trim());
           }
         });
         input._hasPasteListener = true;
