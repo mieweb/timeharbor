@@ -392,6 +392,12 @@ Template.tickets.events({
     t.showCreateTicketForm.set(true);
   },
   'click #cancelCreateTicket'(e, t) {
+    // Clear any pending title fetch timeout
+    if (titleFetchTimeout) {
+      clearTimeout(titleFetchTimeout);
+      titleFetchTimeout = null;
+    }
+    showTitleFetchStatus(false);
     t.showCreateTicketForm.set(false);
   },
   'paste #activityTitle'(e) {
@@ -439,6 +445,14 @@ Template.tickets.events({
   },
   'submit #createTicketForm'(e, t) {
     e.preventDefault();
+    
+    // Clear any pending title fetch timeout
+    if (titleFetchTimeout) {
+      clearTimeout(titleFetchTimeout);
+      titleFetchTimeout = null;
+    }
+    showTitleFetchStatus(false);
+    
     const teamId = t.selectedTeamId.get();
     const title = e.target.title.value.trim();
     const github = e.target.github.value.trim();
