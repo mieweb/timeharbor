@@ -2,9 +2,11 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
-import express from 'express';
-import axios from 'axios';
-import { JSDOM } from 'jsdom';
+import metascraper from 'metascraper';
+import metascraperTitle from 'metascraper-title';
+import metascraperDescription from 'metascraper-description';
+import { HTTP } from 'meteor/http';
+import cheerio from 'cheerio';
 
 function generateTeamCode() {
   // Simple random code, can be improved for production
@@ -329,41 +331,39 @@ Meteor.methods({
       );
     }
   },
-});
-
-// Set up Express app for custom API endpoints
-const app = express();
-app.use(express.json());
-
-app.post('/api/fetch-title', async (req, res) => {
-  const { url } = req.body;
-  try {
-    const response = await axios.get(url);
-    const html = response.data;
-    const dom = new JSDOM(html);
-    
-    // Extract various meta tags for better scraping
-    const title = dom.window.document.querySelector('title')?.textContent?.trim();
-    const h1 = dom.window.document.querySelector('h1')?.textContent?.trim();
-    const metaDesc = dom.window.document.querySelector('meta[name="description"]')?.getAttribute('content');
-    const ogTitle = dom.window.document.querySelector('meta[property="og:title"]')?.getAttribute('content');
-    const twitterTitle = dom.window.document.querySelector('meta[name="twitter:title"]')?.getAttribute('content');
-    const ogDesc = dom.window.document.querySelector('meta[property="og:description"]')?.getAttribute('content');
-    
-    // GitHub-specific extraction for better results
-    let githubTitle = '';
-    if (url.includes('github.com')) {
-      githubTitle = dom.window.document.querySelector('.js-issue-title')?.textContent?.trim() || 
-                   dom.window.document.querySelector('.gh-header-title')?.textContent?.trim() || '';
+  async fetchTitleSuggestion(url) {
+    check(url, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
     }
     
-    // Priority order: GitHub title > title > og:title > twitter:title > h1 > descriptions
-    const suggestion = githubTitle || title || ogTitle || twitterTitle || h1 || metaDesc || ogDesc || '';
-    res.json({ suggestion });
-  } catch (e) {
-    res.json({ suggestion: '' });
-  }
+    try {
+      // Use Meteor's HTTP package instead of axios
+      const response = await HTTP.get(url);
+      const html = response.content;
+      
+      // Use metascraper for robust metadata extraction
+      const scraper = metascraper([
+        metascraperTitle(),
+        metascraperDescription()
+      ]);
+      
+      const metadata = await scraper({ html, url });
+      
+      // GitHub-specific extraction for better results
+      let githubTitle = '';
+      if (url.includes('github.com')) {
+        // Use cheerio for DOM parsing (Meteor's preferred approach)
+        const $ = cheerio.load(html);
+        githubTitle = $('.js-issue-title').text().trim() || 
+                     $('.gh-header-title').text().trim() || '';
+      }
+      
+      // Priority order: GitHub title > metascraper title > metascraper description
+      const suggestion = githubTitle || metadata.title || metadata.description || '';
+      return suggestion;
+    } catch (e) {
+      return '';
+    }
+  },
 });
-
-// Bind Express to Meteor
-WebApp.connectHandlers.use(app);

@@ -341,17 +341,16 @@ Template.tickets.helpers({
 
 // Utility function to fetch title suggestion from backend
 async function fetchTitleSuggestion(url) {
-  try {
-    const res = await fetch('/api/fetch-title', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url })
+  return new Promise((resolve) => {
+    Meteor.call('fetchTitleSuggestion', url, (err, suggestion) => {
+      if (err) {
+        console.error('Error fetching title suggestion:', err);
+        resolve('');
+      } else {
+        resolve(suggestion || '');
+      }
     });
-    const data = await res.json();
-    return data.suggestion;
-  } catch (e) {
-    return '';
-  }
+  });
 }
 
 // Safe URL validation function
