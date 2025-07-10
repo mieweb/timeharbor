@@ -435,6 +435,101 @@ Template.tickets.events({
         });
         input._hasPasteListener = true;
       }
+      
+      // NEW: Handle URL pasting in Title field
+      if (titleInput && !titleInput._hasUrlPasteListener) {
+        titleInput.addEventListener('paste', async function(event) {
+          let pastedText = '';
+          if (event.clipboardData && event.clipboardData.getData) {
+            pastedText = event.clipboardData.getData('text');
+          } else if (window.clipboardData && window.clipboardData.getData) {
+            pastedText = window.clipboardData.getData('Text');
+          }
+          
+          // Check if pasted text is a valid URL
+          if (isValidUrl(pastedText)) {
+            event.preventDefault();
+            
+            // Add blur effect to title input
+            titleInput.style.filter = 'blur(1px)';
+            titleInput.style.transition = 'filter 0.3s ease';
+            
+            // Show loading indicator
+            let loadingDiv = document.getElementById('title-loading-indicator');
+            if (!loadingDiv) {
+              loadingDiv = document.createElement('div');
+              loadingDiv.id = 'title-loading-indicator';
+              loadingDiv.innerHTML = '🔄 Fetching page title...';
+              loadingDiv.style.marginTop = '4px';
+              loadingDiv.style.fontSize = '0.9em';
+              loadingDiv.style.color = '#4A5568';
+              titleInput.parentNode.insertBefore(loadingDiv, titleInput.nextSibling);
+            }
+            
+            try {
+              // Fetch the page title
+              const pageTitle = await fetchTitleSuggestion(pastedText);
+              
+              // Move URL to Reference URL field
+              input.value = pastedText;
+              
+              // Autofill title with extracted title
+              if (pageTitle) {
+                titleInput.value = pageTitle;
+              }
+              
+              // Remove blur effect
+              titleInput.style.filter = 'none';
+              
+              // Remove loading indicator
+              if (loadingDiv) {
+                loadingDiv.remove();
+              }
+              
+              // Show success message briefly
+              let successDiv = document.createElement('div');
+              successDiv.innerHTML = '✅ Title extracted successfully!';
+              successDiv.style.marginTop = '4px';
+              successDiv.style.fontSize = '0.9em';
+              successDiv.style.color = '#059669';
+              titleInput.parentNode.insertBefore(successDiv, titleInput.nextSibling);
+              
+              setTimeout(() => {
+                if (successDiv.parentNode) {
+                  successDiv.remove();
+                }
+              }, 2000);
+              
+            } catch (error) {
+              console.error('Error fetching page title:', error);
+              
+              // Remove blur effect
+              titleInput.style.filter = 'none';
+              
+              // Remove loading indicator
+              if (loadingDiv) {
+                loadingDiv.remove();
+              }
+              
+              // Show error message
+              let errorDiv = document.createElement('div');
+              errorDiv.innerHTML = '❌ Failed to fetch page title';
+              errorDiv.style.marginTop = '4px';
+              errorDiv.style.fontSize = '0.9em';
+              errorDiv.style.color = '#DC2626';
+              titleInput.parentNode.insertBefore(errorDiv, titleInput.nextSibling);
+              
+              setTimeout(() => {
+                if (errorDiv.parentNode) {
+                  errorDiv.remove();
+                }
+              }, 3000);
+            }
+          }
+        });
+        
+        titleInput._hasUrlPasteListener = true;
+      }
     }, 0);
   },
   'click #cancelCreateTicket'(e, t) {

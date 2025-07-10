@@ -338,8 +338,44 @@ Meteor.methods({
     }
     
     try {
-      // Use Meteor's HTTP package instead of axios
-      const response = await HTTP.get(url);
+      // SSRF Protection: Block internal IPs and localhost
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname;
+      
+      // Block internal IP ranges and localhost
+      const blockedPatterns = [
+        /^localhost$/,
+        /^127\./,
+        /^10\./,
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+        /^192\.168\./,
+        /^0\.0\.0\.0$/,
+        /^::1$/,
+        /^fe80:/,
+        /^fc00:/,
+        /^fd00:/
+      ];
+      
+      if (blockedPatterns.some(pattern => pattern.test(hostname))) {
+        throw new Meteor.Error('forbidden', 'Access to internal networks is not allowed');
+      }
+      
+      // Set timeout and max response size for HTTP request
+      const options = {
+        timeout: 10000, // 10 seconds timeout
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      };
+      
+      // Use Meteor's HTTP package with security options
+      const response = await HTTP.get(url, options);
+      
+      // Check response size (limit to 1MB to prevent size bombs)
+      if (response.content && response.content.length > 1024 * 1024) {
+        throw new Meteor.Error('payload-too-large', 'Response too large');
+      }
+      
       const html = response.content;
       
       // Use metascraper for robust metadata extraction
@@ -363,6 +399,7 @@ Meteor.methods({
       const suggestion = githubTitle || metadata.title || metadata.description || '';
       return suggestion;
     } catch (e) {
+      console.error('Error fetching title suggestion:', e);
       return '';
     }
   },
