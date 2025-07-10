@@ -341,11 +341,24 @@ app.post('/api/fetch-title', async (req, res) => {
     const response = await axios.get(url);
     const html = response.data;
     const dom = new JSDOM(html);
+    
+    // Extract various meta tags for better scraping
     const title = dom.window.document.querySelector('title')?.textContent?.trim();
     const h1 = dom.window.document.querySelector('h1')?.textContent?.trim();
     const metaDesc = dom.window.document.querySelector('meta[name="description"]')?.getAttribute('content');
-    // Prefer h1, then title, then meta description
-    const suggestion = h1 || title || metaDesc || '';
+    const ogTitle = dom.window.document.querySelector('meta[property="og:title"]')?.getAttribute('content');
+    const twitterTitle = dom.window.document.querySelector('meta[name="twitter:title"]')?.getAttribute('content');
+    const ogDesc = dom.window.document.querySelector('meta[property="og:description"]')?.getAttribute('content');
+    
+    // GitHub-specific extraction for better results
+    let githubTitle = '';
+    if (url.includes('github.com')) {
+      githubTitle = dom.window.document.querySelector('.js-issue-title')?.textContent?.trim() || 
+                   dom.window.document.querySelector('.gh-header-title')?.textContent?.trim() || '';
+    }
+    
+    // Priority order: GitHub title > title > og:title > twitter:title > h1 > descriptions
+    const suggestion = githubTitle || title || ogTitle || twitterTitle || h1 || metaDesc || ogDesc || '';
     res.json({ suggestion });
   } catch (e) {
     res.json({ suggestion: '' });
