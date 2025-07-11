@@ -93,12 +93,18 @@
     </div>
     {{#if showCreateTeam}}
       <form id="createTeamForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="teamName" placeholder="Project Name" class="input input-bordered" required />
-        {{#if teamNameValidation.message}}
-          <div class="alert {{#if teamNameValidation.available}}alert-success{{else}}alert-error{{/if}}">
-            <span>{{teamNameValidation.message}}</span>
-          </div>
-        {{/if}}
+        <div class="flex items-center gap-2">
+          <input type="text" name="teamName" placeholder="Project Name" class="input input-bordered flex-1" required />
+          {{#if teamNameValidation.message}}
+            <div class="flex items-center gap-1">
+              {{#if teamNameValidation.available}}
+                <span class="text-green-600 text-sm">{{teamNameValidation.message}} ✓</span>
+              {{else}}
+                <span class="text-red-600 text-sm">{{teamNameValidation.message}} ✗</span>
+              {{/if}}
+            </div>
+          {{/if}}
+        </div>
         <div class="flex gap-2">
           <button type="submit" class="btn btn-primary" {{disabledIfTeamNameUnavailable}}>Create Project</button>
           <button type="button" id="cancelCreateTeam" class="btn btn-outline">Cancel</button>

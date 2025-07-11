@@ -239,7 +239,7 @@ Template.teams.events({
       } else {
         // Handle specific error types
         if (err.error === 'duplicate-team-name') {
-          alert('A project with this name already exists. Please choose a different name.');
+          alert('Project name is taken');
         } else {
           alert('Error creating project: ' + err.reason);
         }

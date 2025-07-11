@@ -130,7 +130,7 @@ Meteor.methods({
     });
     
     if (existingTeam) {
-      throw new Meteor.Error('duplicate-team-name', 'A project with this name already exists. Please choose a different name.');
+      throw new Meteor.Error('duplicate-team-name', 'Project name is taken');
     }
     
     const code = generateTeamCode();
@@ -153,7 +153,7 @@ Meteor.methods({
     
     const normalizedTeamName = teamName.trim().toLowerCase();
     if (!normalizedTeamName) {
-      return { available: false, message: 'Project name cannot be empty.' };
+      return { available: false, message: 'Project name is taken' };
     }
     
     const existingTeam = await Teams.findOneAsync({ 
@@ -161,10 +161,10 @@ Meteor.methods({
     });
     
     if (existingTeam) {
-      return { available: false, message: 'A project with this name already exists. Please choose a different name.' };
+      return { available: false, message: 'Project name is taken' };
     }
     
-    return { available: true, message: 'Project name is available.' };
+    return { available: true, message: 'Project name is available' };
   },
   createUserAccount({ username, password }) {
     if (!username || !password) {
