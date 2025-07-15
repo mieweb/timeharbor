@@ -33,6 +33,20 @@ Meteor.startup(async () => {
     const code = generateTeamCode();
     await Teams.updateAsync(team._id, { $set: { code } });
   }
+  
+  // Create a unique index on team name (case-insensitive)
+  try {
+    await Teams.rawCollection().createIndex(
+      { name: 1 },
+      { 
+        unique: true,
+        collation: { locale: 'en', strength: 2 } // Case-insensitive collation
+      }
+    );
+    console.log('Created unique index on team name');
+  } catch (error) {
+    console.log('Team name index already exists or could not be created:', error.message);
+  }
 });
 
 Meteor.publish('userTeams', function () {
@@ -111,9 +125,22 @@ Meteor.methods({
     if (!this.userId) {
       throw new Meteor.Error('not-authorized');
     }
+    
+    // Normalize the team name for comparison (trim whitespace and convert to lowercase)
+    const normalizedTeamName = teamName.trim().toLowerCase();
+    
+    // Check if a team with the same name already exists (case-insensitive)
+    const existingTeam = await Teams.findOneAsync({ 
+      name: { $regex: new RegExp(`^${normalizedTeamName}$`, 'i') }
+    });
+    
+    if (existingTeam) {
+      throw new Meteor.Error('duplicate-team-name', 'Project name is taken');
+    }
+    
     const code = generateTeamCode();
     const teamId = await Teams.insertAsync({
-      name: teamName,
+      name: teamName.trim(), // Store the trimmed name
       members: [this.userId],
       admins: [this.userId],
       leader: this.userId,
@@ -121,6 +148,28 @@ Meteor.methods({
       createdAt: new Date(),
     });
     return teamId;
+  },
+  
+  async checkTeamNameAvailability(teamName) {
+    check(teamName, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+    
+    const normalizedTeamName = teamName.trim().toLowerCase();
+    if (!normalizedTeamName) {
+      return { available: false, message: 'Project name is taken' };
+    }
+    
+    const existingTeam = await Teams.findOneAsync({ 
+      name: { $regex: new RegExp(`^${normalizedTeamName}$`, 'i') }
+    });
+    
+    if (existingTeam) {
+      return { available: false, message: 'Project name is taken' };
+    }
+    
+    return { available: true, message: 'Project name is available' };
   },
   createUserAccount({ username, password }) {
     if (!username || !password) {

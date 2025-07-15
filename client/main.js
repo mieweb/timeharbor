@@ -107,6 +107,7 @@ Template.teams.onCreated(function () {
   this.showJoinTeam = new ReactiveVar(false);
   this.selectedTeamId = new ReactiveVar(null);
   this.selectedTeamUsers = new ReactiveVar([]);
+  this.teamNameValidation = new ReactiveVar({ available: true, message: '' });
   this.autorun(() => {
     this.subscribe('userTeams');
     const selectedId = this.selectedTeamId.get();
@@ -156,6 +157,25 @@ Template.teams.helpers({
       createdAt: queriedTeam.createdAt,
     };
   },
+  // Helper to check if a team name already exists (for frontend validation)
+  isTeamNameDuplicate() {
+    const teamNameInput = document.querySelector('input[name="teamName"]');
+    if (!teamNameInput) return false;
+    
+    const inputName = teamNameInput.value.trim().toLowerCase();
+    if (!inputName) return false;
+    
+    const existingTeams = Teams.find({ members: Meteor.userId() }).fetch();
+    return existingTeams.some(team => team.name.toLowerCase() === inputName);
+  },
+  // Helper for real-time validation feedback
+  teamNameValidation() {
+    return Template.instance().teamNameValidation.get();
+  },
+  disabledIfTeamNameUnavailable() {
+    const validation = Template.instance().teamNameValidation.get();
+    return validation && !validation.available ? 'disabled' : '';
+  },
 });
 
 Template.teams.events({
@@ -171,15 +191,58 @@ Template.teams.events({
   },
   'click #cancelCreateTeam'(e, t) {
     t.showCreateTeam.set(false);
+    // Clear validation state when canceling
+    t.teamNameValidation.set({ available: true, message: '' });
+  },
+  'input input[name="teamName"]'(e, t) {
+    const teamName = e.target.value.trim();
+    
+    // Clear validation if input is empty
+    if (!teamName) {
+      t.teamNameValidation.set({ available: true, message: '' });
+      return;
+    }
+    
+    // Debounce the validation to avoid too many server calls
+    clearTimeout(t.validationTimeout);
+    t.validationTimeout = setTimeout(() => {
+      Meteor.call('checkTeamNameAvailability', teamName, (err, result) => {
+        if (!err) {
+          t.teamNameValidation.set(result);
+        }
+      });
+    }, 300); // Wait 300ms after user stops typing
   },
   'submit #createTeamForm'(e, t) {
     e.preventDefault();
-    const teamName = e.target.teamName.value;
+    const teamName = e.target.teamName.value.trim();
+    
+    // Basic validation
+    if (!teamName) {
+      alert('Project name is required.');
+      return;
+    }
+    
+    // Check validation state
+    const validation = t.teamNameValidation.get();
+    if (!validation.available) {
+      alert(validation.message);
+      return;
+    }
+    
     Meteor.call('createTeam', teamName, (err) => {
       if (!err) {
         t.showCreateTeam.set(false);
+        // Clear the form and validation state
+        e.target.teamName.value = '';
+        t.teamNameValidation.set({ available: true, message: '' });
       } else {
-        alert('Error creating team: ' + err.reason);
+        // Handle specific error types
+        if (err.error === 'duplicate-team-name') {
+          alert('Project name is taken');
+        } else {
+          alert('Error creating project: ' + err.reason);
+        }
       }
     });
   },
