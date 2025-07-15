@@ -5,7 +5,7 @@ import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
 import metascraper from 'metascraper';
 import metascraperTitle from 'metascraper-title';
 import metascraperDescription from 'metascraper-description';
-import { HTTP } from 'meteor/http';
+import axios from 'axios';
 import cheerio from 'cheerio';
 
 function generateTeamCode() {
@@ -360,7 +360,6 @@ Meteor.methods({
         throw new Meteor.Error('forbidden', 'Access to internal networks is not allowed');
       }
       
-      // Set timeout and max response size for HTTP request
       const options = {
         timeout: 10000, // 10 seconds timeout
         headers: {
@@ -368,15 +367,14 @@ Meteor.methods({
         }
       };
       
-      // Use Meteor's HTTP package with security options
-      const response = await HTTP.get(url, options);
+      const response = await axios.get(url, options);
       
       // Check response size (limit to 1MB to prevent size bombs)
       if (response.content && response.content.length > 1024 * 1024) {
         throw new Meteor.Error('payload-too-large', 'Response too large');
       }
       
-      const html = response.content;
+      const html = response.data;
       
       // Use metascraper for robust metadata extraction
       const scraper = metascraper([

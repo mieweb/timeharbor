@@ -10,7 +10,11 @@
   "dependencies": {
     "@babel/runtime": "^7.17.9",
     "@tailwindcss/postcss": "^4.1.7",
+    "axios": "^1.10.0",
     "jquery": "^3.6.0",
+    "metascraper": "^5.49.1",
+    "metascraper-description": "^5.49.1",
+    "metascraper-title": "^5.49.1",
     "meteor-node-stubs": "^1.2.1",
     "postcss-load-config": "^6.0.1"
   },
