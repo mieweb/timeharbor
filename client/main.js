@@ -32,9 +32,14 @@ Template.mainLayout.helpers({
 
 Template.mainLayout.events({
   'click nav a'(event) {
-    event.preventDefault();
-    const target = event.currentTarget.getAttribute('href').substring(1);
-    currentTemplate.set(target || 'home');
+    const href = event.currentTarget.getAttribute('href');
+    // Only handle internal navigation links (starting with /)
+    // Let external links (starting with http) work normally
+    if (href && href.startsWith('/')) {
+      event.preventDefault();
+      const target = href.substring(1);
+      currentTemplate.set(target || 'home');
+    }
   },
 });
 
