@@ -300,15 +300,32 @@ Meteor.methods({
           .map(async (ticket) => {
             const elapsed = Math.floor((now - ticket.startTimestamp) / 1000);
             const prev = ticket.accumulatedTime || 0;
-            return ClockEvents.updateAsync(
+            // Update the ticket entry in the tickets array
+            await ClockEvents.updateAsync(
               { _id: clockEvent._id, 'tickets.ticketId': ticket.ticketId },
               {
                 $set: { 'tickets.$.accumulatedTime': prev + elapsed },
                 $unset: { 'tickets.$.startTimestamp': '' }
               }
             );
+            // Also stop the ticket itself
+            await Tickets.updateAsync(ticket.ticketId, {
+              $set: { accumulatedTime: prev + elapsed },
+              $unset: { startTimestamp: '' }
+            });
           });
         await Promise.all(updates);
+      }
+
+      // Extra safety: Stop all running tickets for this team (not just those in clockEvent.tickets)
+      const runningTickets = await Tickets.find({ teamId, startTimestamp: { $exists: true } }).fetchAsync();
+      for (const ticket of runningTickets) {
+        const elapsed = Math.floor((now - ticket.startTimestamp) / 1000);
+        const prev = ticket.accumulatedTime || 0;
+        await Tickets.updateAsync(ticket._id, {
+          $set: { accumulatedTime: prev + elapsed },
+          $unset: { startTimestamp: '' }
+        });
       }
 
       // Mark clock event as ended
