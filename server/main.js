@@ -235,10 +235,15 @@ Meteor.methods({
     check(seconds, Number);
     Tickets.update(ticketId, { $inc: { timeSpent: seconds } });
   },
-  updateTicketStart(ticketId, now) {
+  async updateTicketStart(ticketId, now) {
     check(ticketId, String);
     check(now, Number);
     if (!this.userId) throw new Meteor.Error('not-authorized');
+    // Prevent starting activity if session is not active
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
+    const clockEvent = await ClockEvents.findOneAsync({ userId: this.userId, teamId: ticket.teamId, endTime: null });
+    if (!clockEvent) throw new Meteor.Error('no-session', 'Please start the session first.');
     return Tickets.updateAsync(ticketId, { $set: { startTimestamp: now } });
   },
   updateTicketStop(ticketId, now) {
