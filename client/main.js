@@ -293,6 +293,8 @@ Template.tickets.onCreated(function () {
   // Restore last active ticket if it is still running
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
+  // Add per-activity error messages
+  this.activityErrorMessages = new ReactiveVar({});
   this.autorun(() => {
     this.subscribe('userTeams');
     this.subscribe('clockEventsForUser');
@@ -400,6 +402,10 @@ Template.tickets.helpers({
     }
     return total;
   },
+  activityErrorMessage(ticketId) {
+    const errors = Template.instance().activityErrorMessages.get() || {};
+    return errors[ticketId] || '';
+  },
 });
 
 Template.tickets.events({
@@ -460,37 +466,22 @@ Template.tickets.events({
     const isActive = t.activeTicketId.get() === ticketId;
     const ticket = Tickets.findOne(ticketId);
     const teamId = t.selectedTeamId.get();
-
-    // Check if user is clocked in for this team
     const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
-
+    // Get the error messages object
+    const errorMessages = t.activityErrorMessages.get() || {};
     if (!isActive) {
-      // Stop any currently active ticket first
-      const currentActiveTicketId = t.activeTicketId.get();
-      if (currentActiveTicketId) {
-        const currentTicket = Tickets.findOne(currentActiveTicketId);
-        if (currentTicket && currentTicket.startTimestamp) {
-          const now = Date.now();
-          // Stop the current ticket
-          Meteor.call('updateTicketStop', currentActiveTicketId, now, (err) => {
-            if (err) {
-              alert('Failed to stop current timer: ' + err.reason);
-              return;
-            }
-          });
-
-          // Stop the current ticket in the clock event if needed
-          if (clockEvent) {
-            Meteor.call('clockEventStopTicket', clockEvent._id, currentActiveTicketId, now, (err) => {
-              if (err) {
-                alert('Failed to stop current ticket in clock event: ' + err.reason);
-                return;
-              }
-            });
-          }
+      // Prevent starting activity if session is not active
+      if (!clockEvent) {
+        errorMessages[ticketId] = 'Please start the session first.';
+        t.activityErrorMessages.set(errorMessages);
+        return;
+      } else {
+        // Clear error if session is active
+        if (errorMessages[ticketId]) {
+          delete errorMessages[ticketId];
+          t.activityErrorMessages.set(errorMessages);
         }
       }
-
       // Start the new timer
       t.activeTicketId.set(ticketId);
       const now = Date.now();
