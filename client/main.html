@@ -167,7 +167,12 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {{#each tickets}}
         <div class="card bg-base-100 shadow-md p-4 {{#if isActive _id}}border border-slate-600{{/if}}">
-          <div class="ticket-title text-lg font-bold mb-2">{{title}}</div>
+          <div class="ticket-title text-lg font-bold mb-2 flex items-center justify-between">
+            <span>{{title}}</span>
+            <button class="delete-activity-btn ml-2 text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Activity">
+              &#128465;
+            </button>
+          </div>
           <div class="ticket-time mb-2"><span class="badge" style="background-color: #4A5568; color: white;">{{formatTime displayTime}}</span></div>
           {{#if github}}
             <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">Reference</a>

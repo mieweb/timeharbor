@@ -557,6 +557,19 @@ Template.tickets.events({
       }
     });
   },
+  'click .delete-activity-btn'(e, t) {
+    const ticketId = e.currentTarget.dataset.id;
+    // Show confirmation popup
+    if (confirm('Are you sure you want to delete this activity?')) {
+      Meteor.call('deleteTicket', ticketId, (err) => {
+        if (err) {
+          alert('Failed to delete activity: ' + err.reason);
+        }
+        // UI will update reactively
+      });
+    }
+    // If user clicks Cancel, do nothing
+  },
 });
 
 Template.home.onCreated(function () {

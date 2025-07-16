@@ -397,4 +397,21 @@ Meteor.methods({
       );
     }
   },
+  async deleteTicket(ticketId) {
+    check(ticketId, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
+    if (ticket.createdBy && ticket.createdBy !== this.userId) {
+      throw new Meteor.Error('forbidden', 'You can only delete your own activities');
+    }
+    await Tickets.removeAsync(ticketId);
+    // Optionally, remove from any clock events
+    await ClockEvents.updateAsync(
+      { 'tickets.ticketId': ticketId },
+      { $pull: { tickets: { ticketId } } },
+      { multi: true }
+    );
+    return true;
+  },
 });
