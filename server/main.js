@@ -230,6 +230,35 @@ Meteor.methods({
 
     return ticketId;
   },
+  async updateTicket(ticketId, updates) {
+    check(ticketId, String);
+    check(updates, Object);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Activity not found');
+    if (ticket.createdBy && ticket.createdBy !== this.userId) {
+      throw new Meteor.Error('forbidden', 'You can only edit your own activities');
+    }
+    
+    // Only allow updating certain fields
+    const allowedUpdates = {};
+    if (updates.title !== undefined) {
+      check(updates.title, String);
+      allowedUpdates.title = updates.title.trim();
+    }
+    if (updates.github !== undefined) {
+      check(updates.github, String);
+      allowedUpdates.github = updates.github.trim();
+    }
+    if (updates.accumulatedTime !== undefined) {
+      check(updates.accumulatedTime, Number);
+      allowedUpdates.accumulatedTime = updates.accumulatedTime;
+    }
+    
+    await Tickets.updateAsync(ticketId, { $set: allowedUpdates });
+    return true;
+  },
   incrementTicketTime(ticketId, seconds) {
     check(ticketId, String);
     check(seconds, Number);
