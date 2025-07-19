@@ -1,0 +1,264 @@
+<!-- Authentication Templates -->
+<template name="authPage">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div class="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
+      <div class="text-center">
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">TimeHarbor</h2>
+        <p class="text-gray-600">Your Personal Time Tracking Assistant</p>
+      </div>
+      
+      <div class="flex space-x-4 mb-6">
+        <button id="login" class="flex-1 py-2 px-4 rounded-lg font-medium transition-colors {{#if isLoginActive}}bg-blue-600 text-white{{else}}bg-gray-100 text-gray-700 hover:bg-gray-200{{/if}}">
+          Sign In
+        </button>
+        <button id="signup" class="flex-1 py-2 px-4 rounded-lg font-medium transition-colors {{#if isSignupActive}}bg-blue-600 text-white{{else}}bg-gray-100 text-gray-700 hover:bg-gray-200{{/if}}">
+          Sign Up
+        </button>
+      </div>
+      
+      {{#if isLoginActive}}
+        {{> loginForm}}
+      {{else}}
+        {{> signupForm}}
+      {{/if}}
+    </div>
+  </div>
+</template>
+
+<template name="loginForm">
+  <form id="loginForm" class="space-y-6">
+    <div>
+      <label for="loginUsername" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+      <input 
+        type="text" 
+        id="loginUsername" 
+        name="username" 
+        class="{{loginUsernameClass}}"
+        placeholder="Enter your username"
+        required
+      />
+      {{#if loginUsernameError}}
+        <p class="mt-1 text-sm text-red-600">{{loginUsernameError}}</p>
+      {{/if}}
+    </div>
+    
+    <div>
+      <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+      <input 
+        type="password" 
+        id="loginPassword" 
+        name="password" 
+        class="{{loginPasswordClass}}"
+        placeholder="Enter your password"
+        required
+      />
+      {{#if loginPasswordError}}
+        <p class="mt-1 text-sm text-red-600">{{loginPasswordError}}</p>
+      {{/if}}
+    </div>
+    
+    <div class="flex items-center justify-between">
+      <button type="button" id="forgotPasswordBtn" class="text-sm text-blue-600 hover:text-blue-800">
+        Forgot Password?
+      </button>
+    </div>
+    
+    <button 
+      type="submit" 
+      class="{{loginButtonClass}}"
+      {{loginButtonDisabled}}
+    >
+      {{#if isLoginLoading}}
+        <span class="inline-flex items-center">
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Signing In...
+        </span>
+      {{else}}
+        Sign In
+      {{/if}}
+    </button>
+    
+    {{#if loginError}}
+      <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+        <p class="text-sm text-red-600">{{loginError}}</p>
+      </div>
+    {{/if}}
+  </form>
+</template>
+
+<template name="signupForm">
+  <form id="signupForm" class="space-y-6">
+    <div>
+      <label for="signupUsername" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+      <input 
+        type="text" 
+        id="signupUsername" 
+        name="username" 
+        class="{{signupUsernameClass}}"
+        placeholder="Choose a username (3-20 characters)"
+        required
+      />
+      {{#if signupUsernameError}}
+        <p class="mt-1 text-sm text-red-600">{{signupUsernameError}}</p>
+      {{else if signupUsernameValid}}
+        <p class="mt-1 text-sm text-green-600">✓ Username is available</p>
+      {{/if}}
+      <p class="mt-1 text-xs text-gray-500">Only letters, numbers, underscores, and hyphens allowed</p>
+    </div>
+    
+    <div>
+      <label for="signupPassword" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+      <input 
+        type="password" 
+        id="signupPassword" 
+        name="password" 
+        class="{{signupPasswordClass}}"
+        placeholder="Create a strong password"
+        required
+      />
+      {{#if signupPasswordError}}
+        <p class="mt-1 text-sm text-red-600">{{signupPasswordError}}</p>
+      {{else if signupPasswordValid}}
+        <p class="mt-1 text-sm text-green-600">✓ Password meets requirements</p>
+      {{/if}}
+      
+      <!-- Password strength indicator -->
+      {{#if passwordStrength}}
+        <div class="mt-2">
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-gray-500">Strength:</span>
+            <div class="flex space-x-1">
+              {{#each passwordStrengthBars}}
+                <div class="h-2 w-8 rounded {{this.color}}"></div>
+              {{/each}}
+            </div>
+            <span class="text-xs font-medium {{passwordStrengthColorClass}}">{{passwordStrengthText}}</span>
+          </div>
+        </div>
+      {{/if}}
+      
+      <div class="mt-2 text-xs text-gray-500">
+        <p>Password must contain:</p>
+        <ul class="list-disc list-inside space-y-1 mt-1">
+          <li class="{{minLengthClass}}">At least 8 characters</li>
+          <li class="text-gray-400 italic">(Complexity requirements temporarily disabled for testing)</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div>
+      <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+      <input 
+        type="password" 
+        id="confirmPassword" 
+        name="confirmPassword" 
+        class="{{confirmPasswordClass}}"
+        placeholder="Confirm your password"
+        required
+      />
+      {{#if confirmPasswordError}}
+        <p class="mt-1 text-sm text-red-600">{{confirmPasswordError}}</p>
+      {{else if confirmPasswordValid}}
+        <p class="mt-1 text-sm text-green-600">✓ Passwords match</p>
+      {{/if}}
+    </div>
+    
+    <button 
+      type="submit" 
+      class="{{signupButtonClass}}"
+      {{signupButtonDisabled}}
+    >
+      {{#if isSignupLoading}}
+        <span class="inline-flex items-center">
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Creating Account...
+        </span>
+      {{else}}
+        Create Account
+      {{/if}}
+    </button>
+    
+    {{#if signupError}}
+      <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+        <p class="text-sm text-red-600">{{signupError}}</p>
+      </div>
+    {{/if}}
+  </form>
+</template>
+
+<template name="forgotPasswordModal">
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">Reset Password</h3>
+        <button id="closeForgotPassword" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <form id="forgotPasswordForm" class="space-y-4">
+        <div>
+          <label for="resetEmail" class="block text-sm font-medium text-gray-700 mb-2">Email or Username</label>
+          <input 
+            type="text" 
+            id="resetEmail" 
+            name="email" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter your email or username"
+            required
+          />
+        </div>
+        
+        <div class="flex space-x-3">
+          <button 
+            type="submit" 
+            class="{{resetButtonClass}}"
+            {{resetButtonDisabled}}
+          >
+            {{#if isResetLoading}}
+              <span class="inline-flex items-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Sending...
+              </span>
+            {{else}}
+              Send Reset Link
+            {{/if}}
+          </button>
+          <button 
+            type="button" 
+            id="cancelForgotPassword"
+            class="flex-1 py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+        
+        {{#if resetError}}
+          <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-sm text-red-600">{{resetError}}</p>
+          </div>
+        {{/if}}
+        
+        {{#if resetSuccess}}
+          <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p class="text-sm text-green-600">{{resetSuccess}}</p>
+            {{#if resetToken}}
+              <p class="text-xs text-gray-600 mt-2">Test token: {{resetToken}}</p>
+            {{/if}}
+          </div>
+        {{/if}}
+      </form>
+    </div>
+  </div>
+</template> 

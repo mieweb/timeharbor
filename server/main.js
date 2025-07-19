@@ -2,6 +2,7 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
+import { AuthMethods } from './auth.js';
 
 function generateTeamCode() {
   // Simple random code, can be improved for production
@@ -42,6 +43,10 @@ Meteor.startup(async () => {
   } catch (error) {
     console.log('Team name index already exists or could not be created:', error.message);
   }
+  
+  // Log existing users for debugging
+  const users = await Meteor.users.find().fetchAsync();
+  console.log('Existing users in database:', users.map(u => ({ id: u._id, username: u.username })));
 });
 
 Meteor.publish('userTeams', function () {
@@ -166,18 +171,33 @@ Meteor.methods({
     
     return { available: true, message: 'Project name is available' };
   },
-  createUserAccount({ username, password }) {
-    if (!username || !password) {
-      throw new Meteor.Error('invalid-data', 'Username and password are required');
-    }
-
+  // Authentication methods
+  async checkUsernameAvailability(username) {
+    return await AuthMethods.checkUsernameAvailability(username);
+  },
+  
+  async createUserAccount({ username, password, confirmPassword }) {
+    return await AuthMethods.createUserAccount({ username, password, confirmPassword });
+  },
+  
+  // Login is now handled client-side with Meteor.loginWithPassword
+  
+  async requestPasswordReset(email) {
+    return await AuthMethods.requestPasswordReset(email);
+  },
+  
+  // Test method for debugging
+  async testCreateUser() {
     try {
-      const userId = Accounts.createUser({ username, password });
-      console.log('User created:', { userId, username }); // Log user creation details
-      return userId;
+      const userId = Accounts.createUser({
+        username: 'testuser',
+        password: 'testpass123'
+      });
+      console.log('Test user created:', userId);
+      return { success: true, userId };
     } catch (error) {
-      console.error('Error in createUserAccount method:', error);
-      throw new Meteor.Error('server-error', 'Failed to create user');
+      console.error('Test user creation failed:', error);
+      return { success: false, error: error.reason };
     }
   },
   async getUsers(userIds) {
