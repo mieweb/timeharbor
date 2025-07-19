@@ -3,12 +3,10 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets, ClockEvents } from '../collections.js';
 
 import './main.html';
+import { authState } from './components/auth/authLogic.js';
 
 // Reactive variable to track the current template
 const currentTemplate = new ReactiveVar('home');
-
-// Reactive variable to track the current screen
-const currentScreen = new ReactiveVar('authPage');
 
 // Reactive variable to track current time for timers
 const currentTime = new ReactiveVar(Date.now());
@@ -17,9 +15,9 @@ setInterval(() => currentTime.set(Date.now()), 1000);
 Template.mainLayout.onCreated(function () {
   this.autorun(() => {
     if (Meteor.userId()) {
-      currentScreen.set('mainLayout');
+      authState.currentScreen.set('mainLayout');
     } else {
-      currentScreen.set('authPage'); // Redirect to auth screen if not logged in
+      authState.currentScreen.set('authPage'); // Redirect to auth screen if not logged in
     }
   });
 });
@@ -40,67 +38,14 @@ Template.mainLayout.events({
 
 Template.body.helpers({
   currentScreen() {
-    return currentScreen.get();
+    return authState.currentScreen.get();
   },
+  showForgotPassword() {
+    return authState.showForgotPassword.get();
+  }
 });
 
-Template.authPage.events({
-  'click #signup'(event) {
-    event.preventDefault();
-
-    // Switch to the signup form screen
-    currentScreen.set('signupForm');
-  },
-  'click #login'(event) {
-    event.preventDefault();
-
-    // Switch to the login form screen
-    currentScreen.set('loginForm');
-  },
-  'submit #signupForm'(event) {
-    event.preventDefault();
-
-    // Collect user input
-    const username = event.target.username.value;
-    const password = event.target.password.value;
-
-    // Call server method to create a new user
-    Meteor.call('createUserAccount', { username, password }, (err, result) => {
-      if (err) {
-        console.error('Error creating user:', err);
-        alert('Failed to create user: ' + err.reason);
-      } else {
-        // Immediately log in as the new user
-        Meteor.loginWithPassword(username, password, (loginErr) => {
-          if (loginErr) {
-            alert('Login failed: ' + loginErr.reason);
-          } else {
-            alert('User created and logged in successfully!');
-            currentScreen.set('mainLayout');
-          }
-        });
-      }
-    });
-  },
-  'submit #loginForm'(event) {
-    event.preventDefault();
-
-    // Collect user input
-    const username = event.target.username.value;
-    const password = event.target.password.value;
-
-    // Log in the user
-    Meteor.loginWithPassword(username, password, (err) => {
-      if (err) {
-        console.error('Error logging in:', err);
-        alert('Failed to log in: ' + err.reason);
-      } else {
-        alert('Logged in successfully!');
-        currentScreen.set('mainLayout');
-      }
-    });
-  },
-});
+// Authentication is now handled by the modular auth system
 
 Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);

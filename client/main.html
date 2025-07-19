@@ -5,6 +5,9 @@
 
 <body class="bg-base-100 min-h-screen">
   {{> Template.dynamic template=currentScreen}}
+  {{#if showForgotPassword}}
+    {{> forgotPasswordModal}}
+  {{/if}}
 </body>
 
 <template name="mainLayout">
@@ -214,21 +217,4 @@
   </form>
 </template>
 
-<template name="authPage">
-  <h3 class="text-2xl font-bold mb-2">Welcome to TimeHarbor</h3>
-  <p class="mb-4">Your personal time tracking assistant. Please log in or create an account to get started.</p>
-  <div class="flex flex-col md:flex-row gap-6">
-    <form id="loginForm" class="card bg-base-100 shadow p-4 flex flex-col gap-2 w-full md:w-1/2">
-      <h4 class="text-lg font-semibold mb-2">Log In</h4>
-      <input type="text" name="username" placeholder="Username" class="input input-bordered" required />
-      <input type="password" name="password" placeholder="Password" class="input input-bordered" required />
-      <button type="submit" class="btn btn-primary">Log In</button>
-    </form>
-    <form id="signupForm" class="card bg-base-100 shadow p-4 flex flex-col gap-2 w-full md:w-1/2">
-      <h4 class="text-lg font-semibold mb-2">Create an Account</h4>
-      <input type="text" name="username" placeholder="Username" class="input input-bordered" required />
-      <input type="password" name="password" placeholder="Password" class="input input-bordered" required />
-      <button type="submit" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Sign Up</button>
-    </form>
-  </div>
-</template>
+
