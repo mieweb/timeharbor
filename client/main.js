@@ -474,71 +474,6 @@ Template.tickets.events({
     setTimeout(() => {
       const input = document.querySelector('input[name="github"]');
       const titleInput = document.querySelector('input[name="title"]');
-      let lastSuggestedUrl = '';
-      if (input && !input._hasPasteListener) {
-        // Create or select the suggestion element for activity title
-        let suggestionDiv = document.getElementById('activity-title-suggestion');
-        if (!suggestionDiv) {
-          suggestionDiv = document.createElement('div');
-          suggestionDiv.id = 'activity-title-suggestion';
-          suggestionDiv.style.marginTop = '4px';
-          suggestionDiv.style.fontSize = '0.95em';
-          suggestionDiv.style.color = '#4A5568';
-          titleInput.parentNode.insertBefore(suggestionDiv, titleInput.nextSibling);
-        }
-        // Helper to fetch and show suggestion if valid URL
-        async function handleUrlSuggestion(url) {
-          if (isValidUrl(url) && url !== lastSuggestedUrl) {
-            lastSuggestedUrl = url;
-            suggestionDiv.textContent = 'Fetching activity title suggestion...';
-            suggestionDiv.style.color = '#4A5568';
-            const suggestion = await fetchTitleSuggestion(url);
-            if (suggestion) {
-              suggestionDiv.innerHTML = `Suggested Activity Title: <span style=\"color: #2563eb; cursor: pointer; text-decoration: underline;\">${suggestion}</span>`;
-              const span = suggestionDiv.querySelector('span');
-              span.onclick = () => {
-                titleInput.value = suggestion;
-              };
-            } else {
-              suggestionDiv.textContent = '';
-            }
-          } else if (!isValidUrl(url)) {
-            suggestionDiv.textContent = '';
-            lastSuggestedUrl = '';
-          }
-        }
-        // Paste event
-        input.addEventListener('paste', async function(event) {
-          event.preventDefault();
-          let pastedText = '';
-          if (event.clipboardData && event.clipboardData.getData) {
-            pastedText = event.clipboardData.getData('text');
-          } else if (window.clipboardData && window.clipboardData.getData) {
-            pastedText = window.clipboardData.getData('Text');
-          }
-          // Insert the pasted text manually
-          const start = input.selectionStart;
-          const end = input.selectionEnd;
-          const value = input.value;
-          input.value = value.slice(0, start) + pastedText + value.slice(end);
-          input.setSelectionRange(start + pastedText.length, start + pastedText.length);
-          await handleUrlSuggestion(pastedText);
-        });
-        // Blur event (when user leaves the input)
-        input.addEventListener('blur', function() {
-          handleUrlSuggestion(input.value.trim());
-        });
-        // Enter key event (when user presses Enter in the input)
-        input.addEventListener('keydown', function(event) {
-          if (event.key === 'Enter') {
-            event.preventDefault(); // Prevent form submission
-            handleUrlSuggestion(input.value.trim());
-          }
-        });
-        input._hasPasteListener = true;
-      }
-      
-      // NEW: Handle URL pasting in Title field
       if (titleInput && !titleInput._hasUrlPasteListener) {
         titleInput.addEventListener('paste', async function(event) {
           let pastedText = '';
@@ -547,15 +482,14 @@ Template.tickets.events({
           } else if (window.clipboardData && window.clipboardData.getData) {
             pastedText = window.clipboardData.getData('Text');
           }
-          
           // Check if pasted text is a valid URL
           if (isValidUrl(pastedText)) {
             event.preventDefault();
-            
+            // Move URL to Reference URL field
+            input.value = pastedText;
             // Add blur effect to title input
             titleInput.style.filter = 'blur(1px)';
             titleInput.style.transition = 'filter 0.3s ease';
-            
             // Show loading indicator
             let loadingDiv = document.getElementById('title-loading-indicator');
             if (!loadingDiv) {
@@ -567,69 +501,23 @@ Template.tickets.events({
               loadingDiv.style.color = '#4A5568';
               titleInput.parentNode.insertBefore(loadingDiv, titleInput.nextSibling);
             }
-            
             try {
-              // Fetch the page title
               const pageTitle = await fetchTitleSuggestion(pastedText);
-              
-              // Move URL to Reference URL field
-              input.value = pastedText;
-              
-              // Autofill title with extracted title
               if (pageTitle) {
                 titleInput.value = pageTitle;
               }
-              
-              // Remove blur effect
-              titleInput.style.filter = 'none';
-              
-              // Remove loading indicator
-              if (loadingDiv) {
-                loadingDiv.remove();
-              }
-              
-              // Show success message briefly
-              let successDiv = document.createElement('div');
-              successDiv.innerHTML = '✅ Title extracted successfully!';
-              successDiv.style.marginTop = '4px';
-              successDiv.style.fontSize = '0.9em';
-              successDiv.style.color = '#059669';
-              titleInput.parentNode.insertBefore(successDiv, titleInput.nextSibling);
-              
-              setTimeout(() => {
-                if (successDiv.parentNode) {
-                  successDiv.remove();
-                }
-              }, 2000);
-              
             } catch (error) {
               console.error('Error fetching page title:', error);
-              
+            } finally {
               // Remove blur effect
               titleInput.style.filter = 'none';
-              
               // Remove loading indicator
               if (loadingDiv) {
                 loadingDiv.remove();
               }
-              
-              // Show error message
-              let errorDiv = document.createElement('div');
-              errorDiv.innerHTML = '❌ Failed to fetch page title';
-              errorDiv.style.marginTop = '4px';
-              errorDiv.style.fontSize = '0.9em';
-              errorDiv.style.color = '#DC2626';
-              titleInput.parentNode.insertBefore(errorDiv, titleInput.nextSibling);
-              
-              setTimeout(() => {
-                if (errorDiv.parentNode) {
-                  errorDiv.remove();
-                }
-              }, 3000);
             }
           }
         });
-        
         titleInput._hasUrlPasteListener = true;
       }
     }, 0);
