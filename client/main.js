@@ -518,6 +518,43 @@ Template.tickets.events({
             }
           }
         });
+        // Add blur event for typing a valid URL
+        titleInput.addEventListener('blur', async function(event) {
+          const typedText = titleInput.value.trim();
+          if (isValidUrl(typedText)) {
+            // Move URL to Reference URL field
+            input.value = typedText;
+            // Add blur effect to title input
+            titleInput.style.filter = 'blur(1px)';
+            titleInput.style.transition = 'filter 0.3s ease';
+            // Show loading indicator
+            let loadingDiv = document.getElementById('title-loading-indicator');
+            if (!loadingDiv) {
+              loadingDiv = document.createElement('div');
+              loadingDiv.id = 'title-loading-indicator';
+              loadingDiv.innerHTML = '🔄 Fetching page title...';
+              loadingDiv.style.marginTop = '4px';
+              loadingDiv.style.fontSize = '0.9em';
+              loadingDiv.style.color = '#4A5568';
+              titleInput.parentNode.insertBefore(loadingDiv, titleInput.nextSibling);
+            }
+            try {
+              const pageTitle = await fetchTitleSuggestion(typedText);
+              if (pageTitle) {
+                titleInput.value = pageTitle;
+              }
+            } catch (error) {
+              console.error('Error fetching page title:', error);
+            } finally {
+              // Remove blur effect
+              titleInput.style.filter = 'none';
+              // Remove loading indicator
+              if (loadingDiv) {
+                loadingDiv.remove();
+              }
+            }
+          }
+        });
         titleInput._hasUrlPasteListener = true;
       }
     }, 0);
