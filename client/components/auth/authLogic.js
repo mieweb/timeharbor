@@ -130,6 +130,16 @@ Template.loginForm.events({
   'click #forgotPasswordBtn'(event) {
     event.preventDefault();
     authState.showForgotPassword.set(true);
+  },
+  'click .google-login-btn'(event, template) {
+    event.preventDefault();
+    Meteor.loginWithGoogle({ requestPermissions: ['email', 'profile'] }, (err) => {
+      if (err) {
+        template.loginError.set('Google login failed: ' + err.reason);
+      } else {
+        // Success! You can redirect or show a success message if needed.
+      }
+    });
   }
 });
 
@@ -477,6 +487,16 @@ Template.signupForm.events({
             // The autorun in authPage will handle the redirect
           }
         });
+      }
+    });
+  },
+  'click .google-login-btn'(event, template) {
+    event.preventDefault();
+    Meteor.loginWithGoogle({ requestPermissions: ['email', 'profile'] }, (err) => {
+      if (err) {
+        template.signupError.set('Google login failed: ' + err.reason);
+      } else {
+        // Success! You can redirect or show a success message if needed.
       }
     });
   }

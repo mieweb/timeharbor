@@ -1,5 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
+import { ServiceConfiguration } from 'meteor/service-configuration';
 import { check } from 'meteor/check';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
 import { AuthMethods } from './auth.js';
@@ -47,6 +48,17 @@ Meteor.startup(async () => {
   // Log existing users for debugging
   const users = await Meteor.users.find().fetchAsync();
   console.log('Existing users in database:', users.map(u => ({ id: u._id, username: u.username })));
+
+  ServiceConfiguration.configurations.upsert(
+    { service: 'google' },
+    {
+      $set: {
+        clientId: '<YOUR_GOOGLE_CLIENT_ID>',
+        secret: '<YOUR_GOOGLE_CLIENT_SECRET>',
+        loginStyle: 'popup',
+      },
+    }
+  );
 });
 
 Meteor.publish('userTeams', function () {
