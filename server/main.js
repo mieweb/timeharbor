@@ -230,15 +230,49 @@ Meteor.methods({
 
     return ticketId;
   },
+  async updateTicket(ticketId, updates) {
+    check(ticketId, String);
+    check(updates, Object);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Activity not found');
+    if (ticket.createdBy && ticket.createdBy !== this.userId) {
+      throw new Meteor.Error('forbidden', 'You can only edit your own activities');
+    }
+    
+    // Only allow updating certain fields
+    const allowedUpdates = {};
+    if (updates.title !== undefined) {
+      check(updates.title, String);
+      allowedUpdates.title = updates.title.trim();
+    }
+    if (updates.github !== undefined) {
+      check(updates.github, String);
+      allowedUpdates.github = updates.github.trim();
+    }
+    if (updates.accumulatedTime !== undefined) {
+      check(updates.accumulatedTime, Number);
+      allowedUpdates.accumulatedTime = updates.accumulatedTime;
+    }
+    
+    await Tickets.updateAsync(ticketId, { $set: allowedUpdates });
+    return true;
+  },
   incrementTicketTime(ticketId, seconds) {
     check(ticketId, String);
     check(seconds, Number);
     Tickets.update(ticketId, { $inc: { timeSpent: seconds } });
   },
-  updateTicketStart(ticketId, now) {
+  async updateTicketStart(ticketId, now) {
     check(ticketId, String);
     check(now, Number);
     if (!this.userId) throw new Meteor.Error('not-authorized');
+    // Prevent starting activity if session is not active
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
+    const clockEvent = await ClockEvents.findOneAsync({ userId: this.userId, teamId: ticket.teamId, endTime: null });
+    if (!clockEvent) throw new Meteor.Error('no-session', 'Please start the session first.');
     return Tickets.updateAsync(ticketId, { $set: { startTimestamp: now } });
   },
   updateTicketStop(ticketId, now) {
@@ -295,15 +329,32 @@ Meteor.methods({
           .map(async (ticket) => {
             const elapsed = Math.floor((now - ticket.startTimestamp) / 1000);
             const prev = ticket.accumulatedTime || 0;
-            return ClockEvents.updateAsync(
+            // Update the ticket entry in the tickets array
+            await ClockEvents.updateAsync(
               { _id: clockEvent._id, 'tickets.ticketId': ticket.ticketId },
               {
                 $set: { 'tickets.$.accumulatedTime': prev + elapsed },
                 $unset: { 'tickets.$.startTimestamp': '' }
               }
             );
+            // Also stop the ticket itself
+            await Tickets.updateAsync(ticket.ticketId, {
+              $set: { accumulatedTime: prev + elapsed },
+              $unset: { startTimestamp: '' }
+            });
           });
         await Promise.all(updates);
+      }
+
+      // Extra safety: Stop all running tickets for this team (not just those in clockEvent.tickets)
+      const runningTickets = await Tickets.find({ teamId, startTimestamp: { $exists: true } }).fetchAsync();
+      for (const ticket of runningTickets) {
+        const elapsed = Math.floor((now - ticket.startTimestamp) / 1000);
+        const prev = ticket.accumulatedTime || 0;
+        await Tickets.updateAsync(ticket._id, {
+          $set: { accumulatedTime: prev + elapsed },
+          $unset: { startTimestamp: '' }
+        });
       }
 
       // Mark clock event as ended
@@ -374,5 +425,22 @@ Meteor.methods({
         }
       );
     }
+  },
+  async deleteTicket(ticketId) {
+    check(ticketId, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
+    if (ticket.createdBy && ticket.createdBy !== this.userId) {
+      throw new Meteor.Error('forbidden', 'You can only delete your own activities');
+    }
+    await Tickets.removeAsync(ticketId);
+    // Optionally, remove from any clock events
+    await ClockEvents.updateAsync(
+      { 'tickets.ticketId': ticketId },
+      { $pull: { tickets: { ticketId } } },
+      { multi: true }
+    );
+    return true;
   },
 });
