@@ -34,41 +34,22 @@ describe("timeharbor", function () {
       it("should prevent creating teams with duplicate names (case-insensitive)", async function () {
         // Create a test user
         const userId = Accounts.createUser({ username: 'testuser', password: 'password' });
-        
-        // Test the validation logic directly
-        const normalizedName1 = 'Test Project'.trim().toLowerCase();
-        const normalizedName2 = 'test project'.trim().toLowerCase();
-        
-        // They should be equal (case-insensitive)
-        assert.strictEqual(normalizedName1, normalizedName2);
-        
-        // Test that the regex pattern works
-        const regex = new RegExp(`^${normalizedName1}$`, 'i');
-        assert(regex.test('Test Project'));
-        assert(regex.test('test project'));
-        assert(regex.test('TEST PROJECT'));
-        
-        // Test the validation logic by simulating what our createTeam method does
-        // First, create a team directly in the database
-        const teamId1 = await Teams.insertAsync({
-          name: 'Test Project',
-          members: [userId],
-          admins: [userId],
-          leader: userId,
-          code: 'TEST123',
-          createdAt: new Date(),
-        });
+        await Meteor.users.findOneAsync({ _id: userId }); // Ensure user is created
+
+        // Call the Meteor method as the test user
+        const teamId1 = await Meteor.server.applyAsync('createTeam', ['Test Project'], { userId });
         assert(teamId1);
-        
-        // Now test the validation logic that our createTeam method uses
-        const existingTeam = await Teams.findOneAsync({ 
-          name: { $regex: new RegExp(`^${normalizedName2}$`, 'i') }
-        });
-        
-        // Should find the existing team (case-insensitive match)
-        assert(existingTeam);
-        assert.strictEqual(existingTeam.name, 'Test Project');
-        
+
+        // Try to create a duplicate team (should throw an error)
+        let errorThrown = false;
+        try {
+          await Meteor.server.applyAsync('createTeam', ['test project'], { userId });
+        } catch (e) {
+          errorThrown = true;
+          assert.strictEqual(e.error, 'duplicate-team-name');
+        }
+        assert(errorThrown, 'Expected error when creating duplicate team name');
+
         // Verify only one team was created
         const teamsArray = await Teams.find({}).fetchAsync();
         assert.strictEqual(teamsArray.length, 1);
