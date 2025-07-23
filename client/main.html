@@ -1,6 +1,7 @@
 <head>
   <title>TimeHarbor - Your Personal Time Tracking Assistant</title>
   <link rel="stylesheet" href="/client/tailwind.generated.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 
 <body class="bg-base-100 min-h-screen">
@@ -177,10 +178,10 @@
             <span>{{title}}</span>
             <div class="flex items-center gap-2">
               <button class="edit-activity-btn text-blue-600 hover:text-blue-800" data-id="{{_id}}" title="Edit Activity">
-                ✏️
+                <i class="fa-solid fa-pen text-primary"></i>
               </button>
               <button class="delete-activity-btn text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Activity">
-                &#128465;
+                <i class="fa-solid fa-trash"></i>
               </button>
             </div>
           </div>
