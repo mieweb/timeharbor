@@ -9,6 +9,7 @@ Quick start: [click here](./HOW_TO_USE.md)
 ## Table of Contents
 
 - [Overview](#overview)
+- [Screenshots](#screenshots)
 - [Core Purpose](#core-purpose)
 - [Key Features](#key-features)
 - [Design Principles](#design-principles)
@@ -27,6 +28,28 @@ Quick start: [click here](./HOW_TO_USE.md)
 ## Overview
 
 **TimeHarbor** empowers individuals to take control of their time tracking and reflection. Whether you're an employee, student, mentor, volunteer, or nonprofit contributor, TimeHarbor helps you understand how you spend your time, reflect on your work, and communicate your value—all while keeping your data private by default.
+
+---
+
+## Screenshots
+
+Here are some screenshots showing TimeHarbor in action:
+
+### Login & Authentication
+![Login Screen](screenshots/1-login.png)
+*Simple and secure login interface to get you started with TimeHarbor*
+
+### Project Management
+![Projects Screen](screenshots/2-projects.png)
+*Create or join projects to organize your time tracking activities*
+
+### Activity Tracking
+![Activities Screen](screenshots/3-activities.png)
+*Track time on specific activities within your projects with start/stop functionality*
+
+### Time Overview Dashboard
+![Dashboard Screen](screenshots/4-dashboard.png)
+*Review your time usage across projects and activities with detailed breakdowns*
 
 ---
 
