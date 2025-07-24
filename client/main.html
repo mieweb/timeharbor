@@ -188,6 +188,9 @@
           {{#if github}}
             <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">Reference</a>
           {{/if}}
+          {{#if (activityErrorMessage _id)}}
+            <div class="text-red-600 text-sm mb-1">{{activityErrorMessage _id}}</div>
+          {{/if}}
           <button class="activate-ticket btn btn-outline btn-neutral mt-2 w-full" data-id="{{_id}}">
             {{#if isActive _id}}
               Stop

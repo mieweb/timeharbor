@@ -332,6 +332,8 @@ Template.tickets.onCreated(function () {
   // Restore last active ticket if it is still running
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
+  // Add per-activity error messages
+  this.activityErrorMessages = new ReactiveVar({});
   this.autorun(() => {
     this.subscribe('userTeams');
     this.subscribe('clockEventsForUser');
@@ -439,6 +441,10 @@ Template.tickets.helpers({
     }
     return total;
   },
+  activityErrorMessage(ticketId) {
+    const errors = Template.instance().activityErrorMessages.get() || {};
+    return errors[ticketId] || '';
+  },
 });
 
 Template.tickets.events({
@@ -499,37 +505,13 @@ Template.tickets.events({
     const isActive = t.activeTicketId.get() === ticketId;
     const ticket = Tickets.findOne(ticketId);
     const teamId = t.selectedTeamId.get();
-
-    // Check if user is clocked in for this team
     const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
-
     if (!isActive) {
-      // Stop any currently active ticket first
-      const currentActiveTicketId = t.activeTicketId.get();
-      if (currentActiveTicketId) {
-        const currentTicket = Tickets.findOne(currentActiveTicketId);
-        if (currentTicket && currentTicket.startTimestamp) {
-          const now = Date.now();
-          // Stop the current ticket
-          Meteor.call('updateTicketStop', currentActiveTicketId, now, (err) => {
-            if (err) {
-              alert('Failed to stop current timer: ' + err.reason);
-              return;
-            }
-          });
-
-          // Stop the current ticket in the clock event if needed
-          if (clockEvent) {
-            Meteor.call('clockEventStopTicket', clockEvent._id, currentActiveTicketId, now, (err) => {
-              if (err) {
-                alert('Failed to stop current ticket in clock event: ' + err.reason);
-                return;
-              }
-            });
-          }
-        }
+      // Prevent starting activity if session is not active
+      if (!clockEvent) {
+        alert('Need to start the session first');
+        return;
       }
-
       // Start the new timer
       t.activeTicketId.set(ticketId);
       const now = Date.now();
@@ -540,9 +522,7 @@ Template.tickets.events({
           return;
         }
       });
-
       // If user is clocked in, add the new ticket timing entry to the clock event
-      // Note: Initial accumulated time is now handled server-side in clockEventAddTicket
       if (clockEvent) {
         Meteor.call('clockEventAddTicket', clockEvent._id, ticketId, now, (err) => {
           if (err) {
@@ -550,24 +530,21 @@ Template.tickets.events({
           }
         });
       }
-    } else {
-      // Stop the timer: calculate elapsed, add to accumulatedTime, clear startTimestamp
-      if (ticket && ticket.startTimestamp) {
-        const now = Date.now();
-        Meteor.call('updateTicketStop', ticketId, now, (err) => {
+    }
+    // Stop the timer:calculate elapsed, add to accumulatedTime, clear startTimestamp
+    if (ticket && ticket.startTimestamp) {
+      const now = Date.now();
+      Meteor.call('updateTicketStop', ticketId, now, (err) => {
+        if (err) {
+          alert('Failed to stop timer: ' + err.reason);
+        }
+      });
+      if (clockEvent) {
+        Meteor.call('clockEventStopTicket', clockEvent._id, ticketId, now, (err) => {
           if (err) {
-            alert('Failed to stop timer: ' + err.reason);
+            alert('Failed to stop ticket in clock event: ' + err.reason);
           }
         });
-
-        // If user is clocked in, stop the ticket timing in the clock event
-        if (clockEvent) {
-          Meteor.call('clockEventStopTicket', clockEvent._id, ticketId, now, (err) => {
-            if (err) {
-              alert('Failed to stop ticket in clock event: ' + err.reason);
-            }
-          });
-        }
       }
       t.activeTicketId.set(null);
     }
