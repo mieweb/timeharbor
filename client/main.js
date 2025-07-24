@@ -458,7 +458,10 @@ async function fetchTitleSuggestion(url) {
 // Safe URL validation function
 function isValidUrl(string) {
   try {
-    new URL(string);
+    const url = new URL(string);
+    if (url.origin === 'null') {
+      return false;
+    }
     return true;
   } catch (_) {
     return false;
