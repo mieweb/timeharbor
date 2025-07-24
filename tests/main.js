@@ -11,3 +11,5 @@ describe("timeharbor", function () {
     it("server is not client", function () {
       assert.strictEqual(Meteor.isClient, false);
     });
+  }
+}); 
