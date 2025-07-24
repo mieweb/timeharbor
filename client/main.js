@@ -441,12 +441,126 @@ Template.tickets.helpers({
   },
 });
 
+// Utility function to fetch title suggestion from backend
+async function fetchTitleSuggestion(url) {
+  return new Promise((resolve) => {
+    Meteor.call('fetchTitleSuggestion', url, (err, suggestion) => {
+      if (err) {
+        console.error('Error fetching title suggestion:', err);
+        resolve('');
+      } else {
+        resolve(suggestion || '');
+      }
+    });
+  });
+}
+
+// Safe URL validation function
+function isValidUrl(string) {
+  try {
+    const url = new URL(string);
+    if (url.origin === 'null') {
+      return false;
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 Template.tickets.events({
   'change #teamSelect'(e, t) {
     t.selectedTeamId.set(e.target.value);
   },
   'click #showCreateTicketForm'(e, t) {
     t.showCreateTicketForm.set(true);
+    setTimeout(() => {
+      const input = document.querySelector('input[name="github"]');
+      const titleInput = document.querySelector('input[name="title"]');
+      if (titleInput && !titleInput._hasUrlPasteListener) {
+        titleInput.addEventListener('paste', async function(event) {
+          let pastedText = '';
+          if (event.clipboardData && event.clipboardData.getData) {
+            pastedText = event.clipboardData.getData('text');
+          } else if (window.clipboardData && window.clipboardData.getData) {
+            pastedText = window.clipboardData.getData('Text');
+          }
+          // Check if pasted text is a valid URL
+          if (isValidUrl(pastedText)) {
+            event.preventDefault();
+            // Move URL to Reference URL field
+            input.value = pastedText;
+            // Add blur effect to title input
+            titleInput.style.filter = 'blur(1px)';
+            titleInput.style.transition = 'filter 0.3s ease';
+            // Show loading indicator
+            let loadingDiv = document.getElementById('title-loading-indicator');
+            if (!loadingDiv) {
+              loadingDiv = document.createElement('div');
+              loadingDiv.id = 'title-loading-indicator';
+              loadingDiv.innerHTML = '🔄 Fetching page title...';
+              loadingDiv.style.marginTop = '4px';
+              loadingDiv.style.fontSize = '0.9em';
+              loadingDiv.style.color = '#4A5568';
+              titleInput.parentNode.insertBefore(loadingDiv, titleInput.nextSibling);
+            }
+            try {
+              const pageTitle = await fetchTitleSuggestion(pastedText);
+              if (pageTitle) {
+                titleInput.value = pageTitle;
+              }
+            } catch (error) {
+              console.error('Error fetching page title:', error);
+            } finally {
+              // Remove blur effect
+              titleInput.style.filter = 'none';
+              // Remove loading indicator
+              if (loadingDiv) {
+                loadingDiv.remove();
+              }
+            }
+          }
+        });
+        // Add blur event for typing a valid URL
+        titleInput.addEventListener('blur', async function(event) {
+          const typedText = titleInput.value.trim();
+          if (isValidUrl(typedText)) {
+            // Move URL to Reference URL field
+            input.value = typedText;
+            // Add blur effect to title input
+            titleInput.style.filter = 'blur(1px)';
+            titleInput.style.transition = 'filter 0.3s ease';
+            // Show loading indicator
+            let loadingDiv = document.getElementById('title-loading-indicator');
+            if (!loadingDiv) {
+              loadingDiv = document.createElement('div');
+              loadingDiv.id = 'title-loading-indicator';
+              loadingDiv.innerHTML = '🔄 Fetching page title...';
+              loadingDiv.style.marginTop = '4px';
+              loadingDiv.style.fontSize = '0.9em';
+              loadingDiv.style.color = '#4A5568';
+              titleInput.parentNode.insertBefore(loadingDiv, titleInput.nextSibling);
+            }
+            try {
+              const pageTitle = await fetchTitleSuggestion(typedText);
+              if (pageTitle) {
+                titleInput.value = pageTitle;
+              }
+            } catch (error) {
+              console.error('Error fetching page title:', error);
+            } finally {
+              // Remove blur effect
+              titleInput.style.filter = 'none';
+              // Remove loading indicator
+              if (loadingDiv) {
+                loadingDiv.remove();
+              }
+            }
+          }
+        });
+        titleInput._hasUrlPasteListener = true;
+      }
+    }, 0);
   },
   'click #cancelCreateTicket'(e, t) {
     t.showCreateTicketForm.set(false);

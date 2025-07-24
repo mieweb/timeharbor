@@ -2,6 +2,11 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
+import metascraper from 'metascraper';
+import metascraperTitle from 'metascraper-title';
+import metascraperDescription from 'metascraper-description';
+import axios from 'axios';
+import cheerio from 'cheerio';
 
 function generateTeamCode() {
   // Simple random code, can be improved for production
@@ -373,6 +378,76 @@ Meteor.methods({
           }
         }
       );
+    }
+  },
+  async fetchTitleSuggestion(url) {
+    check(url, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+    
+    try {
+      // SSRF Protection: Block internal IPs and localhost
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname;
+      
+      // Block internal IP ranges and localhost
+      const blockedPatterns = [
+        /^localhost$/,
+        /^127\./,
+        /^10\./,
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+        /^192\.168\./,
+        /^0\.0\.0\.0$/,
+        /^::1$/,
+        /^fe80:/,
+        /^fc00:/,
+        /^fd00:/
+      ];
+      
+      if (blockedPatterns.some(pattern => pattern.test(hostname))) {
+        throw new Meteor.Error('forbidden', 'Access to internal networks is not allowed');
+      }
+      
+      const options = {
+        timeout: 10000, // 10 seconds timeout
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      };
+      
+      const response = await axios.get(url, options);
+      
+      // Check response size (limit to 1MB to prevent size bombs)
+      if (response.content && response.content.length > 1024 * 1024) {
+        throw new Meteor.Error('payload-too-large', 'Response too large');
+      }
+      
+      const html = response.data;
+      
+      // Use metascraper for robust metadata extraction
+      const scraper = metascraper([
+        metascraperTitle(),
+        metascraperDescription()
+      ]);
+      
+      const metadata = await scraper({ html, url });
+      
+      // GitHub-specific extraction for better results
+      let githubTitle = '';
+      if (url.includes('github.com')) {
+        // Use cheerio for DOM parsing (Meteor's preferred approach)
+        const $ = cheerio.load(html);
+        githubTitle = $('.js-issue-title').text().trim() || 
+                     $('.gh-header-title').text().trim() || '';
+      }
+      
+      // Priority order: GitHub title > metascraper title > metascraper description
+      const suggestion = githubTitle || metadata.title || metadata.description || '';
+      return suggestion;
+    } catch (e) {
+      console.error('Error fetching title suggestion:', e);
+      return '';
     }
   },
 });
