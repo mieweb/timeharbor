@@ -492,7 +492,7 @@ Template.tickets.events({
         });
       }
     }
-    // Stop the timer: calculate elapsed, add to accumulatedTime, clear startTimestamp
+    // Stop the timer:calculate elapsed, add to accumulatedTime, clear startTimestamp
     if (ticket && ticket.startTimestamp) {
       const now = Date.now();
       Meteor.call('updateTicketStop', ticketId, now, (err) => {
