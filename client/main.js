@@ -467,20 +467,11 @@ Template.tickets.events({
     const ticket = Tickets.findOne(ticketId);
     const teamId = t.selectedTeamId.get();
     const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
-    // Get the error messages object
-    const errorMessages = t.activityErrorMessages.get() || {};
     if (!isActive) {
       // Prevent starting activity if session is not active
       if (!clockEvent) {
-        errorMessages[ticketId] = 'Please start the session first.';
-        t.activityErrorMessages.set(errorMessages);
+        alert('Need to start the session first');
         return;
-      } else {
-        // Clear error if session is active
-        if (errorMessages[ticketId]) {
-          delete errorMessages[ticketId];
-          t.activityErrorMessages.set(errorMessages);
-        }
       }
       // Start the new timer
       t.activeTicketId.set(ticketId);
@@ -492,9 +483,7 @@ Template.tickets.events({
           return;
         }
       });
-
       // If user is clocked in, add the new ticket timing entry to the clock event
-      // Note: Initial accumulated time is now handled server-side in clockEventAddTicket
       if (clockEvent) {
         Meteor.call('clockEventAddTicket', clockEvent._id, ticketId, now, (err) => {
           if (err) {
@@ -502,24 +491,21 @@ Template.tickets.events({
           }
         });
       }
-    } else {
-      // Stop the timer: calculate elapsed, add to accumulatedTime, clear startTimestamp
-      if (ticket && ticket.startTimestamp) {
-        const now = Date.now();
-        Meteor.call('updateTicketStop', ticketId, now, (err) => {
+    }
+    // Stop the timer: calculate elapsed, add to accumulatedTime, clear startTimestamp
+    if (ticket && ticket.startTimestamp) {
+      const now = Date.now();
+      Meteor.call('updateTicketStop', ticketId, now, (err) => {
+        if (err) {
+          alert('Failed to stop timer: ' + err.reason);
+        }
+      });
+      if (clockEvent) {
+        Meteor.call('clockEventStopTicket', clockEvent._id, ticketId, now, (err) => {
           if (err) {
-            alert('Failed to stop timer: ' + err.reason);
+            alert('Failed to stop ticket in clock event: ' + err.reason);
           }
         });
-
-        // If user is clocked in, stop the ticket timing in the clock event
-        if (clockEvent) {
-          Meteor.call('clockEventStopTicket', clockEvent._id, ticketId, now, (err) => {
-            if (err) {
-              alert('Failed to stop ticket in clock event: ' + err.reason);
-            }
-          });
-        }
       }
       t.activeTicketId.set(null);
     }
