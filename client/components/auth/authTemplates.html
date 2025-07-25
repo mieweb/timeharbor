@@ -144,7 +144,10 @@
         <p>Password must contain:</p>
         <ul class="list-disc list-inside space-y-1 mt-1">
           <li class="{{minLengthClass}}">At least 8 characters</li>
-          <li class="text-gray-400 italic">(Complexity requirements temporarily disabled for testing)</li>
+          <li class="{{upperCaseClass}}">At least one uppercase letter (A-Z)</li>
+          <li class="{{lowerCaseClass}}">At least one lowercase letter (a-z)</li>
+          <li class="{{numberClass}}">At least one digit (0-9)</li>
+          <li class="{{specialCharClass}}">At least one special character (!@#$%^&*...)</li>
         </ul>
       </div>
     </div>

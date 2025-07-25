@@ -63,9 +63,19 @@ export const AuthValidation = {
         errors.push(`Password must be no more than ${this.maxLength} characters long`);
       }
       
-      // For now, only check minimum length and weak passwords
-      // Temporarily disable complexity requirements for testing
-      
+      // Enforce complexity requirements
+      if (!/[A-Z]/.test(password)) {
+        errors.push('Password must contain at least one uppercase letter');
+      }
+      if (!/[a-z]/.test(password)) {
+        errors.push('Password must contain at least one lowercase letter');
+      }
+      if (!/\d/.test(password)) {
+        errors.push('Password must contain at least one digit');
+      }
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        errors.push('Password must contain at least one special character');
+      }
       // Check for common weak passwords
       const weakPasswords = ['password', '123456', 'qwerty', 'admin', 'letmein'];
       if (weakPasswords.includes(password.toLowerCase())) {

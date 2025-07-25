@@ -367,9 +367,10 @@ Template.signupForm.events({
       return;
     }
     
-    // Basic validation
-    if (password.length < 8) {
-      template.signupPasswordError.set('Password must be at least 8 characters long');
+    // Full validation using AuthValidation
+    const validation = AuthValidation.password.validate(password);
+    if (!validation.isValid) {
+      template.signupPasswordError.set(validation.errors[0]);
       template.signupPasswordValid.set(false);
     } else {
       template.signupPasswordError.set('');

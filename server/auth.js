@@ -102,9 +102,19 @@ export const AuthMethods = {
       throw new Meteor.Error('invalid-password', `Password must be no more than ${PASSWORD_RULES.maxLength} characters long`);
     }
     
-    // For now, only check minimum length and weak passwords
-    // Temporarily disable complexity requirements for testing
-    
+    // Enforce complexity requirements
+    if (!/[A-Z]/.test(password)) {
+      throw new Meteor.Error('invalid-password', 'Password must contain at least one uppercase letter');
+    }
+    if (!/[a-z]/.test(password)) {
+      throw new Meteor.Error('invalid-password', 'Password must contain at least one lowercase letter');
+    }
+    if (!/\d/.test(password)) {
+      throw new Meteor.Error('invalid-password', 'Password must contain at least one digit');
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      throw new Meteor.Error('invalid-password', 'Password must contain at least one special character');
+    }
     // Check for weak passwords
     if (PASSWORD_RULES.weakPasswords.includes(password.toLowerCase())) {
       throw new Meteor.Error('invalid-password', 'This password is too common. Please choose a stronger password');
@@ -147,8 +157,11 @@ export const AuthMethods = {
         throw new Meteor.Error('invalid-username', 'Username must be at least 3 characters long');
       }
       
-      if (!password || password.length < 8) {
-        throw new Meteor.Error('invalid-password', 'Password must be at least 8 characters long');
+      // Full password validation
+      try {
+        AuthMethods.validatePassword(password);
+      } catch (error) {
+        throw new Meteor.Error('invalid-password', error.reason);
       }
       
       if (password !== confirmPassword) {
