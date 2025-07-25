@@ -12,6 +12,10 @@ const currentTemplate = new ReactiveVar('home');
 const currentTime = new ReactiveVar(Date.now());
 setInterval(() => currentTime.set(Date.now()), 1000);
 
+// Add a reactive variable for logout loading and message
+const isLogoutLoading = new ReactiveVar(false);
+const logoutMessage = new ReactiveVar('');
+
 Template.mainLayout.onCreated(function () {
   this.autorun(() => {
     if (Meteor.userId()) {
@@ -26,6 +30,18 @@ Template.mainLayout.helpers({
   main() {
     return currentTemplate.get(); // Ensure it returns the current template
   },
+  currentUser() {
+    return Meteor.user();
+  },
+  isLogoutLoading() {
+    return isLogoutLoading.get();
+  },
+  logoutMessage() {
+    return logoutMessage.get();
+  },
+  logoutBtnAttrs() {
+    return isLogoutLoading.get() ? { disabled: true } : {};
+  }
 });
 
 Template.mainLayout.events({
@@ -34,6 +50,25 @@ Template.mainLayout.events({
     const target = event.currentTarget.getAttribute('href').substring(1);
     currentTemplate.set(target || 'home');
   },
+  'click #logoutBtn'(event, instance) {
+    event.preventDefault();
+    if (isLogoutLoading.get()) return;
+    if (confirm('Are you sure you want to log out?')) {
+      isLogoutLoading.set(true);
+      Meteor.logout((err) => {
+        isLogoutLoading.set(false);
+        if (err) {
+          logoutMessage.set('Logout failed: ' + (err.reason || err.message));
+        } else {
+          logoutMessage.set('You have been logged out successfully.');
+          // Redirect to login/auth page
+          currentScreen.set('authPage');
+          currentTemplate.set('home');
+        }
+        setTimeout(() => logoutMessage.set(''), 3000);
+      });
+    }
+  }
 });
 
 Template.body.helpers({

@@ -4,6 +4,13 @@
 </head>
 
 <body class="bg-base-100 min-h-screen">
+  {{#if logoutMessage}}
+    <div class="toast toast-top toast-center z-50">
+      <div class="alert alert-success shadow-lg">
+        <span>{{logoutMessage}}</span>
+      </div>
+    </div>
+  {{/if}}
   {{> Template.dynamic template=currentScreen}}
   {{#if showForgotPassword}}
     {{> forgotPasswordModal}}
@@ -19,6 +26,15 @@
       <a href="/" class="btn btn-ghost hover:bg-primary-focus">Home</a>
       <a href="/teams" class="btn btn-ghost hover:bg-primary-focus">Teams</a>
       <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Projects</a>
+      {{#if currentUser}}
+        <button id="logoutBtn" class="btn btn-outline btn-error ml-4" {{logoutBtnAttrs}}>
+          {{#if isLogoutLoading}}
+            <span class="loading loading-spinner loading-xs"></span> Logging out...
+          {{else}}
+            Logout
+          {{/if}}
+        </button>
+      {{/if}}
     </nav>
   </header>
   <main class="container mx-auto px-4">
