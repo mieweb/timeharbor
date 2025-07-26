@@ -622,3 +622,39 @@ Template.home.helpers({
     return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   },
 });
+
+// Google OAuth callback handler
+Template.body.onCreated(function() {
+  // Check if we're on the OAuth callback page
+  if (window.location.pathname === '/_oauth/google') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const error = urlParams.get('error');
+    
+    if (error) {
+      // Handle OAuth error
+      window.opener?.postMessage({
+        type: 'GOOGLE_OAUTH_ERROR',
+        error: error
+      }, window.location.origin);
+      window.close();
+    } else if (code) {
+      // Handle OAuth success
+      // Exchange code for access token
+      Meteor.call('exchangeGoogleCode', code, (err, result) => {
+        if (err) {
+          window.opener?.postMessage({
+            type: 'GOOGLE_OAUTH_ERROR',
+            error: err.reason || 'Authentication failed'
+          }, window.location.origin);
+        } else {
+          window.opener?.postMessage({
+            type: 'GOOGLE_OAUTH_SUCCESS',
+            user: result
+          }, window.location.origin);
+        }
+        window.close();
+      });
+    }
+  }
+});

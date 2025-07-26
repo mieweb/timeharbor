@@ -1,0 +1,11 @@
+{
+  "google": {
+    "clientId": "1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2.apps.googleusercontent.com",
+    "clientSecret": "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"
+  },
+  "public": {
+    "google": {
+      "clientId": "1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2.apps.googleusercontent.com"
+    }
+  }
+}

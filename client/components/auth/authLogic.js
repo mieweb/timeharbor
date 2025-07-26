@@ -99,30 +99,83 @@ Template.loginForm.events({
     const email = event.target.email.value.trim();
     const password = event.target.password.value;
     
-    // Basic validation
+    // Validate inputs
     if (!email) {
       template.loginEmailError.set('Email is required');
       return;
     }
-    
     if (!password) {
       template.loginPasswordError.set('Password is required');
       return;
     }
     
-    // Set loading state
     template.isLoginLoading.set(true);
     
-    // Use Meteor's built-in login method with email
     Meteor.loginWithPassword(email, password, (err) => {
       template.isLoginLoading.set(false);
-      
       if (err) {
         console.error('Login error:', err);
         template.loginError.set(err.reason || 'Login failed. Please try again.');
       } else {
         console.log('Login successful');
-        // The autorun in authPage will handle the redirect
+      }
+    });
+  },
+  
+  'click #googleLoginBtn'(event, template) {
+    event.preventDefault();
+    template.loginError.set('');
+    template.isLoginLoading.set(true);
+    
+    // Custom Google OAuth implementation
+    const googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+      'client_id=' + encodeURIComponent(Meteor.settings?.public?.google?.clientId || 'YOUR_ACTUAL_CLIENT_ID_HERE') +
+      '&redirect_uri=' + encodeURIComponent(window.location.origin + '/_oauth/google') +
+      '&scope=' + encodeURIComponent('email profile') +
+      '&response_type=code' +
+      '&access_type=offline';
+    
+    // Open Google OAuth popup
+    const popup = window.open(googleAuthUrl, 'googleOAuth', 'width=500,height=600,scrollbars=yes,resizable=yes');
+    
+    // Handle the OAuth response
+    const checkClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkClosed);
+        template.isLoginLoading.set(false);
+        // Handle popup closed without completion
+        template.loginError.set('Google login was cancelled');
+      }
+    }, 1000);
+    
+    // Listen for OAuth response
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'GOOGLE_OAUTH_SUCCESS') {
+        clearInterval(checkClosed);
+        popup.close();
+        template.isLoginLoading.set(false);
+        console.log('Google OAuth successful');
+        
+        // Log in the user using the token
+        if (event.data.user && event.data.user.token) {
+          Meteor.loginWithToken(event.data.user.token, (err) => {
+            if (err) {
+              console.error('Token login error:', err);
+              template.loginError.set('Login failed. Please try again.');
+            } else {
+              console.log('User logged in successfully');
+              // The autorun in authPage will handle the redirect to main page
+            }
+          });
+        }
+        
+      } else if (event.data.type === 'GOOGLE_OAUTH_ERROR') {
+        clearInterval(checkClosed);
+        popup.close();
+        template.isLoginLoading.set(false);
+        template.loginError.set(event.data.error || 'Google login failed');
       }
     });
   },
@@ -569,6 +622,64 @@ Template.signupForm.events({
             // The autorun in authPage will handle the redirect
           }
         });
+      }
+    });
+  },
+  
+  'click #googleSignupBtn'(event, template) {
+    event.preventDefault();
+    template.signupError.set('');
+    template.isSignupLoading.set(true);
+    
+    // Custom Google OAuth implementation
+    const googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+      'client_id=' + encodeURIComponent(Meteor.settings?.public?.google?.clientId || 'YOUR_ACTUAL_CLIENT_ID_HERE') +
+      '&redirect_uri=' + encodeURIComponent(window.location.origin + '/_oauth/google') +
+      '&scope=' + encodeURIComponent('email profile') +
+      '&response_type=code' +
+      '&access_type=offline';
+    
+    // Open Google OAuth popup
+    const popup = window.open(googleAuthUrl, 'googleOAuth', 'width=500,height=600,scrollbars=yes,resizable=yes');
+    
+    // Handle the OAuth response
+    const checkClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkClosed);
+        template.isSignupLoading.set(false);
+        // Handle popup closed without completion
+        template.signupError.set('Google signup was cancelled');
+      }
+    }, 1000);
+    
+    // Listen for OAuth response
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'GOOGLE_OAUTH_SUCCESS') {
+        clearInterval(checkClosed);
+        popup.close();
+        template.isSignupLoading.set(false);
+        console.log('Google OAuth successful');
+        
+        // Log in the user using the token
+        if (event.data.user && event.data.user.token) {
+          Meteor.loginWithToken(event.data.user.token, (err) => {
+            if (err) {
+              console.error('Token login error:', err);
+              template.signupError.set('Signup failed. Please try again.');
+            } else {
+              console.log('User signed up and logged in successfully');
+              // The autorun in authPage will handle the redirect to main page
+            }
+          });
+        }
+        
+      } else if (event.data.type === 'GOOGLE_OAUTH_ERROR') {
+        clearInterval(checkClosed);
+        popup.close();
+        template.isSignupLoading.set(false);
+        template.signupError.set(event.data.error || 'Google signup failed');
       }
     });
   }
