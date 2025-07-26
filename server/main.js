@@ -112,6 +112,20 @@ The TimeHarbor Team`;
     console.log('Team name index already exists or could not be created:', error.message);
   }
   
+  // Create a unique index on email addresses (case-insensitive)
+  try {
+    await Meteor.users.rawCollection().createIndex(
+      { 'emails.address': 1 },
+      { 
+        unique: true,
+        collation: { locale: 'en', strength: 2 } // Case-insensitive collation
+      }
+    );
+    console.log('Created unique index on email addresses');
+  } catch (error) {
+    console.log('Email index already exists or could not be created:', error.message);
+  }
+  
   // Log existing users for debugging
   const users = await Meteor.users.find().fetchAsync();
   console.log('Existing users in database:', users.map(u => ({ id: u._id, username: u.username })));

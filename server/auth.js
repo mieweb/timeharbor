@@ -160,8 +160,10 @@ export const AuthMethods = {
         };
       }
       
-      // Check if email already exists
-      const existingUser = await Meteor.users.findOneAsync({ 'emails.address': validatedEmail });
+      // Check if email already exists (case-insensitive)
+      const existingUser = await Meteor.users.findOneAsync({ 
+        'emails.address': { $regex: new RegExp(`^${validatedEmail}$`, 'i') }
+      });
       
       return {
         available: !existingUser,
@@ -218,8 +220,10 @@ export const AuthMethods = {
         throw new Meteor.Error('username-taken', 'Username is already taken');
       }
       
-      // Check if email already exists
-      const existingEmail = await Meteor.users.findOneAsync({ 'emails.address': validatedEmail });
+      // Check if email already exists (case-insensitive)
+      const existingEmail = await Meteor.users.findOneAsync({ 
+        'emails.address': { $regex: new RegExp(`^${validatedEmail}$`, 'i') }
+      });
       if (existingEmail) {
         throw new Meteor.Error('email-taken', 'Email address is already registered');
       }
@@ -258,30 +262,32 @@ export const AuthMethods = {
   },
   
   // Login with rate limiting
-  async loginUser({ username, password }) {
-    check(username, String);
+  async loginUser({ email, password }) {
+    check(email, String);
     check(password, String);
     
     // Rate limiting
-    checkRateLimit(`login:${username}`);
+    checkRateLimit(`login:${email}`);
     
     try {
-      // Find the user first
-      const user = await Meteor.users.findOneAsync({ username: username });
+      // Find the user by email (case-insensitive)
+      const user = await Meteor.users.findOneAsync({ 
+        'emails.address': { $regex: new RegExp(`^${email}$`, 'i') }
+      });
       if (!user) {
-        throw new Meteor.Error('login-failed', 'Invalid username or password');
+        throw new Meteor.Error('login-failed', 'Invalid email or password');
       }
       
       // Verify password using Accounts._checkPassword
       const passwordCheck = await Accounts._checkPassword(user, password);
       if (passwordCheck.error) {
-        throw new Meteor.Error('login-failed', 'Invalid username or password');
+        throw new Meteor.Error('login-failed', 'Invalid email or password');
       }
       
       // Clear rate limit on successful validation
-      clearRateLimit(`login:${username}`);
+      clearRateLimit(`login:${email}`);
       
-      console.log('User login validated successfully:', { username });
+      console.log('User login validated successfully:', { email });
       return { success: true, userId: user._id };
       
     } catch (error) {
@@ -304,12 +310,9 @@ export const AuthMethods = {
     checkRateLimit(`reset:${email}`);
     
     try {
-      // Find user by email (if you have email field) or username
+      // Find user by email (case-insensitive)
       const user = await Meteor.users.findOneAsync({ 
-        $or: [
-          { 'emails.address': email },
-          { username: email } // Allow username as well
-        ]
+        'emails.address': { $regex: new RegExp(`^${email}$`, 'i') }
       });
       
       if (!user) {
