@@ -10,6 +10,74 @@ function generateTeamCode() {
 }
 
 Meteor.startup(async () => {
+  // Configure Meteor's built-in email validation and templates
+  Accounts.emailTemplates.siteName = 'TimeHarbor';
+  Accounts.emailTemplates.from = 'TimeHarbor <noreply@timeharbor.com>';
+  
+  // Configure email verification template
+  Accounts.emailTemplates.verifyEmail = {
+    subject() {
+      return 'Verify your email address for TimeHarbor';
+    },
+    text(user, url) {
+      return `Hello ${user.username || user.profile?.name || 'there'},
+
+Please verify your email address by clicking on the link below:
+
+${url}
+
+If you did not request this verification, please ignore this email.
+
+Thanks,
+The TimeHarbor Team`;
+    },
+    html(user, url) {
+      return `
+        <h2>Verify your email address</h2>
+        <p>Hello ${user.username || user.profile?.name || 'there'},</p>
+        <p>Please verify your email address by clicking on the link below:</p>
+        <p><a href="${url}">Verify Email Address</a></p>
+        <p>If you did not request this verification, please ignore this email.</p>
+        <p>Thanks,<br>The TimeHarbor Team</p>
+      `;
+    }
+  };
+  
+  // Configure password reset template
+  Accounts.emailTemplates.resetPassword = {
+    subject() {
+      return 'Reset your password for TimeHarbor';
+    },
+    text(user, url) {
+      return `Hello ${user.username || user.profile?.name || 'there'},
+
+You requested to reset your password. Click the link below to reset it:
+
+${url}
+
+If you did not request this reset, please ignore this email.
+
+Thanks,
+The TimeHarbor Team`;
+    },
+    html(user, url) {
+      return `
+        <h2>Reset your password</h2>
+        <p>Hello ${user.username || user.profile?.name || 'there'},</p>
+        <p>You requested to reset your password. Click the link below to reset it:</p>
+        <p><a href="${url}">Reset Password</a></p>
+        <p>If you did not request this reset, please ignore this email.</p>
+        <p>Thanks,<br>The TimeHarbor Team</p>
+      `;
+    }
+  };
+  
+  // Enable email verification by default
+  Accounts.config({
+    sendVerificationEmail: true,
+    forbidClientAccountCreation: false
+  });
+  
   // Code to run on server startup
   if (await Tickets.find().countAsync() === 0) {
     await Tickets.insertAsync({ title: 'Sample Ticket', description: 'This is a sample ticket.', createdAt: new Date() });
@@ -176,8 +244,12 @@ Meteor.methods({
     return await AuthMethods.checkUsernameAvailability(username);
   },
   
-  async createUserAccount({ username, password, confirmPassword }) {
-    return await AuthMethods.createUserAccount({ username, password, confirmPassword });
+  async checkEmailAvailability(email) {
+    return await AuthMethods.checkEmailAvailability(email);
+  },
+  
+  async createUserAccount({ username, email, password, confirmPassword }) {
+    return await AuthMethods.createUserAccount({ username, email, password, confirmPassword });
   },
   
   // Login is now handled client-side with Meteor.loginWithPassword

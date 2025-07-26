@@ -145,9 +145,40 @@ export const AuthMethods = {
     }
   },
   
+  // Check email availability
+  async checkEmailAvailability(email) {
+    check(email, String);
+    
+    try {
+      const validatedEmail = email.trim();
+      
+      // Basic email validation
+      if (!validatedEmail.includes('@') || !validatedEmail.includes('.')) {
+        return {
+          available: false,
+          message: 'Please enter a valid email address'
+        };
+      }
+      
+      // Check if email already exists
+      const existingUser = await Meteor.users.findOneAsync({ 'emails.address': validatedEmail });
+      
+      return {
+        available: !existingUser,
+        message: existingUser ? 'Email address is already registered' : 'Email is available'
+      };
+    } catch (error) {
+      return {
+        available: false,
+        message: 'Error checking email availability'
+      };
+    }
+  },
+  
   // Create user account with validation
-  async createUserAccount({ username, password, confirmPassword }) {
+  async createUserAccount({ username, email, password, confirmPassword }) {
     check(username, String);
+    check(email, String);
     check(password, String);
     check(confirmPassword, String);
     
@@ -157,18 +188,29 @@ export const AuthMethods = {
         throw new Meteor.Error('invalid-username', 'Username must be at least 3 characters long');
       }
       
-      // Full password validation
-      try {
-        AuthMethods.validatePassword(password);
-      } catch (error) {
-        throw new Meteor.Error('invalid-password', error.reason);
-      }
-      
       if (password !== confirmPassword) {
         throw new Meteor.Error('password-mismatch', 'Passwords do not match');
       }
       
       const validatedUsername = username.trim();
+      const validatedEmail = email.trim();
+      
+      // Server-side email validation for additional security
+      if (!validatedEmail.includes('@') || !validatedEmail.includes('.')) {
+        throw new Meteor.Error('invalid-email', 'Please enter a valid email address');
+      }
+      
+      const domain = validatedEmail.split('@')[1];
+      const validEndings = [
+        '.com', '.org', '.net', '.edu', '.gov', '.mil', 
+        '.co', '.io', '.ai', '.app', '.dev', '.tech',
+        '.info', '.biz', '.me', '.tv', '.cc', '.ws'
+      ];
+      
+      const hasValidEnding = validEndings.some(ending => domain.endsWith(ending));
+      if (!hasValidEnding) {
+        throw new Meteor.Error('invalid-email', 'Please use a valid email address with a recognized domain ending (.com, .org, .edu, etc.)');
+      }
       
       // Check if username already exists
       const existingUser = await Meteor.users.findOneAsync({ username: validatedUsername });
@@ -176,9 +218,17 @@ export const AuthMethods = {
         throw new Meteor.Error('username-taken', 'Username is already taken');
       }
       
-      // Create the user using basic Meteor accounts
+      // Check if email already exists
+      const existingEmail = await Meteor.users.findOneAsync({ 'emails.address': validatedEmail });
+      if (existingEmail) {
+        throw new Meteor.Error('email-taken', 'Email address is already registered');
+      }
+      
+      // Create the user using Meteor's built-in Accounts.createUser()
+      // Meteor will handle email validation, password hashing, and user creation
       const userId = Accounts.createUser({ 
-        username: validatedUsername, 
+        username: validatedUsername,
+        email: validatedEmail,
         password: password 
       });
       
@@ -197,7 +247,7 @@ export const AuthMethods = {
         });
       }
       
-      return { userId, username: validatedUsername };
+      return { userId, username: validatedUsername, email: validatedEmail };
       
     } catch (error) {
       console.error('Error creating user account:', error);

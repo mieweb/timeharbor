@@ -50,7 +50,7 @@ Template.authPage.events({
 Template.loginForm.onCreated(function() {
   this.loginError = new ReactiveVar('');
   this.isLoginLoading = new ReactiveVar(false);
-  this.loginUsernameError = new ReactiveVar('');
+  this.loginEmailError = new ReactiveVar('');
   this.loginPasswordError = new ReactiveVar('');
 });
 
@@ -61,8 +61,8 @@ Template.loginForm.helpers({
   isLoginLoading() {
     return Template.instance().isLoginLoading.get();
   },
-  loginUsernameError() {
-    return Template.instance().loginUsernameError.get();
+  loginEmailError() {
+    return Template.instance().loginEmailError.get();
   },
   loginPasswordError() {
     return Template.instance().loginPasswordError.get();
@@ -75,8 +75,8 @@ Template.loginForm.helpers({
     const isLoading = Template.instance().isLoginLoading.get();
     return isLoading ? 'disabled' : '';
   },
-  loginUsernameClass() {
-    const hasError = Template.instance().loginUsernameError.get();
+  loginEmailClass() {
+    const hasError = Template.instance().loginEmailError.get();
     const borderClass = hasError ? 'border-red-500' : 'border-gray-300';
     return `w-full px-3 py-2 border ${borderClass} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`;
   },
@@ -93,15 +93,15 @@ Template.loginForm.events({
     
     // Clear previous errors
     template.loginError.set('');
-    template.loginUsernameError.set('');
+    template.loginEmailError.set('');
     template.loginPasswordError.set('');
     
-    const username = event.target.username.value.trim();
+    const email = event.target.email.value.trim();
     const password = event.target.password.value;
     
     // Basic validation
-    if (!username) {
-      template.loginUsernameError.set('Username is required');
+    if (!email) {
+      template.loginEmailError.set('Email is required');
       return;
     }
     
@@ -113,8 +113,8 @@ Template.loginForm.events({
     // Set loading state
     template.isLoginLoading.set(true);
     
-    // Use Meteor's built-in login method
-    Meteor.loginWithPassword(username, password, (err) => {
+    // Use Meteor's built-in login method with email
+    Meteor.loginWithPassword(email, password, (err) => {
       template.isLoginLoading.set(false);
       
       if (err) {
@@ -138,13 +138,16 @@ Template.signupForm.onCreated(function() {
   this.signupError = new ReactiveVar('');
   this.isSignupLoading = new ReactiveVar(false);
   this.signupUsernameError = new ReactiveVar('');
+  this.signupEmailError = new ReactiveVar('');
   this.signupPasswordError = new ReactiveVar('');
   this.confirmPasswordError = new ReactiveVar('');
   this.signupUsernameValid = new ReactiveVar(false);
+  this.signupEmailValid = new ReactiveVar(false);
   this.signupPasswordValid = new ReactiveVar(false);
   this.confirmPasswordValid = new ReactiveVar(false);
   this.passwordStrength = new ReactiveVar(null);
   this.usernameValidationTimeout = null;
+  this.emailValidationTimeout = null;
   this.passwordValidationTimeout = null;
 });
 
@@ -158,6 +161,9 @@ Template.signupForm.helpers({
   signupUsernameError() {
     return Template.instance().signupUsernameError.get();
   },
+  signupEmailError() {
+    return Template.instance().signupEmailError.get();
+  },
   signupPasswordError() {
     return Template.instance().signupPasswordError.get();
   },
@@ -166,6 +172,9 @@ Template.signupForm.helpers({
   },
   signupUsernameValid() {
     return Template.instance().signupUsernameValid.get();
+  },
+  signupEmailValid() {
+    return Template.instance().signupEmailValid.get();
   },
   signupPasswordValid() {
     return Template.instance().signupPasswordValid.get();
@@ -271,6 +280,7 @@ Template.signupForm.helpers({
   isFormValid() {
     const template = Template.instance();
     return template.signupUsernameValid.get() && 
+           template.signupEmailValid.get() &&
            template.signupPasswordValid.get() && 
            template.confirmPasswordValid.get();
   },
@@ -278,6 +288,15 @@ Template.signupForm.helpers({
     const template = Template.instance();
     const hasError = template.signupUsernameError.get();
     const isValid = template.signupUsernameValid.get();
+    let borderClass = 'border-gray-300';
+    if (hasError) borderClass = 'border-red-500';
+    else if (isValid) borderClass = 'border-green-500';
+    return `w-full px-3 py-2 border ${borderClass} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`;
+  },
+  signupEmailClass() {
+    const template = Template.instance();
+    const hasError = template.signupEmailError.get();
+    const isValid = template.signupEmailValid.get();
     let borderClass = 'border-gray-300';
     if (hasError) borderClass = 'border-red-500';
     else if (isValid) borderClass = 'border-green-500';
@@ -305,6 +324,7 @@ Template.signupForm.helpers({
     const template = Template.instance();
     const isLoading = template.isSignupLoading.get();
     const isValid = template.signupUsernameValid.get() && 
+                   template.signupEmailValid.get() &&
                    template.signupPasswordValid.get() && 
                    template.confirmPasswordValid.get();
     const disabledClass = (isLoading || !isValid) ? 'opacity-50 cursor-not-allowed' : '';
@@ -314,6 +334,7 @@ Template.signupForm.helpers({
     const template = Template.instance();
     const isLoading = template.isSignupLoading.get();
     const isValid = template.signupUsernameValid.get() && 
+                   template.signupEmailValid.get() &&
                    template.signupPasswordValid.get() && 
                    template.confirmPasswordValid.get();
     return (isLoading || !isValid) ? 'disabled' : '';
@@ -351,6 +372,70 @@ Template.signupForm.events({
         } else {
           template.signupUsernameError.set(result?.message || 'Username validation failed');
           template.signupUsernameValid.set(false);
+        }
+      });
+    }, 300);
+  },
+  
+  'input #signupEmail'(event, template) {
+    const email = event.target.value.trim();
+    
+    // Clear validation if empty
+    if (!email) {
+      template.signupEmailError.set('');
+      template.signupEmailValid.set(false);
+      return;
+    }
+    
+    // Client-side validation for better user experience
+    // Check basic format first
+    if (!email.includes('@') || !email.includes('.')) {
+      template.signupEmailError.set('Please enter a valid email address');
+      template.signupEmailValid.set(false);
+      return;
+    }
+    
+    // Check for realistic domain endings
+    const domain = email.split('@')[1];
+    const validEndings = [
+      '.com', '.org', '.net', '.edu', '.gov', '.mil', 
+      '.co', '.io', '.ai', '.app', '.dev', '.tech',
+      '.info', '.biz', '.me', '.tv', '.cc', '.ws'
+    ];
+    
+    const hasValidEnding = validEndings.some(ending => domain.endsWith(ending));
+    if (!hasValidEnding) {
+      template.signupEmailError.set('Please use a valid email address with a recognized domain ending (.com, .org, .edu, etc.)');
+      template.signupEmailValid.set(false);
+      return;
+    }
+    
+    // Additional basic checks
+    const localPart = email.split('@')[0];
+    if (localPart.length < 2) {
+      template.signupEmailError.set('Email username should be at least 2 characters');
+      template.signupEmailValid.set(false);
+      return;
+    }
+    
+    if (domain.length < 4) {
+      template.signupEmailError.set('Please enter a valid email address');
+      template.signupEmailValid.set(false);
+      return;
+    }
+    
+    // Clear client-side error
+    template.signupEmailError.set('');
+    
+    // Debounce server-side email availability check
+    clearTimeout(template.emailValidationTimeout);
+    template.emailValidationTimeout = setTimeout(() => {
+      Meteor.call('checkEmailAvailability', email, (err, result) => {
+        if (!err && result.available) {
+          template.signupEmailValid.set(true);
+        } else {
+          template.signupEmailError.set(result?.message || 'Email validation failed');
+          template.signupEmailValid.set(false);
         }
       });
     }, 300);
@@ -416,12 +501,18 @@ Template.signupForm.events({
     template.signupError.set('');
     
     const username = event.target.username.value.trim();
+    const email = event.target.email.value.trim();
     const password = event.target.password.value;
     const confirmPassword = event.target.confirmPassword.value;
     
     // Final validation
     if (!template.signupUsernameValid.get()) {
       template.signupError.set('Please fix username errors');
+      return;
+    }
+    
+    if (!template.signupEmailValid.get()) {
+      template.signupError.set('Please fix email errors');
       return;
     }
     
@@ -439,7 +530,7 @@ Template.signupForm.events({
     template.isSignupLoading.set(true);
     
     // Call server method
-    Meteor.call('createUserAccount', { username, password, confirmPassword }, (err, result) => {
+    Meteor.call('createUserAccount', { username, email, password, confirmPassword }, (err, result) => {
       if (err) {
         template.isSignupLoading.set(false);
         console.error('Signup error:', err);
