@@ -3,12 +3,10 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets, ClockEvents } from '../collections.js';
 
 import './main.html';
+import { authState } from './components/auth/authLogic.js';
 
 // Reactive variable to track the current template
 const currentTemplate = new ReactiveVar('home');
-
-// Reactive variable to track the current screen
-const currentScreen = new ReactiveVar('authPage');
 
 // Reactive variable to track current time for timers
 const currentTime = new ReactiveVar(Date.now());
@@ -20,14 +18,10 @@ const logoutMessage = new ReactiveVar('');
 
 Template.mainLayout.onCreated(function () {
   this.autorun(() => {
-    if (!Meteor.userId()) {
-      if (typeof authState !== 'undefined') {
-        authState.currentScreen.set('authPage');
-      }
+    if (Meteor.userId()) {
+      authState.currentScreen.set('mainLayout');
     } else {
-      if (typeof authState !== 'undefined') {
-        authState.currentScreen.set('mainLayout');
-      }
+      authState.currentScreen.set('authPage'); // Redirect to auth screen if not logged in
     }
   });
 });
@@ -79,67 +73,14 @@ Template.mainLayout.events({
 
 Template.body.helpers({
   currentScreen() {
-    return currentScreen.get();
+    return authState.currentScreen.get();
   },
+  showForgotPassword() {
+    return authState.showForgotPassword.get();
+  }
 });
 
-Template.authPage.events({
-  'click #signup'(event) {
-    event.preventDefault();
-
-    // Switch to the signup form screen
-    currentScreen.set('signupForm');
-  },
-  'click #login'(event) {
-    event.preventDefault();
-
-    // Switch to the login form screen
-    currentScreen.set('loginForm');
-  },
-  'submit #signupForm'(event) {
-    event.preventDefault();
-
-    // Collect user input
-    const username = event.target.username.value;
-    const password = event.target.password.value;
-
-    // Call server method to create a new user
-    Meteor.call('createUserAccount', { username, password }, (err, result) => {
-      if (err) {
-        console.error('Error creating user:', err);
-        alert('Failed to create user: ' + err.reason);
-      } else {
-        // Immediately log in as the new user
-        Meteor.loginWithPassword(username, password, (loginErr) => {
-          if (loginErr) {
-            alert('Login failed: ' + loginErr.reason);
-          } else {
-            alert('User created and logged in successfully!');
-            currentScreen.set('mainLayout');
-          }
-        });
-      }
-    });
-  },
-  'submit #loginForm'(event) {
-    event.preventDefault();
-
-    // Collect user input
-    const username = event.target.username.value;
-    const password = event.target.password.value;
-
-    // Log in the user
-    Meteor.loginWithPassword(username, password, (err) => {
-      if (err) {
-        console.error('Error logging in:', err);
-        alert('Failed to log in: ' + err.reason);
-      } else {
-        alert('Logged in successfully!');
-        currentScreen.set('mainLayout');
-      }
-    });
-  },
-});
+// Authentication is now handled by the modular auth system
 
 Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);
@@ -680,4 +621,40 @@ Template.home.helpers({
     const s = t % 60;
     return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   },
+});
+
+// Google OAuth callback handler
+Template.body.onCreated(function() {
+  // Check if we're on the OAuth callback page
+  if (window.location.pathname === '/_oauth/google') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const error = urlParams.get('error');
+    
+    if (error) {
+      // Handle OAuth error
+      window.opener?.postMessage({
+        type: 'GOOGLE_OAUTH_ERROR',
+        error: error
+      }, window.location.origin);
+      window.close();
+    } else if (code) {
+      // Handle OAuth success
+      // Exchange code for access token
+      Meteor.call('exchangeGoogleCode', code, (err, result) => {
+        if (err) {
+          window.opener?.postMessage({
+            type: 'GOOGLE_OAUTH_ERROR',
+            error: err.reason || 'Authentication failed'
+          }, window.location.origin);
+        } else {
+          window.opener?.postMessage({
+            type: 'GOOGLE_OAUTH_SUCCESS',
+            user: result
+          }, window.location.origin);
+        }
+        window.close();
+      });
+    }
+  }
 });
