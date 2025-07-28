@@ -1,6 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import { check } from 'meteor/check';
+import { ServiceConfiguration } from 'meteor/service-configuration';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
 import { AuthMethods } from './auth.js';
 
@@ -10,6 +11,37 @@ function generateTeamCode() {
 }
 
 Meteor.startup(async () => {
+  // Configure Google OAuth
+  if (Meteor.settings && Meteor.settings.google) {
+    await ServiceConfiguration.configurations.upsertAsync(
+      { service: 'google' },
+      {
+        $set: {
+          clientId: Meteor.settings.google.clientId,
+          secret: Meteor.settings.google.clientSecret,
+          loginStyle: 'popup'
+        }
+      }
+    );
+    console.log('Google OAuth configured successfully');
+  } else {
+    console.error('Google OAuth settings not found. Please check your settings.json file.');
+  }
+
+  // Configure additional find user for Google OAuth
+  Accounts.setAdditionalFindUserOnExternalLogin(
+    ({ serviceName, serviceData }) => {
+      if (serviceName === "google") {
+        // Note: Consider security implications. If someone other than the owner
+        // gains access to the account on the third-party service they could use
+        // the e-mail set there to access the account on your app.
+        // Most often this is not an issue, but as a developer you should be aware
+        // of how bad actors could play.
+        return Accounts.findUserByEmail(serviceData.email);
+      }
+    }
+  );
+
   // Configure Meteor's built-in email validation and templates
   Accounts.emailTemplates.siteName = 'TimeHarbor';
   Accounts.emailTemplates.from = 'TimeHarbor <noreply@timeharbor.com>';
@@ -179,91 +211,7 @@ Meteor.publish('usersByIds', async function (userIds) {
 });
 
 Meteor.methods({
-  async exchangeGoogleCode(code) {
-    check(code, String);
-    
-    try {
-      // Exchange authorization code for access token
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          code: code,
-          client_id: Meteor.settings.google.clientId,
-          client_secret: Meteor.settings.google.clientSecret,
-          redirect_uri: 'http://localhost:3000/_oauth/google',
-          grant_type: 'authorization_code',
-        }),
-      });
-      
-      const tokenData = await tokenResponse.json();
-      
-      if (!tokenResponse.ok) {
-        throw new Meteor.Error('oauth-error', 'Failed to exchange code for token');
-      }
-      
-      // Get user info using access token
-      const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-        },
-      });
-      
-      const userData = await userResponse.json();
-      
-      if (!userResponse.ok) {
-        throw new Meteor.Error('oauth-error', 'Failed to get user info');
-      }
-      
-      // Find or create user
-      let user = await Meteor.users.findOneAsync({ 'emails.address': userData.email });
-      
-      if (!user) {
-        // Create new user
-        const userId = await Accounts.createUserAsync({
-          email: userData.email,
-          username: userData.name || userData.email.split('@')[0],
-          profile: {
-            name: userData.name,
-            picture: userData.picture,
-            googleId: userData.id
-          }
-        });
-        user = await Meteor.users.findOneAsync({ _id: userId });
-      }
-      
-      // Update user profile
-      await Meteor.users.updateAsync(user._id, {
-        $set: {
-          'profile.lastLogin': new Date(),
-          'profile.googleId': userData.id
-        }
-      });
-      
-      // Create a login token for the user
-      const stampedToken = Accounts._generateStampedLoginToken();
-      const hashStampedToken = Accounts._hashStampedToken(stampedToken);
-      
-      await Meteor.users.updateAsync(user._id, {
-        $push: {
-          'services.resume.loginTokens': hashStampedToken
-        }
-      });
-      
-      return {
-        userId: user._id,
-        email: userData.email,
-        name: userData.name,
-        token: stampedToken.token
-      };
-      
-    } catch (error) {
-      console.error('Google OAuth error:', error);
-      throw new Meteor.Error('oauth-error', 'Authentication failed');
-    }
-  },
+
   async joinTeamWithCode(teamCode) {
     check(teamCode, String);
     if (!this.userId) {
