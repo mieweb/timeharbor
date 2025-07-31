@@ -23,6 +23,7 @@
       <a href="/" class="btn btn-ghost hover:bg-primary-focus">Home</a>
       <a href="/teams" class="btn btn-ghost hover:bg-primary-focus">Teams</a>
       <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Projects</a>
+      <a href="/calendar" class="btn btn-ghost hover:bg-primary-focus">Calendar</a>
       {{#if currentUser}}
         <button id="logoutBtn" class="btn btn-outline btn-error ml-4" {{logoutBtnAttrs}}>
           {{#if isLogoutLoading}}
@@ -43,6 +44,20 @@
 </template>
 
 <template name="home">
+  <!-- Calendar Events Notification -->
+  {{#if pendingCalendarEvents.length}}
+    <div class="alert alert-info mb-6">
+      <div class="flex items-center gap-3">
+        <div class="text-xl">📅</div>
+        <div class="flex-1">
+          <div class="font-semibold">Calendar Events Ready for Review</div>
+          <p class="text-sm">You have {{pendingCalendarEvents.length}} calendar events that might need to be logged as time entries.</p>
+        </div>
+        <a href="/calendar" class="btn btn-sm btn-primary">Review Events</a>
+      </div>
+    </div>
+  {{/if}}
+
   <h3 class="text-xl font-semibold mb-4">Your Time Overview</h3>
   <ul class="space-y-4">
     {{#each allClockEvents}}
@@ -247,4 +262,170 @@
       <button type="submit" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Sign Up</button>
     </form>
   </div>
+</template>
+
+<template name="calendar">
+  <h3 class="text-xl font-semibold mb-4">Calendar Integration</h3>
+  
+  <!-- Calendar Connection Status -->
+  <div class="card bg-base-100 shadow p-4 mb-6">
+    <h4 class="text-lg font-bold mb-4">Connected Calendars</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Google Calendar -->
+      <div class="flex items-center justify-between p-3 border rounded">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white font-bold">G</div>
+          <div>
+            <div class="font-semibold">Google Calendar</div>
+            {{#if googleCalendarConnected}}
+              <div class="text-sm text-success">Connected - Last sync: {{formatDate googleLastSync}}</div>
+            {{else}}
+              <div class="text-sm text-base-content/70">Not connected</div>
+            {{/if}}
+          </div>
+        </div>
+        <div class="flex gap-2">
+          {{#if googleCalendarConnected}}
+            <button id="refreshGoogleCalendar" class="btn btn-sm btn-outline">Refresh</button>
+            <button id="disconnectGoogleCalendar" class="btn btn-sm btn-error">Disconnect</button>
+          {{else}}
+            <button id="connectGoogleCalendar" class="btn btn-sm btn-primary">Connect</button>
+          {{/if}}
+        </div>
+      </div>
+      
+      <!-- Microsoft Calendar -->
+      <div class="flex items-center justify-between p-3 border rounded">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white font-bold">M</div>
+          <div>
+            <div class="font-semibold">Microsoft Outlook</div>
+            {{#if microsoftCalendarConnected}}
+              <div class="text-sm text-success">Connected - Last sync: {{formatDate microsoftLastSync}}</div>
+            {{else}}
+              <div class="text-sm text-base-content/70">Not connected</div>
+            {{/if}}
+          </div>
+        </div>
+        <div class="flex gap-2">
+          {{#if microsoftCalendarConnected}}
+            <button id="refreshMicrosoftCalendar" class="btn btn-sm btn-outline">Refresh</button>
+            <button id="disconnectMicrosoftCalendar" class="btn btn-sm btn-error">Disconnect</button>
+          {{else}}
+            <button id="connectMicrosoftCalendar" class="btn btn-sm btn-primary">Connect</button>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Calendar Events -->
+  {{#if pendingEvents.length}}
+    <div class="card bg-base-100 shadow p-4 mb-6">
+      <h4 class="text-lg font-bold mb-4">Calendar Events to Review</h4>
+      <p class="text-sm text-base-content/70 mb-4">
+        Review your recent and upcoming calendar events. Confirm attendance and adjust time to log them as activities.
+      </p>
+      
+      <div class="space-y-4">
+        {{#each pendingEvents}}
+          <div class="border rounded p-4">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1">
+                <h5 class="font-semibold">{{title}}</h5>
+                <div class="text-sm text-base-content/70">
+                  {{formatDate startTime}} - {{formatDate endTime}}
+                </div>
+                <div class="text-sm">
+                  <span class="badge badge-neutral">{{formatDuration duration}}</span>
+                  {{#if source}}
+                    <span class="badge badge-outline ml-2">{{source}}</span>
+                  {{/if}}
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button class="dismiss-event btn btn-sm btn-ghost" data-event-id="{{_id}}">Dismiss</button>
+              </div>
+            </div>
+            
+            <!-- Time Adjustment Form -->
+            <div class="mt-3 p-3 bg-base-200 rounded">
+              <div class="flex items-center gap-4 mb-3">
+                <label class="text-sm font-medium">Time to log:</label>
+                <div class="flex gap-2">
+                  <input type="number" min="0" max="23" value="{{suggestedHours}}" class="input input-sm input-bordered w-16" data-field="hours" />
+                  <span class="self-center">h</span>
+                  <input type="number" min="0" max="59" value="{{suggestedMinutes}}" class="input input-sm input-bordered w-16" data-field="minutes" />
+                  <span class="self-center">m</span>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-4 mb-3">
+                <label class="text-sm font-medium">Project:</label>
+                <select class="select select-sm select-bordered flex-1" data-field="teamId">
+                  <option value="">Select project (optional)</option>
+                  {{#each ../userTeams}}
+                    <option value="{{_id}}" {{#if ../suggestedTeamId}}{{#if (eq _id ../suggestedTeamId)}}selected{{/if}}{{/if}}>{{name}}</option>
+                  {{/each}}
+                </select>
+              </div>
+              
+              <div class="flex items-center gap-4 mb-3">
+                <label class="text-sm font-medium">Activity title:</label>
+                <input type="text" value="{{title}}" class="input input-sm input-bordered flex-1" data-field="activityTitle" />
+              </div>
+              
+              <div class="flex gap-2">
+                <button class="confirm-event btn btn-sm btn-primary" data-event-id="{{_id}}">
+                  Confirm & Log Time
+                </button>
+                <button class="snooze-event btn btn-sm btn-outline" data-event-id="{{_id}}">
+                  Remind Later
+                </button>
+              </div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+      
+      <!-- Batch Actions -->
+      <div class="mt-4 pt-4 border-t">
+        <div class="flex gap-2">
+          <button id="dismissAllEvents" class="btn btn-sm btn-outline">Dismiss All</button>
+          <button id="refreshCalendarEvents" class="btn btn-sm btn-outline">Refresh Events</button>
+        </div>
+      </div>
+    </div>
+  {{else}}
+    {{#if hasConnectedCalendars}}
+      <div class="card bg-base-100 shadow p-4">
+        <div class="text-center py-8">
+          <div class="text-lg mb-2">📅 No calendar events to review</div>
+          <p class="text-base-content/70 mb-4">
+            You're all caught up! We'll show new events here as they appear.
+          </p>
+          <button id="refreshCalendarEvents" class="btn btn-outline">Check for New Events</button>
+        </div>
+      </div>
+    {{else}}
+      <div class="card bg-base-100 shadow p-4">
+        <div class="text-center py-8">
+          <div class="text-lg mb-2">🔗 Connect Your Calendar</div>
+          <p class="text-base-content/70 mb-4">
+            Connect your Google or Microsoft calendar to automatically suggest time entries based on your meetings.
+          </p>
+          <div class="flex gap-4 justify-center">
+            <button id="connectGoogleCalendar" class="btn btn-primary">
+              <span class="w-4 h-4 bg-red-500 rounded mr-2"></span>
+              Connect Google Calendar
+            </button>
+            <button id="connectMicrosoftCalendar" class="btn btn-primary">
+              <span class="w-4 h-4 bg-blue-500 rounded mr-2"></span>
+              Connect Microsoft Outlook
+            </button>
+          </div>
+        </div>
+      </div>
+    {{/if}}
+  {{/if}}
 </template>

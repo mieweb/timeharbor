@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.17.9",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "@tailwindcss/postcss": "^4.1.7",
+    "googleapis": "^143.0.0",
     "jquery": "^3.6.0",
     "meteor-node-stubs": "^1.2.1",
     "postcss-load-config": "^6.0.1"
