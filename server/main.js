@@ -3,6 +3,9 @@ import { Accounts } from 'meteor/accounts-base';
 import { check, Match } from 'meteor/check';
 import { Tickets, Teams, Sessions, ClockEvents, CalendarConnections, CalendarEvents } from '../collections.js';
 
+// Import webhook handlers
+import './webhooks.js';
+
 function generateTeamCode() {
   // Simple random code, can be improved for production
   return Math.random().toString(36).substr(2, 8).toUpperCase();

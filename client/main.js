@@ -696,6 +696,21 @@ Template.calendar.onCreated(function () {
     this.subscribe('calendarConnections');
     this.subscribe('pendingCalendarEvents');
   });
+  
+  // Check for OAuth success/error messages in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const connected = urlParams.get('connected');
+  const error = urlParams.get('error');
+  
+  if (connected) {
+    alert(`${connected} Calendar connected successfully!`);
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (error) {
+    alert(`Calendar connection failed: ${error}`);
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 });
 
 Template.calendar.helpers({

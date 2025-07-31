@@ -1,0 +1,22 @@
+{
+  "public": {
+    "calendar": {
+      "googleEnabled": true,
+      "microsoftEnabled": true
+    }
+  },
+  "google": {
+    "clientId": "your_google_client_id_here",
+    "clientSecret": "your_google_client_secret_here"
+  },
+  "microsoft": {
+    "clientId": "your_microsoft_client_id_here",
+    "clientSecret": "your_microsoft_client_secret_here"
+  },
+  "calendar": {
+    "webhookSecret": "your_webhook_secret_here",
+    "syncIntervalMinutes": 60,
+    "eventLookbackDays": 7,
+    "eventLookaheadDays": 7
+  }
+}

@@ -43,10 +43,11 @@ Quick start: [click here](./HOW_TO_USE.md)
 1. **Clock In/Clock Out:** Simple, intuitive interface for starting and ending work or project sessions
 2. **Project & Objective Allocation:** Tag time entries to specific projects, objectives, or tasks (e.g., "robotics build," "grant writing," "classwork")
 3. **Personal Reflection & Notes:** Add context, challenges, and accomplishments to each time entry, helping communicate value and obstacles
-4. **User-Controlled Sharing:** All data remains private by default. Share with others (leaders, sponsors, teachers) only with explicit approval
-5. **Role Flexibility:** Designed for employees, students, mentors, volunteers, and nonprofit contributors
-6. **Reporting & Summaries:** Generate reports or summaries to share contributions, progress, or challenges as needed
-7. **Coach/Assistant Persona:** Supportive tool that helps with personal growth and positive communication
+4. **Calendar Integration:** Connect Google Calendar or Microsoft Outlook to automatically suggest time entries based on your meetings and appointments
+5. **User-Controlled Sharing:** All data remains private by default. Share with others (leaders, sponsors, teachers) only with explicit approval
+6. **Role Flexibility:** Designed for employees, students, mentors, volunteers, and nonprofit contributors
+7. **Reporting & Summaries:** Generate reports or summaries to share contributions, progress, or challenges as needed
+8. **Coach/Assistant Persona:** Supportive tool that helps with personal growth and positive communication
 
 ---
 
@@ -118,6 +119,8 @@ Quick start: [click here](./HOW_TO_USE.md)
 - **Start a Personal Session:** Begin tracking your work, study, or project time with simple clock in/out
 - **Tag Your Activities:** Create projects or tasks to categorize your time (e.g., "Math Homework," "Robot Assembly," "Grant Writing")
 - **Add Reflections:** Include notes about challenges, accomplishments, or context for each session
+- **Connect Your Calendar:** Link Google Calendar or Microsoft Outlook to automatically suggest time entries from your meetings
+- **Review Calendar Events:** Confirm, adjust, or dismiss suggested time entries from your calendar events
 - **Control Your Privacy:** All data stays private unless you choose to share specific summaries or reports
 - **Generate Reports:** Create summaries to share with mentors, teachers, or supervisors when beneficial
 
