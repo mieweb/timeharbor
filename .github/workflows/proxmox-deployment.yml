@@ -8,7 +8,6 @@ on:
 jobs:
     setup-runner:
         runs-on: ubuntu-latest
-        if: github.event_name != 'push' || github.event.created == false
         steps:
             - name: Install dependencies
               run: |
@@ -23,7 +22,6 @@ jobs:
     deploy:
         runs-on: self-hosted
         needs: setup-runner
-        if: github.event_name != 'push' || github.event.created == false
         steps:
           - name: Deploy to Proxmox
             uses: maxklema/proxmox-launchpad@main
@@ -31,6 +29,7 @@ jobs:
                 proxmox_username: ${{ secrets.PROXMOX_USERNAME }}
                 proxmox_password: ${{ secrets.PROXMOX_PASSWORD }}
                 public_key: ${{ secrets.PUBLIC_KEY }}
+                http_port: 3000
                 install_command: npm install
                 start_command: meteor run --port 0.0.0.0:3000 --allow-superuser
                 runtime_language: nodejs
