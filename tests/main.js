@@ -1,5 +1,5 @@
 import assert from "assert";
-import { Teams } from "../collections.js";
+import { Teams, CalendarConnections, CalendarEvents } from "../collections.js";
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
 
@@ -152,6 +152,83 @@ describe("timeharbor", function () {
         // Verify the team was created with trimmed name
         const team = await Teams.findOneAsync(teamId);
         assert.strictEqual(team.name, 'Test Project');
+      });
+    });
+    
+    describe("Calendar integration", function () {
+      let testUserId;
+      
+      beforeEach(async function () {
+        // Clear collections before each test
+        await CalendarConnections.removeAsync({});
+        await CalendarEvents.removeAsync({});
+        await Teams.removeAsync({});
+        await Meteor.users.removeAsync({});
+        
+        // Create a test user
+        testUserId = Accounts.createUser({ username: 'testuser', password: 'password' });
+      });
+      
+      it("should allow creating calendar connections", async function () {
+        const connectionId = await CalendarConnections.insertAsync({
+          userId: testUserId,
+          provider: 'google',
+          accessToken: 'test-token',
+          refreshToken: 'test-refresh',
+          expiresAt: new Date(Date.now() + 3600 * 1000),
+          lastSync: new Date(),
+          createdAt: new Date()
+        });
+        
+        assert(connectionId);
+        
+        const connection = await CalendarConnections.findOneAsync(connectionId);
+        assert.strictEqual(connection.provider, 'google');
+        assert.strictEqual(connection.userId, testUserId);
+      });
+      
+      it("should allow creating and managing calendar events", async function () {
+        // Create a calendar event
+        const eventId = await CalendarEvents.insertAsync({
+          calendarEventId: 'test-event-1',
+          title: 'Test Meeting',
+          startTime: new Date(),
+          endTime: new Date(Date.now() + 3600 * 1000),
+          source: 'google',
+          userId: testUserId,
+          status: 'pending',
+          createdAt: new Date()
+        });
+        
+        assert(eventId);
+        
+        const event = await CalendarEvents.findOneAsync(eventId);
+        assert.strictEqual(event.title, 'Test Meeting');
+        assert.strictEqual(event.status, 'pending');
+        assert.strictEqual(event.userId, testUserId);
+      });
+      
+      it("should properly dismiss calendar events", async function () {
+        // Create a calendar event
+        const eventId = await CalendarEvents.insertAsync({
+          calendarEventId: 'test-event-2',
+          title: 'Test Meeting 2',
+          startTime: new Date(),
+          endTime: new Date(Date.now() + 3600 * 1000),
+          source: 'google',
+          userId: testUserId,
+          status: 'pending',
+          createdAt: new Date()
+        });
+        
+        // Dismiss the event
+        await CalendarEvents.updateAsync(eventId, {
+          $set: { status: 'dismissed', dismissedAt: new Date() }
+        });
+        
+        const event = await CalendarEvents.findOneAsync(eventId);
+        assert.strictEqual(event.status, 'dismissed');
+        assert(event.dismissedAt);
       });
     });
   }

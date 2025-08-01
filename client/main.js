@@ -1,6 +1,6 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
-import { Teams, Tickets, ClockEvents } from '../collections.js';
+import { Teams, Tickets, ClockEvents, CalendarConnections, CalendarEvents } from '../collections.js';
 
 import './main.html';
 
@@ -611,6 +611,7 @@ Template.home.onCreated(function () {
   this.autorun(() => {
     this.subscribe('userTeams');
     this.subscribe('clockEventsForUser');
+    this.subscribe('pendingCalendarEvents'); // Add calendar events subscription
     // Subscribe to all clock events for teams the user leads
     const leaderTeams = Teams.find({ leader: Meteor.userId() }).fetch();
     const teamIds = leaderTeams.map(t => t._id);
@@ -628,6 +629,12 @@ Template.home.onCreated(function () {
 });
 
 Template.home.helpers({
+  pendingCalendarEvents() {
+    return CalendarEvents.find({ 
+      userId: Meteor.userId(), 
+      status: 'pending' 
+    }).fetch();
+  },
   leaderTeams() {
     return Teams.find({ leader: Meteor.userId() }).fetch();
   },
@@ -680,4 +687,257 @@ Template.home.helpers({
     const s = t % 60;
     return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   },
+});
+
+// Calendar integration
+Template.calendar.onCreated(function () {
+  this.autorun(() => {
+    this.subscribe('userTeams');
+    this.subscribe('calendarConnections');
+    this.subscribe('pendingCalendarEvents');
+  });
+  
+  // Check for OAuth success/error messages in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const connected = urlParams.get('connected');
+  const error = urlParams.get('error');
+  
+  if (connected) {
+    alert(`${connected} Calendar connected successfully!`);
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (error) {
+    alert(`Calendar connection failed: ${error}`);
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+});
+
+Template.calendar.helpers({
+  googleCalendarConnected() {
+    const connection = CalendarConnections.findOne({ 
+      userId: Meteor.userId(), 
+      provider: 'google' 
+    });
+    return !!(connection && connection.accessToken);
+  },
+  microsoftCalendarConnected() {
+    const connection = CalendarConnections.findOne({ 
+      userId: Meteor.userId(), 
+      provider: 'microsoft' 
+    });
+    return !!(connection && connection.accessToken);
+  },
+  googleLastSync() {
+    const connection = CalendarConnections.findOne({ 
+      userId: Meteor.userId(), 
+      provider: 'google' 
+    });
+    return connection ? connection.lastSync : null;
+  },
+  microsoftLastSync() {
+    const connection = CalendarConnections.findOne({ 
+      userId: Meteor.userId(), 
+      provider: 'microsoft' 
+    });
+    return connection ? connection.lastSync : null;
+  },
+  hasConnectedCalendars() {
+    const connections = CalendarConnections.find({ 
+      userId: Meteor.userId() 
+    }).count();
+    return connections > 0;
+  },
+  pendingEvents() {
+    return CalendarEvents.find({ 
+      userId: Meteor.userId(), 
+      status: 'pending' 
+    }, { sort: { startTime: 1 } }).fetch().map(event => {
+      // Calculate suggested time
+      const duration = event.endTime - event.startTime;
+      const hours = Math.floor(duration / (1000 * 60 * 60));
+      const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+      
+      // Try to match project by event title
+      const userTeams = Teams.find({ members: Meteor.userId() }).fetch();
+      const suggestedTeam = userTeams.find(team => 
+        event.title.toLowerCase().includes(team.name.toLowerCase())
+      );
+      
+      return {
+        ...event,
+        suggestedHours: hours,
+        suggestedMinutes: minutes,
+        suggestedTeamId: suggestedTeam ? suggestedTeam._id : null,
+        duration: duration
+      };
+    });
+  },
+  userTeams() {
+    return Teams.find({ members: Meteor.userId() }).fetch();
+  },
+  formatDate(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleString();
+  },
+  formatDuration(milliseconds) {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  },
+  eq(a, b) {
+    return a === b;
+  },
+  isSelectedTeam(teamId, suggestedTeamId) {
+    return teamId === suggestedTeamId ? 'selected' : '';
+  }
+});
+
+Template.calendar.events({
+  'click #connectGoogleCalendar'(event, instance) {
+    Meteor.call('calendar.initiateOAuth', 'google', (err, result) => {
+      if (err) {
+        alert('Failed to connect Google Calendar: ' + err.reason);
+      } else {
+        // Redirect to OAuth URL
+        window.location.href = result.authUrl;
+      }
+    });
+  },
+  
+  'click #connectMicrosoftCalendar'(event, instance) {
+    Meteor.call('calendar.initiateOAuth', 'microsoft', (err, result) => {
+      if (err) {
+        alert('Failed to connect Microsoft Calendar: ' + err.reason);
+      } else {
+        // Redirect to OAuth URL
+        window.location.href = result.authUrl;
+      }
+    });
+  },
+  
+  'click #disconnectGoogleCalendar'(event, instance) {
+    if (confirm('Are you sure you want to disconnect your Google Calendar?')) {
+      Meteor.call('calendar.disconnect', 'google', (err) => {
+        if (err) {
+          alert('Failed to disconnect: ' + err.reason);
+        } else {
+          alert('Google Calendar disconnected successfully');
+        }
+      });
+    }
+  },
+  
+  'click #disconnectMicrosoftCalendar'(event, instance) {
+    if (confirm('Are you sure you want to disconnect your Microsoft Calendar?')) {
+      Meteor.call('calendar.disconnect', 'microsoft', (err) => {
+        if (err) {
+          alert('Failed to disconnect: ' + err.reason);
+        } else {
+          alert('Microsoft Calendar disconnected successfully');
+        }
+      });
+    }
+  },
+  
+  'click #refreshGoogleCalendar'(event, instance) {
+    Meteor.call('calendar.refreshEvents', 'google', (err) => {
+      if (err) {
+        alert('Failed to refresh Google Calendar: ' + err.reason);
+      } else {
+        alert('Google Calendar refreshed successfully');
+      }
+    });
+  },
+  
+  'click #refreshMicrosoftCalendar'(event, instance) {
+    Meteor.call('calendar.refreshEvents', 'microsoft', (err) => {
+      if (err) {
+        alert('Failed to refresh Microsoft Calendar: ' + err.reason);
+      } else {
+        alert('Microsoft Calendar refreshed successfully');
+      }
+    });
+  },
+  
+  'click #refreshCalendarEvents'(event, instance) {
+    Meteor.call('calendar.refreshAllEvents', (err) => {
+      if (err) {
+        alert('Failed to refresh calendar events: ' + err.reason);
+      } else {
+        alert('Calendar events refreshed successfully');
+      }
+    });
+  },
+  
+  'click .confirm-event'(event, instance) {
+    const eventId = event.currentTarget.dataset.eventId;
+    const eventCard = event.currentTarget.closest('.border');
+    
+    // Collect form data from the event card
+    const hours = parseInt(eventCard.querySelector('[data-field="hours"]').value) || 0;
+    const minutes = parseInt(eventCard.querySelector('[data-field="minutes"]').value) || 0;
+    const teamId = eventCard.querySelector('[data-field="teamId"]').value;
+    const activityTitle = eventCard.querySelector('[data-field="activityTitle"]').value;
+    
+    const timeData = {
+      hours,
+      minutes,
+      teamId: teamId || null,
+      activityTitle: activityTitle.trim()
+    };
+    
+    if (!timeData.activityTitle) {
+      alert('Please enter an activity title');
+      return;
+    }
+    
+    if (timeData.teamId && (timeData.hours > 0 || timeData.minutes > 0)) {
+      Meteor.call('calendar.confirmEvent', eventId, timeData, (err) => {
+        if (err) {
+          alert('Failed to log calendar event: ' + err.reason);
+        } else {
+          alert('Calendar event logged successfully!');
+        }
+      });
+    } else if (!timeData.teamId) {
+      alert('Please select a project to log time against');
+    } else {
+      alert('Please enter time to log (hours and/or minutes)');
+    }
+  },
+  
+  'click .dismiss-event'(event, instance) {
+    const eventId = event.currentTarget.dataset.eventId;
+    Meteor.call('calendar.dismissEvent', eventId, (err) => {
+      if (err) {
+        alert('Failed to dismiss event: ' + err.reason);
+      }
+    });
+  },
+  
+  'click .snooze-event'(event, instance) {
+    const eventId = event.currentTarget.dataset.eventId;
+    Meteor.call('calendar.snoozeEvent', eventId, (err) => {
+      if (err) {
+        alert('Failed to snooze event: ' + err.reason);
+      }
+    });
+  },
+  
+  'click #dismissAllEvents'(event, instance) {
+    if (confirm('Are you sure you want to dismiss all pending calendar events?')) {
+      Meteor.call('calendar.dismissAllEvents', (err) => {
+        if (err) {
+          alert('Failed to dismiss events: ' + err.reason);
+        } else {
+          alert('All events dismissed');
+        }
+      });
+    }
+  }
 });

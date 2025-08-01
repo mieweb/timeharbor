@@ -1,7 +1,10 @@
 import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
-import { check } from 'meteor/check';
-import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
+import { check, Match } from 'meteor/check';
+import { Tickets, Teams, Sessions, ClockEvents, CalendarConnections, CalendarEvents } from '../collections.js';
+
+// Import webhook handlers
+import './webhooks.js';
 
 function generateTeamCode() {
   // Simple random code, can be improved for production
@@ -27,6 +30,23 @@ Meteor.startup(async () => {
   for (const team of teamsWithoutCode) {
     const code = generateTeamCode();
     await Teams.updateAsync(team._id, { $set: { code } });
+  }
+  
+  // Create demo calendar connections for existing users (for demo purposes)
+  if (await CalendarConnections.find().countAsync() === 0) {
+    const users = await Meteor.users.find().fetchAsync();
+    for (const user of users) {
+      // Create a mock Google calendar connection
+      await CalendarConnections.insertAsync({
+        userId: user._id,
+        provider: 'google',
+        accessToken: 'mock-google-token',
+        refreshToken: 'mock-google-refresh',
+        expiresAt: new Date(Date.now() + 3600 * 1000),
+        lastSync: new Date(),
+        createdAt: new Date()
+      });
+    }
   }
   
   // Create a unique index on team name (case-insensitive)
@@ -89,6 +109,20 @@ Meteor.publish('usersByIds', async function (userIds) {
   const allowedUserIds = Array.from(new Set(userTeams.flatMap(team => team.members.concat([team.leader]))));
   const filteredUserIds = userIds.filter(id => allowedUserIds.includes(id));
   return Meteor.users.find({ _id: { $in: filteredUserIds } }, { fields: { username: 1 } });
+});
+
+// Calendar integration publications
+Meteor.publish('calendarConnections', function () {
+  if (!this.userId) return this.ready();
+  return CalendarConnections.find({ userId: this.userId });
+});
+
+Meteor.publish('pendingCalendarEvents', function () {
+  if (!this.userId) return this.ready();
+  return CalendarEvents.find({ 
+    userId: this.userId, 
+    status: { $in: ['pending', 'snoozed'] }
+  });
 });
 
 Meteor.methods({
@@ -375,4 +409,221 @@ Meteor.methods({
       );
     }
   },
+  
+  // Calendar integration methods
+  async 'calendar.initiateOAuth'(provider) {
+    check(provider, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    // Generate OAuth URL based on provider
+    const baseUrl = Meteor.absoluteUrl();
+    const redirectUri = `${baseUrl}auth/${provider}/callback`;
+    
+    if (provider === 'google') {
+      const clientId = Meteor.settings?.google?.clientId || process.env.GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        throw new Meteor.Error('config-error', 'Google Calendar integration not configured');
+      }
+      
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `response_type=code&` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent('https://www.googleapis.com/auth/calendar.readonly')}&` +
+        `access_type=offline&` +
+        `state=${this.userId}`;
+      
+      return { authUrl };
+    } else if (provider === 'microsoft') {
+      const clientId = Meteor.settings?.microsoft?.clientId || process.env.MICROSOFT_CLIENT_ID;
+      if (!clientId) {
+        throw new Meteor.Error('config-error', 'Microsoft Calendar integration not configured');
+      }
+      
+      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+        `response_type=code&` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent('https://graph.microsoft.com/calendars.read')}&` +
+        `state=${this.userId}`;
+      
+      return { authUrl };
+    } else {
+      throw new Meteor.Error('invalid-provider', 'Unsupported calendar provider');
+    }
+  },
+  
+  async 'calendar.disconnect'(provider) {
+    check(provider, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    // Remove the calendar connection
+    await CalendarConnections.removeAsync({ userId: this.userId, provider });
+    
+    // Remove pending events from this provider
+    await CalendarEvents.removeAsync({ userId: this.userId, source: provider });
+  },
+  
+  async 'calendar.refreshEvents'(provider) {
+    check(provider, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    const connection = await CalendarConnections.findOneAsync({ 
+      userId: this.userId, 
+      provider 
+    });
+    
+    if (!connection || !connection.accessToken) {
+      throw new Meteor.Error('not-connected', `${provider} calendar not connected`);
+    }
+    
+    // This would implement the actual API calls to fetch events
+    // For now, we'll create mock events for demonstration
+    const mockEvents = [
+      {
+        calendarEventId: `mock-${provider}-1`,
+        title: 'Team Meeting',
+        startTime: new Date(Date.now() + 1000 * 60 * 60 * 2), // 2 hours from now
+        endTime: new Date(Date.now() + 1000 * 60 * 60 * 3), // 3 hours from now
+        source: provider,
+        userId: this.userId,
+        status: 'pending',
+        createdAt: new Date()
+      },
+      {
+        calendarEventId: `mock-${provider}-2`,
+        title: 'Project Review',
+        startTime: new Date(Date.now() - 1000 * 60 * 60 * 24), // Yesterday
+        endTime: new Date(Date.now() - 1000 * 60 * 60 * 23), // Yesterday + 1 hour
+        source: provider,
+        userId: this.userId,
+        status: 'pending',
+        createdAt: new Date()
+      }
+    ];
+    
+    // Insert mock events that don't already exist
+    for (const event of mockEvents) {
+      const existing = await CalendarEvents.findOneAsync({
+        userId: this.userId,
+        calendarEventId: event.calendarEventId
+      });
+      
+      if (!existing) {
+        await CalendarEvents.insertAsync(event);
+      }
+    }
+    
+    // Update last sync time
+    await CalendarConnections.updateAsync(
+      { userId: this.userId, provider },
+      { $set: { lastSync: new Date() } }
+    );
+  },
+  
+  async 'calendar.refreshAllEvents'() {
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    const connections = await CalendarConnections.find({ userId: this.userId }).fetchAsync();
+    
+    for (const connection of connections) {
+      try {
+        await Meteor.call('calendar.refreshEvents', connection.provider);
+      } catch (error) {
+        console.error(`Failed to refresh ${connection.provider} events:`, error);
+      }
+    }
+  },
+  
+  async 'calendar.confirmEvent'(eventId, timeData) {
+    check(eventId, String);
+    check(timeData, {
+      hours: Number,
+      minutes: Number,
+      teamId: Match.Maybe(String),
+      activityTitle: String
+    });
+    
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    const event = await CalendarEvents.findOneAsync({
+      _id: eventId,
+      userId: this.userId
+    });
+    
+    if (!event) {
+      throw new Meteor.Error('not-found', 'Calendar event not found');
+    }
+    
+    if (!timeData.teamId) {
+      throw new Meteor.Error('invalid-data', 'Team ID is required');
+    }
+    
+    // Verify user is member of the team
+    const team = await Teams.findOneAsync({ 
+      _id: timeData.teamId, 
+      members: this.userId 
+    });
+    
+    if (!team) {
+      throw new Meteor.Error('not-authorized', 'You are not a member of this team');
+    }
+    
+    // Create a ticket/activity for this calendar event
+    const accumulatedTime = (timeData.hours * 3600) + (timeData.minutes * 60);
+    
+    const ticketId = await Tickets.insertAsync({
+      teamId: timeData.teamId,
+      title: timeData.activityTitle,
+      github: `Calendar event: ${event.title}`,
+      accumulatedTime,
+      createdBy: this.userId,
+      createdAt: new Date(),
+      calendarEventId: event._id // Link to calendar event
+    });
+    
+    // Mark the calendar event as confirmed
+    await CalendarEvents.updateAsync(eventId, {
+      $set: { 
+        status: 'confirmed', 
+        confirmedAt: new Date(),
+        ticketId: ticketId
+      }
+    });
+    
+    return ticketId;
+  },
+  
+  async 'calendar.dismissEvent'(eventId) {
+    check(eventId, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    await CalendarEvents.updateAsync(
+      { _id: eventId, userId: this.userId },
+      { $set: { status: 'dismissed', dismissedAt: new Date() } }
+    );
+  },
+  
+  async 'calendar.snoozeEvent'(eventId) {
+    check(eventId, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    // Snooze for 24 hours
+    const snoozeUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    await CalendarEvents.updateAsync(
+      { _id: eventId, userId: this.userId },
+      { $set: { status: 'snoozed', snoozeUntil } }
+    );
+  },
+  
+  async 'calendar.dismissAllEvents'() {
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    await CalendarEvents.updateAsync(
+      { userId: this.userId, status: 'pending' },
+      { $set: { status: 'dismissed', dismissedAt: new Date() } },
+      { multi: true }
+    );
+  }
 });

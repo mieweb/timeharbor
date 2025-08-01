@@ -1,0 +1,38 @@
+name: Proxmox Deployment
+
+on: 
+    push:
+    create:
+    delete:
+  
+jobs:
+    setup-runner:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Install dependencies
+              run: |
+                sudo apt-get update
+                sudo apt install -y sshpass jq
+            - name: Setting up runner
+              uses: maxklema/proxmox-launchpad@main
+              with:
+                proxmox_username: ${{ secrets.PROXMOX_USERNAME }}
+                proxmox_password: ${{ secrets.PROXMOX_PASSWORD }}
+                github_pat: ${{ secrets.RUNNER_PAT }}
+    deploy:
+        runs-on: self-hosted
+        needs: setup-runner
+        steps:
+          - name: Deploy to Proxmox
+            uses: maxklema/proxmox-launchpad@main
+            with: 
+                proxmox_username: ${{ secrets.PROXMOX_USERNAME }}
+                proxmox_password: ${{ secrets.PROXMOX_PASSWORD }}
+                public_key: ${{ secrets.PUBLIC_KEY }}
+                http_port: 3000
+                install_command: npm install
+                start_command: meteor run --port 0.0.0.0:3000 --allow-superuser
+                runtime_language: nodejs
+                services: '["meteor"]'
+
+                

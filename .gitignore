@@ -1,2 +1,6 @@
 node_modules/
 .DS_Store
+
+# Settings files (keep example, ignore actual settings)
+settings.json
+settings-local.json
