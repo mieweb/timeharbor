@@ -365,7 +365,7 @@
                 <select class="select select-sm select-bordered flex-1" data-field="teamId">
                   <option value="">Select project (optional)</option>
                   {{#each ../userTeams}}
-                    <option value="{{_id}}" {{#if ../suggestedTeamId}}{{#if (eq _id ../suggestedTeamId)}}selected{{/if}}{{/if}}>{{name}}</option>
+                    <option value="{{_id}}" {{isSelectedTeam _id ../suggestedTeamId}}>{{name}}</option>
                   {{/each}}
                 </select>
               </div>

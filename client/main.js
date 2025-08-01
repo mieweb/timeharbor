@@ -791,6 +791,9 @@ Template.calendar.helpers({
   },
   eq(a, b) {
     return a === b;
+  },
+  isSelectedTeam(teamId, suggestedTeamId) {
+    return teamId === suggestedTeamId ? 'selected' : '';
   }
 });
 
