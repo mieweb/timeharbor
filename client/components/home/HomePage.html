@@ -1,0 +1,42 @@
+<template name="home">
+  <h3 class="text-xl font-semibold mb-4">Your Time Overview</h3>
+  <ul class="space-y-4">
+    {{#each allClockEvents}}
+      <li class="card bg-base-100 shadow p-4">
+        <div class="mb-2"><span class="font-bold">Project:</span> {{teamName teamId}}</div>
+        <div class="mb-2"><span class="font-bold">User:</span> {{userName userId}}</div>
+        <div class="mb-2">
+          <span class="font-bold">Clock-in Period:</span>
+          {{#if endTime}}
+            {{formatDate startTimestamp}} - {{formatDate endTime}}
+          {{else}}
+            Started {{formatDate startTimestamp}} (Active)
+          {{/if}}
+        </div>
+        <div class="mb-2">
+          <span class="font-bold">Total Clock-in Time:</span>
+          <span class="badge badge-primary">{{formatTime (clockEventTotalTime this)}}</span>
+          {{#unless endTime}}
+            <span class="text-success ml-2">(Running)</span>
+          {{/unless}}
+        </div>
+        <div class="mt-4">
+          <div class="font-bold mb-2">Tickets worked on:</div>
+          <ul class="ml-4 list-disc space-y-2">
+            {{#each tickets}}
+              <li class="flex items-center justify-between">
+                <div>
+                  <span class="font-semibold">{{ticketTitle ticketId}}</span>
+                  {{#if startTimestamp}}
+                    <span class="text-success">(Active)</span>
+                  {{/if}}
+                </div>
+                <span class="badge" style="background-color: #4A5568; color: white;">{{formatTime (ticketTotalTime this)}}</span>
+              </li>
+            {{/each}}
+          </ul>
+        </div>
+      </li>
+    {{/each}}
+  </ul>
+</template>
