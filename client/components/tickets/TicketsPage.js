@@ -44,9 +44,7 @@ Template.tickets.onDestroyed(function() {
 Template.tickets.helpers({
   userTeams() {
     // Return the list of teams the user is in
-    console.log('My id:', Meteor.userId());
     const teams = Teams.find({members: Meteor.userId()}).fetch();
-    console.log('My teams:', teams);
     return teams;
   },
   isSelectedTeam(teamId) {
@@ -139,7 +137,6 @@ Template.tickets.events({
           const now = Date.now();
           // Start the new timer
           t.activeTicketId.set(ticketId);
-          debugger;
           Meteor.call('updateTicketStart', ticketId, now, (err) => {
             if (err) {
               alert('Failed to start timer: ' + err.reason);
@@ -200,7 +197,6 @@ Template.tickets.events({
       // Start the new timer
       t.activeTicketId.set(ticketId);
       const now = Date.now();
-      debugger;
       Meteor.call('updateTicketStart', ticketId, now, (err) => {
         if (err) {
           alert('Failed to start timer: ' + err.reason);
