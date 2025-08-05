@@ -5,6 +5,7 @@ import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
 
 import { isTeamsLoading, isClockEventsLoading } from '../layout/MainLayout.js';
+import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
 Template.tickets.onCreated(function () {
   this.showCreateTicketForm = new ReactiveVar(false);
@@ -43,11 +44,7 @@ Template.tickets.onDestroyed(function() {
 });
 
 Template.tickets.helpers({
-  userTeams() {
-    // Return the list of teams the user is in
-    const teams = Teams.find({members: Meteor.userId()}).fetch();
-    return teams;
-  },
+  userTeams: getUserTeams,
   isSelectedTeam(teamId) {
     // Return 'selected' if this team is the selected one
     return Template.instance().selectedTeamId && Template.instance().selectedTeamId.get() === teamId ? 'selected' : '';

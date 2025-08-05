@@ -2,6 +2,7 @@ import { Template } from 'meteor/templating';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, formatDate, calculateTotalTime } from '../../utils/TimeUtils.js';
+import { getTeamName, getUserName } from '../../utils/UserTeamUtils.js';
 
 import { isTeamsLoading, isClockEventsLoading } from '../layout/MainLayout.js';
 
@@ -37,14 +38,8 @@ Template.home.helpers({
     const teamIds = leaderTeams.map(t => t._id);
     return ClockEvents.find({ teamId: { $in: teamIds } }, { sort: { startTimestamp: -1 } }).fetch();
   },
-  teamName(teamId) {
-    const team = Teams.findOne(teamId);
-    return team && team.name ? team.name : teamId;
-  },
-  userName(userId) {
-    const user = Meteor.users && Meteor.users.findOne(userId);
-    return user && user.username ? user.username : userId;
-  },
+  teamName: getTeamName,
+  userName: getUserName,
   formatDate,  // Using imported utility
   ticketTitle(ticketId) {
     const ticket = Tickets.findOne(ticketId);

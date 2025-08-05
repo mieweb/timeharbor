@@ -3,6 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams } from '../../../collections.js';
 
 import { isTeamsLoading } from '../layout/MainLayout.js';
+import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
 Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);
@@ -40,10 +41,7 @@ Template.teams.helpers({
   showJoinTeam() {
     return Template.instance().showJoinTeam.get();
   },
-  userTeams() {
-    const teams = Teams.find({ members: Meteor.userId() }).fetch();
-    return teams;
-  },
+  userTeams: getUserTeams,
   selectedTeam() {
     const id = Template.instance().selectedTeamId.get();
     const queriedTeam = id ? Teams.findOne(id) : null;
