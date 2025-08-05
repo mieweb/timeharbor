@@ -3,10 +3,11 @@ import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, formatDate, calculateTotalTime } from '../../utils/TimeUtils.js';
 
+import { isTeamsLoading, isClockEventsLoading } from '../layout/MainLayout.js';
+
 Template.home.onCreated(function () {
   this.autorun(() => {
-    // userTeams subscription moved to MainLayout
-    this.subscribe('clockEventsForUser');
+    // userTeams and clockEventsForUser subscriptions moved to MainLayout
     // Subscribe to all clock events for teams the user leads
     const leaderTeams = Teams.find({ leader: Meteor.userId() }).fetch();
     const teamIds = leaderTeams.map(t => t._id);

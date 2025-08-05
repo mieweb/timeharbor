@@ -9,8 +9,9 @@ const currentTemplate = new ReactiveVar('home');
 export const currentTime = new ReactiveVar(Date.now());
 setInterval(() => currentTime.set(Date.now()), 1000);
 
-// Reactive variable to track subscription loading state
+// Reactive variables to track subscription loading states
 export const isTeamsLoading = new ReactiveVar(true);
+export const isClockEventsLoading = new ReactiveVar(true);
 
 // Safety check for template
 if (Template.mainLayout) {
@@ -20,9 +21,13 @@ if (Template.mainLayout) {
         currentScreen.set('authPage');
       } else {
         currentScreen.set('mainLayout');
-        // Subscribe to userTeams when user is logged in
+        // Subscribe to common data when user is logged in
         const teamsHandle = this.subscribe('userTeams');
+        const clockEventsHandle = this.subscribe('clockEventsForUser');
+        
+        // Update loading states
         isTeamsLoading.set(!teamsHandle.ready());
+        isClockEventsLoading.set(!clockEventsHandle.ready());
       }
     });
   });

@@ -4,7 +4,7 @@ import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
 
-import { isTeamsLoading } from '../layout/MainLayout.js';
+import { isTeamsLoading, isClockEventsLoading } from '../layout/MainLayout.js';
 
 Template.tickets.onCreated(function () {
   this.showCreateTicketForm = new ReactiveVar(false);
@@ -14,8 +14,7 @@ Template.tickets.onCreated(function () {
   this.clockedIn = new ReactiveVar(false);
   
   this.autorun(() => {
-    // userTeams subscription moved to MainLayout
-    this.subscribe('clockEventsForUser');
+    // userTeams and clockEventsForUser subscriptions moved to MainLayout
     // If no team is selected, default to the first team
     const teamIds = Teams.find({}).map(t => t._id);
 
