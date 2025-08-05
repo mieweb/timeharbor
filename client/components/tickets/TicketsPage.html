@@ -14,7 +14,7 @@
       {{#if isClockedInForTeam selectedTeamId}}
         <button id="clockOutBtn" class="btn bg-neutral hover:bg-neutral-focus text-neutral-content">Stop Session</button>
       {{else}}
-        <button id="clockInBtn" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Start Session</button>
+        <button id="clockInBtn" class="btn bg-gray-700 text-white hover:bg-opacity-90">Start Session</button>
       {{/if}}
     </div>
     {{#if showCreateTicketForm}}
@@ -36,7 +36,7 @@
       {{#each tickets}}
         <div class="card bg-base-100 shadow-md p-4 {{#if isActive _id}}border border-slate-600{{/if}}">
           <div class="ticket-title text-lg font-bold mb-2">{{title}}</div>
-          <div class="ticket-time mb-2"><span class="badge" style="background-color: #4A5568; color: white;">{{formatTime displayTime}}</span></div>
+          <div class="ticket-time mb-2"><span class="badge bg-gray-700 text-white">{{formatTime displayTime}}</span></div>
           {{#if github}}
             <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">Reference</a>
           {{/if}}
