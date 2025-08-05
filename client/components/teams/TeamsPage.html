@@ -48,19 +48,3 @@
   {{/if}}
 </template>
 
-<template name="joinTeam">
-  <h3 class="text-xl font-semibold mb-4">Join a Project</h3>
-  <form id="joinTeamForm" class="card bg-base-100 shadow p-4 flex flex-col gap-2">
-    <input type="text" name="teamCode" placeholder="Enter Project Code" class="input input-bordered" required />
-    <button type="submit" class="btn" style="background-color: #4A5568; color: white; hover:bg-opacity-90">Join</button>
-  </form>
-</template>
-
-<template name="createTeam">
-  <h3 class="text-xl font-semibold mb-4">Create a Project</h3>
-  <form id="createTeamForm" class="card bg-base-100 shadow p-4 flex flex-col gap-2">
-    <input type="text" name="teamName" placeholder="Enter Project Name" class="input input-bordered" required />
-    <input type="text" name="ownerName" placeholder="Enter Your Name" class="input input-bordered" required />
-    <button type="submit" class="btn btn-primary">Create</button>
-  </form>
-</template>
