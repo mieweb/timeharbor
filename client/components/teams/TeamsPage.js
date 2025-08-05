@@ -2,6 +2,8 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams } from '../../../collections.js';
 
+import { isTeamsLoading } from '../layout/MainLayout.js';
+
 Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);
   this.showJoinTeam = new ReactiveVar(false);
@@ -9,7 +11,7 @@ Template.teams.onCreated(function () {
   this.selectedTeamUsers = new ReactiveVar([]);
   
   this.autorun(() => {
-    this.subscribe('userTeams');
+    // userTeams subscription moved to MainLayout
     const selectedId = this.selectedTeamId.get();
     if (selectedId) {
       this.subscribe('teamDetails', selectedId);

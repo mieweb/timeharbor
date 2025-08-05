@@ -9,17 +9,23 @@ const currentTemplate = new ReactiveVar('home');
 export const currentTime = new ReactiveVar(Date.now());
 setInterval(() => currentTime.set(Date.now()), 1000);
 
+// Reactive variable to track subscription loading state
+export const isTeamsLoading = new ReactiveVar(true);
+
 // Safety check for template
 if (Template.mainLayout) {
   Template.mainLayout.onCreated(function () {
-  this.autorun(() => {
-    if (!Meteor.userId()) {
-      currentScreen.set('authPage');
-    } else {
-      currentScreen.set('mainLayout');
-    }
+    this.autorun(() => {
+      if (!Meteor.userId()) {
+        currentScreen.set('authPage');
+      } else {
+        currentScreen.set('mainLayout');
+        // Subscribe to userTeams when user is logged in
+        const teamsHandle = this.subscribe('userTeams');
+        isTeamsLoading.set(!teamsHandle.ready());
+      }
+    });
   });
-});
 
 Template.mainLayout.helpers({
   main() {

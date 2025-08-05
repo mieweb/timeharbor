@@ -5,7 +5,7 @@ import { formatTime, formatDate, calculateTotalTime } from '../../utils/TimeUtil
 
 Template.home.onCreated(function () {
   this.autorun(() => {
-    this.subscribe('userTeams');
+    // userTeams subscription moved to MainLayout
     this.subscribe('clockEventsForUser');
     // Subscribe to all clock events for teams the user leads
     const leaderTeams = Teams.find({ leader: Meteor.userId() }).fetch();
