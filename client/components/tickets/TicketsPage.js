@@ -3,6 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
+import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
 import { isTeamsLoading, isClockEventsLoading } from '../layout/MainLayout.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
@@ -13,9 +14,12 @@ Template.tickets.onCreated(function () {
   // Restore last active ticket if it is still running
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
-  
+
   this.autorun(() => {
+<<<<<<< HEAD
     // userTeams and clockEventsForUser subscriptions moved to MainLayout
+=======
+>>>>>>> main
     // If no team is selected, default to the first team
     const teamIds = Teams.find({}).map(t => t._id);
 
@@ -229,7 +233,11 @@ Template.tickets.events({
       // Start the new timer
       t.activeTicketId.set(ticketId);
       const now = Date.now();
+<<<<<<< HEAD
       Meteor.call('updateTicketStart', ticketId, now, (err, result) => {
+=======
+      Meteor.call('updateTicketStart', ticketId, now, (err) => {
+>>>>>>> main
         if (err) {
           alert('Failed to start timer: ' + err.reason);
           return;
