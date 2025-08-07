@@ -40,7 +40,9 @@
           {{#if github}}
             <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">Reference</a>
           {{/if}}
-          <button class="activate-ticket btn btn-outline btn-neutral mt-2 w-full" data-id="{{_id}}">
+          <button class="activate-ticket {{getButtonClasses _id}} mt-2 w-full" 
+                  data-id="{{_id}}"
+                  title="{{getButtonTooltip _id}}">
             {{#if isActive _id}}
               Stop
             {{else}}

@@ -101,6 +101,34 @@ Template.tickets.helpers({
     if (!clockEvent) return 0;
     return calculateTotalTime(clockEvent);  // Using imported utility
   },
+  // Helper for button classes
+  getButtonClasses(ticketId) {
+    const isActive = Template.instance().activeTicketId.get() === ticketId;
+    const teamId = Template.instance().selectedTeamId.get();
+    const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
+    
+    if (isActive) {
+      return 'btn btn-outline btn-neutral';
+    } else if (hasActiveSession) {
+      return 'btn btn-outline btn-neutral';
+    } else {
+      return 'btn btn-disabled';
+    }
+  },
+  // Helper for button tooltip
+  getButtonTooltip(ticketId) {
+    const isActive = Template.instance().activeTicketId.get() === ticketId;
+    const teamId = Template.instance().selectedTeamId.get();
+    const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
+    
+    if (isActive) {
+      return 'Click to stop this activity';
+    } else if (hasActiveSession) {
+      return 'Click to start this activity';
+    } else {
+      return 'Start a session first to begin activities';
+    }
+  },
 });
 
 // Rest of the events code remains unchanged
@@ -166,6 +194,12 @@ Template.tickets.events({
     const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
 
     if (!isActive) {
+      // Check if session is active before allowing activity start
+      if (!clockEvent) {
+        alert('Please start a session before starting an activity.');
+        return;
+      }
+
       // Stop any currently active ticket first
       const currentActiveTicketId = t.activeTicketId.get();
       if (currentActiveTicketId) {
@@ -195,9 +229,15 @@ Template.tickets.events({
       // Start the new timer
       t.activeTicketId.set(ticketId);
       const now = Date.now();
-      Meteor.call('updateTicketStart', ticketId, now, (err) => {
+      Meteor.call('updateTicketStart', ticketId, now, (err, result) => {
         if (err) {
           alert('Failed to start timer: ' + err.reason);
+          return;
+        }
+        // Check if server returned false (no active session)
+        if (result === false) {
+          alert('Please start a session before starting an activity.');
+          t.activeTicketId.set(null);
           return;
         }
       });
@@ -263,6 +303,9 @@ Template.tickets.events({
     Meteor.call('clockEventStop', teamId, (err) => {
       if (err) {
         alert('Failed to clock out: ' + err.reason);
+      } else {
+        // Clear active ticket when session stops
+        t.activeTicketId.set(null);
       }
     });
   },
