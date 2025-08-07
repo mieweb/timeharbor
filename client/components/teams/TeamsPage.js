@@ -1,8 +1,6 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams } from '../../../collections.js';
-
-import { isTeamsLoading } from '../layout/MainLayout.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
 Template.teams.onCreated(function () {
@@ -10,9 +8,8 @@ Template.teams.onCreated(function () {
   this.showJoinTeam = new ReactiveVar(false);
   this.selectedTeamId = new ReactiveVar(null);
   this.selectedTeamUsers = new ReactiveVar([]);
-  
+
   this.autorun(() => {
-    // userTeams subscription moved to MainLayout
     const selectedId = this.selectedTeamId.get();
     if (selectedId) {
       this.subscribe('teamDetails', selectedId);
@@ -70,7 +67,7 @@ Template.teams.events({
     t.showCreateTeam.set(false);
   },
   'submit #createTeamForm'(e, t) {
-    e.preventDefault(); 
+    e.preventDefault();
     const teamName = e.target.teamName.value;
     Meteor.call('createTeam', teamName, (err) => {
       if (!err) {
@@ -119,4 +116,4 @@ Template.teams.events({
         });
     }
   },
-}); 
+});

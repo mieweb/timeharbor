@@ -3,8 +3,6 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
-
-import { isTeamsLoading, isClockEventsLoading } from '../layout/MainLayout.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
 Template.tickets.onCreated(function () {
@@ -13,9 +11,8 @@ Template.tickets.onCreated(function () {
   // Restore last active ticket if it is still running
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
-  
+
   this.autorun(() => {
-    // userTeams and clockEventsForUser subscriptions moved to MainLayout
     // If no team is selected, default to the first team
     const teamIds = Teams.find({}).map(t => t._id);
 
