@@ -5,9 +5,6 @@ import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
-import { isTeamsLoading, isClockEventsLoading } from '../layout/MainLayout.js';
-import { getUserTeams } from '../../utils/UserTeamUtils.js';
-
 Template.tickets.onCreated(function () {
   this.showCreateTicketForm = new ReactiveVar(false);
   this.selectedTeamId = new ReactiveVar(null);
@@ -16,10 +13,6 @@ Template.tickets.onCreated(function () {
   this.clockedIn = new ReactiveVar(false);
 
   this.autorun(() => {
-<<<<<<< HEAD
-    // userTeams and clockEventsForUser subscriptions moved to MainLayout
-=======
->>>>>>> main
     // If no team is selected, default to the first team
     const teamIds = Teams.find({}).map(t => t._id);
 
@@ -134,7 +127,6 @@ Template.tickets.helpers({
     }
   },
 });
-
 // Rest of the events code remains unchanged
 Template.tickets.events({
   'change #teamSelect'(e, t) {
@@ -193,17 +185,14 @@ Template.tickets.events({
     const isActive = t.activeTicketId.get() === ticketId;
     const ticket = Tickets.findOne(ticketId);
     const teamId = t.selectedTeamId.get();
-
     // Check if user is clocked in for this team
     const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
-
     if (!isActive) {
       // Check if session is active before allowing activity start
       if (!clockEvent) {
         alert('Please start a session before starting an activity.');
         return;
       }
-
       // Stop any currently active ticket first
       const currentActiveTicketId = t.activeTicketId.get();
       if (currentActiveTicketId) {
@@ -217,7 +206,6 @@ Template.tickets.events({
               return;
             }
           });
-
           // Stop the current ticket in the clock event if needed
           if (clockEvent) {
             Meteor.call('clockEventStopTicket', clockEvent._id, currentActiveTicketId, now, (err) => {
@@ -229,15 +217,10 @@ Template.tickets.events({
           }
         }
       }
-
       // Start the new timer
       t.activeTicketId.set(ticketId);
       const now = Date.now();
-<<<<<<< HEAD
       Meteor.call('updateTicketStart', ticketId, now, (err, result) => {
-=======
-      Meteor.call('updateTicketStart', ticketId, now, (err) => {
->>>>>>> main
         if (err) {
           alert('Failed to start timer: ' + err.reason);
           return;
@@ -249,7 +232,6 @@ Template.tickets.events({
           return;
         }
       });
-
       // If user is clocked in, add the new ticket timing entry to the clock event
       // Note: Initial accumulated time is now handled server-side in clockEventAddTicket
       if (clockEvent) {
@@ -268,7 +250,6 @@ Template.tickets.events({
             alert('Failed to stop timer: ' + err.reason);
           }
         });
-
         // If user is clocked in, stop the ticket timing in the clock event
         if (clockEvent) {
           Meteor.call('clockEventStopTicket', clockEvent._id, ticketId, now, (err) => {
