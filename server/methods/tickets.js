@@ -1,8 +1,43 @@
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 import { Tickets, Teams, ClockEvents } from '../../collections.js';
+import axios from 'axios';
+import cheerio from 'cheerio';
 
 export const ticketMethods = {
+  async extractUrlTitle(url) {
+    check(url, String);
+    
+    try {
+      // Try to fetch the URL
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
+        timeout: 5000 // 5 second timeout
+      });
+
+      // Check if response is HTML
+      const contentType = response.headers['content-type'];
+      if (!contentType || !contentType.includes('text/html')) {
+        return { error: 'URL does not contain HTML content' };
+      }
+
+      // Load HTML content into cheerio
+      const $ = cheerio.load(response.data);
+      
+      // Extract title
+      const title = $('title').text().trim();
+      
+      if (!title) {
+        return { error: 'No title found in the webpage' };
+      }
+
+      return { title };
+    } catch (error) {
+      return { error: 'Failed to fetch URL or extract title' };
+    }
+  },
   async createTicket({ teamId, title, github, accumulatedTime }) {
     check(teamId, String);
     check(title, String);

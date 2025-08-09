@@ -4,6 +4,7 @@ import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
+import { extractUrlTitle } from '../../utils/UrlUtils.js';
 
 Template.tickets.onCreated(function () {
   this.showCreateTicketForm = new ReactiveVar(false);
@@ -98,6 +99,34 @@ Template.tickets.helpers({
     if (!clockEvent) return 0;
     return calculateTotalTime(clockEvent);  // Using imported utility
   },
+   // Helper for button classes
+   getButtonClasses(ticketId) {
+    const isActive = Template.instance().activeTicketId.get() === ticketId;
+    const teamId = Template.instance().selectedTeamId.get();
+    const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
+
+    if (isActive) {
+      return 'btn btn-outline btn-neutral';
+    } else if (hasActiveSession) {
+      return 'btn btn-outline btn-neutral';
+    } else {
+      return 'btn btn-disabled';
+    }
+  },
+  // Helper for button tooltip
+  getButtonTooltip(ticketId) {
+    const isActive = Template.instance().activeTicketId.get() === ticketId;
+    const teamId = Template.instance().selectedTeamId.get();
+    const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
+
+    if (isActive) {
+      return 'Click to stop this activity';
+    } else if (hasActiveSession) {
+      return 'Click to start this activity';
+    } else {
+      return 'Start a session first to begin activities';
+    }
+  },
 });
 
 // Rest of the events code remains unchanged
@@ -111,6 +140,15 @@ Template.tickets.events({
   'click #cancelCreateTicket'(e, t) {
     t.showCreateTicketForm.set(false);
   },
+  'blur [name="title"]'(e) {
+    extractUrlTitle(e.target.value, e.target);
+  },
+
+  'paste [name="title"]'(e) {
+    // Wait for the paste to complete
+    setTimeout(() => extractUrlTitle(e.target.value, e.target), 0);
+  },
+
   'submit #createTicketForm'(e, t) {
     e.preventDefault();
     const teamId = t.selectedTeamId.get();
@@ -161,8 +199,12 @@ Template.tickets.events({
 
     // Check if user is clocked in for this team
     const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
-
     if (!isActive) {
+      // Check if session is active before allowing activity start
+      if (!clockEvent) {
+        alert('Please start a session before starting an activity.');
+        return;
+      }
       // Stop any currently active ticket first
       const currentActiveTicketId = t.activeTicketId.get();
       if (currentActiveTicketId) {
@@ -170,11 +212,17 @@ Template.tickets.events({
         if (currentTicket && currentTicket.startTimestamp) {
           const now = Date.now();
           // Stop the current ticket
-          Meteor.call('updateTicketStop', currentActiveTicketId, now, (err) => {
+          Meteor.call('updateTicketStart', ticketId, now, (err, result) => {
             if (err) {
               alert('Failed to stop current timer: ' + err.reason);
               return;
             }
+             // Check if server returned false (no active session)
+            if (result === false) {
+            alert('Please start a session before starting an activity.');
+            t.activeTicketId.set(null);
+            return;
+        }
           });
 
           // Stop the current ticket in the clock event if needed
@@ -260,6 +308,9 @@ Template.tickets.events({
     Meteor.call('clockEventStop', teamId, (err) => {
       if (err) {
         alert('Failed to clock out: ' + err.reason);
+      } else {
+        // Clear active ticket when session stops
+        t.activeTicketId.set(null);
       }
     });
   },
