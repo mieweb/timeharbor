@@ -1,5 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
+import { ServiceConfiguration } from 'meteor/service-configuration';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
 // Import authentication methods
 import { authMethods } from './methods/auth.js';
@@ -8,7 +9,47 @@ import { teamMethods } from './methods/teams.js';
 // Import ticket and clock event methods
 import { ticketMethods } from './methods/tickets.js';
 import { clockEventMethods } from './methods/clockEvents.js';
+
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
+
 Meteor.startup(async () => {
+  // Configure Google OAuth from environment variables
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  
+  if (googleClientId && googleClientSecret) {
+    await ServiceConfiguration.configurations.upsertAsync(
+      { service: 'google' },
+      {
+        $set: {
+          clientId: googleClientId,
+          secret: googleClientSecret,
+          loginStyle: 'popup'
+        }
+      }
+    );
+    console.log('Google OAuth configured successfully from environment variables');
+  } else {
+    console.error('Google OAuth environment variables not found. Please check your .env file.');
+    console.error('Required: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
+  }
+
+  // Configure additional find user for Google OAuth
+  Accounts.setAdditionalFindUserOnExternalLogin(
+    ({ serviceName, serviceData }) => {
+      if (serviceName === "google") {
+        // Note: Consider security implications. If someone other than the owner
+        // gains access to the account on the third-party service they could use
+        // the e-mail set there to access the account on your app.
+        // Most often this is not an issue, but as a developer you should be aware
+        // of how bad actors could play.
+        return Accounts.findUserByEmail(serviceData.email);
+      }
+    }
+  );
+
   // Code to run on server startup
   if (await Tickets.find().countAsync() === 0) {
     await Tickets.insertAsync({ title: 'Sample Ticket', description: 'This is a sample ticket.', createdAt: new Date() });
