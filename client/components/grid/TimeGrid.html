@@ -1,0 +1,14 @@
+<template name="timeGrid">
+  <div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Time Entries</h2>
+      <div class="flex items-center gap-4">
+        <input type="text" id="quickFilter" placeholder="Quick filter..." class="input input-bordered w-64" />
+        <button id="exportExcel" class="btn btn-primary">Export Excel</button>
+      </div>
+    </div>
+
+    <!-- AG Grid Container -->
+    <div id="myGrid" style="height: 500px; width: 100%;" class="ag-theme-alpine"></div>
+  </div>
+</template>
