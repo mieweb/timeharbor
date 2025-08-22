@@ -67,6 +67,12 @@ Meteor.publish('clockEventsForTeams', async function (teamIds) {
   return ClockEvents.find({ teamId: { $in: allowedTeamIds } });
 });
 
+// Publish all clock events for the grid
+Meteor.publish('allClockEvents', function() {
+  if (!this.userId) return this.ready();
+  return ClockEvents.find({});
+});
+
 Meteor.publish('usersByIds', async function (userIds) {
   check(userIds, [String]);
   // Only publish users that are in teams the current user is a member or leader of

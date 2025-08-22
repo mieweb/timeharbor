@@ -9,11 +9,14 @@
         <button id="copyTeamCode" class="btn btn-sm btn-outline btn-neutral">Copy Code</button>
       </div>
       <h5 class="font-semibold mb-2">Collaborators:</h5>
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap gap-2 mb-6">
         {{#each selectedTeam.members}}
           <div class="badge badge-neutral">{{this.username}}</div>
         {{/each}}
       </div>
+
+      <!-- Time Entries Grid -->
+      {{> timeGrid}}
     </div>
   {{else}}
     <div class="flex gap-4 mb-4">
