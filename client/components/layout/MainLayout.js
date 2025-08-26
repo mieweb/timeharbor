@@ -1,10 +1,14 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
-import { currentScreen, isLogoutLoading, logoutMessage } from '../auth/AuthPage.js';
+import { currentScreen } from '../auth/AuthPage.js';
 
 // Constants for better maintainability
 const MESSAGE_TIMEOUT = 3000;
 const ERROR_PREFIX = 'Logout failed: ';
+
+// Logout state variables (local to MainLayout)
+const isLogoutLoading = new ReactiveVar(false);
+const logoutMessage = new ReactiveVar('');
 
 // Reactive variable to track the current template
 const currentTemplate = new ReactiveVar('home');
@@ -54,47 +58,47 @@ if (Template.mainLayout) {
     });
   });
 
-Template.mainLayout.helpers({
-  main() {
-    return currentTemplate.get();
-  },
-  currentUser() {
-    return Meteor.user();
-  },
-  isLogoutLoading() {
-    return isLogoutLoading.get();
-  },
-  logoutMessage() {
-    return logoutMessage.get();
-  },
-  logoutBtnAttrs() {
-    return isLogoutLoading.get() ? { disabled: true } : {};
-  }
-});
-
-Template.mainLayout.events({
-  'click nav a'(event) {
-    event.preventDefault();
-    const target = event.currentTarget.getAttribute('href').substring(1);
-    currentTemplate.set(target || 'home');
-  },
-  'click #logoutBtn'(event, instance) {
-    event.preventDefault();
-    
-    // Early return if already loading or user cancels
-    if (isLogoutLoading.get() || !confirm('Are you sure you want to log out?')) {
-      return;
+  Template.mainLayout.helpers({
+    main() {
+      return currentTemplate.get();
+    },
+    currentUser() {
+      return Meteor.user();
+    },
+    isLogoutLoading() {
+      return isLogoutLoading.get();
+    },
+    logoutMessage() {
+      return logoutMessage.get();
+    },
+    logoutBtnAttrs() {
+      return isLogoutLoading.get() ? { disabled: true } : {};
     }
-    
-    // Start logout process
-    isLogoutLoading.set(true);
-    Meteor.logout(handleLogoutResult);
-  }
-});
+  });
+
+  Template.mainLayout.events({
+    'click nav a'(event) {
+      event.preventDefault();
+      const target = event.currentTarget.getAttribute('href').substring(1);
+      currentTemplate.set(target || 'home');
+    },
+    'click #logoutBtn'(event, instance) {
+      event.preventDefault();
+      
+      // Early return if already loading or user cancels
+      if (isLogoutLoading.get() || !confirm('Are you sure you want to log out?')) {
+        return;
+      }
+      
+      // Start logout process
+      isLogoutLoading.set(true);
+      Meteor.logout(handleLogoutResult);
+    }
+  });
+}
 
 Template.body.helpers({
   currentScreen() {
     return currentScreen.get();
   },
 });
-}

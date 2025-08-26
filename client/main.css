@@ -3,3 +3,14 @@
 @plugin "daisyui";
 
 /* You can add custom styles below if needed */
+
+/* Status badge styling improvements */
+.badge {
+  font-weight: 500;
+}
+
+/* Help tooltip improvements */
+.tooltip:before {
+  max-width: 300px;
+  white-space: normal;
+}
