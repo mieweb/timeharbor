@@ -2,7 +2,7 @@ import { Template } from 'meteor/templating';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, formatDate, calculateTotalTime } from '../../utils/TimeUtils.js';
-import { getTeamName, getUserName } from '../../utils/UserTeamUtils.js';
+import { getTeamName, getUserEmail } from '../../utils/UserTeamUtils.js';
 import { isTeamsLoading, isClockEventsLoading } from '../layout/MainLayout.js';
 
 Template.home.onCreated(function () {
@@ -38,7 +38,7 @@ Template.home.helpers({
     return ClockEvents.find({ teamId: { $in: teamIds } }, { sort: { startTimestamp: -1 } }).fetch();
   },
   teamName: getTeamName,
-  userName: getUserName,
+  userName: getUserEmail,
   formatDate,  // Using imported utility
   ticketTitle(ticketId) {
     const ticket = Tickets.findOne(ticketId);

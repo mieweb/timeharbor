@@ -11,8 +11,8 @@ export const getTeamName = (teamId) => {
     return team?.name || teamId;
 };
 
-// Get username from user ID
-export const getUserName = (userId) => {
+// Get user email from user ID
+export const getUserEmail = (userId) => {
     const user = Meteor.users?.findOne(userId);
-    return user?.username || userId;
+    return user?.emails?.[0]?.address || userId;
 };

@@ -2,14 +2,14 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 
 export const authMethods = {
-  createUserAccount({ username, password }) {
-    if (!username || !password) {
-      throw new Meteor.Error('invalid-data', 'Username and password are required');
+  createUserAccount({ email, password }) {
+    if (!email || !password) {
+      throw new Meteor.Error('invalid-data', 'Email and password are required');
     }
     
     try {
-      const userId = Accounts.createUser({ username, password });
-      console.log('User created:', { userId, username }); // Log user creation details
+      const userId = Accounts.createUser({ email, password });
+      console.log('User created:', { userId, email }); // Log user creation details
       return userId;
     } catch (error) {
       console.error('Error in createUserAccount method:', error);

@@ -1,2 +1,32 @@
+# Meteor local files
+.meteor/local/
+.meteor/meteor-boilerplate/
+
+# Node modules
 node_modules/
+
+# Environment variables
+.env
+
+# Google OAuth credentials (SECURITY CRITICAL)
+settings.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Package lock (optional - some teams prefer to commit this)
+# package-lock.json
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
 .DS_Store
+Thumbs.db

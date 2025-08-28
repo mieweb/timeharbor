@@ -43,6 +43,6 @@ export const teamMethods = {
   async getUsers(userIds) {
     check(userIds, [String]);
     const users = await Meteor.users.find({ _id: { $in: userIds } }).fetchAsync();
-    return users.map(user => ({ id: user._id, username: user.username }));
+    return users.map(user => ({ id: user._id, email: user.emails?.[0]?.address || 'No email' }));
   },
 }; 
