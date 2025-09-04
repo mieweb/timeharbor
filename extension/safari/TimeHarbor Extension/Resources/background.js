@@ -3,6 +3,12 @@
  * Handles extension lifecycle, toolbar button clicks, and messaging
  */
 
+// Load shared modules
+importScripts('../shared/storage-manager.js');
+importScripts('../shared/screenshot-handler.js');
+importScripts('../shared/api-client.js');
+importScripts('../shared/html-log-generator.js');
+
 // Initialize extension components
 let storageManager;
 let screenshotHandler;
@@ -88,19 +94,25 @@ async function handleToolbarClick(tab) {
     }
 
     // Show capturing state
-    chrome.browserAction.setBadgeText({ text: '📸' });
+    if (chrome.browserAction && chrome.browserAction.setBadgeText) {
+      chrome.browserAction.setBadgeText({ text: '📸' });
+    }
     currentCapture = { tabId: tab.id, status: 'capturing' };
 
     // Capture screenshot and process
     const result = await captureAndStore(tab);
     
     // Show success state
-    chrome.browserAction.setBadgeText({ text: '✓' });
+    if (chrome.browserAction && chrome.browserAction.setBadgeText) {
+      chrome.browserAction.setBadgeText({ text: '✓' });
+    }
     showNotification('Screenshot captured!', `Saved ${result.mode} mode`);
     
     // Clear badge after delay
     setTimeout(() => {
-      chrome.browserAction.setBadgeText({ text: '' });
+      if (chrome.browserAction && chrome.browserAction.setBadgeText) {
+        chrome.browserAction.setBadgeText({ text: '' });
+      }
       currentCapture = null;
     }, 2000);
 
@@ -114,13 +126,17 @@ async function handleToolbarClick(tab) {
 
   } catch (error) {
     console.error('Capture failed:', error);
-    chrome.browserAction.setBadgeText({ text: '✗' });
-    chrome.browserAction.setBadgeBackgroundColor({ color: '#e74c3c' });
+    if (chrome.browserAction && chrome.browserAction.setBadgeText) {
+      chrome.browserAction.setBadgeText({ text: '✗' });
+      chrome.browserAction.setBadgeBackgroundColor({ color: '#e74c3c' });
+    }
     showNotification('Capture failed', error.message);
     
     setTimeout(() => {
-      chrome.browserAction.setBadgeText({ text: '' });
-      chrome.browserAction.setBadgeBackgroundColor({ color: '#3498db' });
+      if (chrome.browserAction && chrome.browserAction.setBadgeText) {
+        chrome.browserAction.setBadgeText({ text: '' });
+        chrome.browserAction.setBadgeBackgroundColor({ color: '#3498db' });
+      }
       currentCapture = null;
     }, 3000);
   }
