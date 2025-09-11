@@ -28,7 +28,8 @@ jobs:
             with: 
                 proxmox_username: ${{ secrets.PROXMOX_USERNAME }}
                 proxmox_password: ${{ secrets.PROXMOX_PASSWORD }}
-                public_key: ${{ secrets.PUBLIC_KEY }}
+                container_env_vars: '{"GOOGLE_CLIENT_ID": "${{ secrets.GOOGLE_CLIENT_ID }}", "GOOGLE_CLIENT_SECRET": "${{ secrets.GOOGLE_CLIENT_SECRET }}"}'
+                github_pat: ${{ secrets.RUNNER_PAT }}
                 http_port: 3000
                 install_command: npm install
                 start_command: meteor run --port 0.0.0.0:3000 --allow-superuser
