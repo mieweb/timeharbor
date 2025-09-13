@@ -69,6 +69,9 @@ Template.teams.events({
   'click #cancelCreateTeam'(e, t) {
     t.showCreateTeam.set(false);
   },
+  'click #cancelJoinTeam'(e, t) {
+    t.showJoinTeam.set(false);
+  },
   'submit #createTeamForm'(e, t) {
     e.preventDefault();
     const teamName = e.target.teamName.value;

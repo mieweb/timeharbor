@@ -167,10 +167,18 @@ Template.ycardPersonCard.helpers({
       return phone[0];
     }
     return phone;
+  },
+  
+  substr(str, start, length) {
+    if (!str) return '';
+    return str.substring(start, start + length).toUpperCase();
   }
 });
 
 // Hierarchy node helpers  
 Template.ycardHierarchyNode.helpers({
-  // All data is passed through the context
+  substr(str, start, length) {
+    if (!str) return '';
+    return str.substring(start, start + length).toUpperCase();
+  }
 });
