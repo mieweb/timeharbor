@@ -3,3 +3,51 @@
 @plugin "daisyui";
 
 /* You can add custom styles below if needed */
+
+/* yCard Editor Styles */
+.ycard-editor-container {
+  width: 100%;
+}
+
+.ycard-preview {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+}
+
+.ycard-hierarchy {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.hierarchy-node {
+  margin-bottom: 1rem;
+}
+
+.hierarchy-node .children {
+  margin-top: 1rem;
+}
+
+.hierarchy-node .node-content {
+  display: inline-block;
+  min-width: 200px;
+}
+
+/* Person card enhancements */
+.ycard-person-card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.ycard-person-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .ycard-hierarchy {
+    font-size: 0.875rem;
+  }
+  
+  .hierarchy-node .children {
+    margin-left: 1rem;
+    padding-left: 0.5rem;
+  }
+}

@@ -1,0 +1,163 @@
+<template name="ycardEditor">
+  <div class="ycard-editor-container">
+    <div class="card bg-base-100 shadow p-6 mb-6">
+      <h4 class="text-lg font-bold mb-4">Team Contacts</h4>
+      
+      {{#if showEditor}}
+        <div class="mb-4">
+          <label class="label">
+            <span class="label-text">yCard YAML Editor</span>
+            <span class="label-text-alt">
+              <button id="loadSample" class="btn btn-xs btn-outline">Load Sample</button>
+              <button id="togglePreview" class="btn btn-xs btn-outline ml-2">
+                {{#if showPreview}}Hide Preview{{else}}Show Preview{{/if}}
+              </button>
+            </span>
+          </label>
+          
+          <textarea 
+            id="ycardTextarea" 
+            class="textarea textarea-bordered w-full font-mono text-sm"
+            rows="12"
+            placeholder="Paste your yCard YAML here or click 'Load Sample' to get started...">{{yCardData}}</textarea>
+          
+          {{#if validationErrors.length}}
+            <div class="alert alert-error mt-2">
+              <div>
+                <strong>Validation Errors:</strong>
+                <ul class="list-disc list-inside">
+                  {{#each validationErrors}}
+                    <li>{{this}}</li>
+                  {{/each}}
+                </ul>
+              </div>
+            </div>
+          {{/if}}
+          
+          <div class="flex gap-2 mt-4">
+            <button id="saveContacts" class="btn btn-primary" {{#if validationErrors.length}}disabled{{/if}}>
+              Save Contacts
+            </button>
+            <button id="cancelEditor" class="btn btn-outline">Cancel</button>
+          </div>
+        </div>
+        
+        {{#if showPreview}}
+          <div class="divider">Preview</div>
+          <div class="ycard-preview">
+            {{#if parsedPeople.length}}
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{#each parsedPeople}}
+                  {{> ycardPersonCard}}
+                {{/each}}
+              </div>
+              
+              {{#if hierarchyData.length}}
+                <div class="divider">Organization Chart</div>
+                <div class="ycard-hierarchy">
+                  {{#each hierarchyData}}
+                    {{> ycardHierarchyNode}}
+                  {{/each}}
+                </div>
+              {{/if}}
+            {{else}}
+              <div class="text-gray-500 italic">No valid contacts to preview</div>
+            {{/if}}
+          </div>
+        {{/if}}
+      {{else}}
+        <div class="contacts-display">
+          {{#if contacts.length}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {{#each contacts}}
+                {{> ycardPersonCard}}
+              {{/each}}
+            </div>
+            
+            {{#if hierarchyData.length}}
+              <div class="divider">Organization Chart</div>
+              <div class="ycard-hierarchy">
+                {{#each hierarchyData}}
+                  {{> ycardHierarchyNode}}
+                {{/each}}
+              </div>
+            {{/if}}
+            
+            <div class="mt-4">
+              <button id="editContacts" class="btn btn-outline">Edit Contacts</button>
+            </div>
+          {{else}}
+            <div class="text-center py-8">
+              <div class="text-gray-500 mb-4">No contacts added yet</div>
+              <button id="addContacts" class="btn btn-primary">Add Contacts</button>
+            </div>
+          {{/if}}
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</template>
+
+<template name="ycardPersonCard">
+  <div class="card bg-base-200 p-4">
+    <div class="flex items-start justify-between">
+      <div class="flex-1">
+        <h5 class="font-semibold text-lg mb-1">
+          {{name}}{{#if surname}} {{surname}}{{/if}}
+        </h5>
+        
+        {{#if title}}
+          <div class="text-sm text-gray-600 mb-2">{{title}}</div>
+        {{/if}}
+        
+        {{#if org}}
+          <div class="badge badge-neutral badge-sm mb-2">{{org}}</div>
+        {{/if}}
+        
+        {{#if org_unit}}
+          <div class="badge badge-ghost badge-sm mb-2 ml-1">{{org_unit}}</div>
+        {{/if}}
+        
+        <div class="text-sm space-y-1">
+          {{#if email}}
+            <div class="flex items-center gap-1">
+              <span class="text-gray-500">✉</span>
+              <a href="mailto:{{email}}" class="link">{{email}}</a>
+            </div>
+          {{/if}}
+          
+          {{#if phone}}
+            <div class="flex items-center gap-1">
+              <span class="text-gray-500">📞</span>
+              <span>{{#if phone.number}}{{phone.number}}{{else}}{{phone}}{{/if}}</span>
+            </div>
+          {{/if}}
+          
+          {{#if manager}}
+            <div class="flex items-center gap-1">
+              <span class="text-gray-500">👤</span>
+              <span class="text-sm">Reports to: {{manager}}</span>
+            </div>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template name="ycardHierarchyNode">
+  <div class="hierarchy-node">
+    <div class="node-content bg-primary text-primary-content p-3 rounded-lg mb-2">
+      <div class="font-semibold">{{name}}{{#if surname}} {{surname}}{{/if}}</div>
+      {{#if title}}<div class="text-sm opacity-90">{{title}}</div>{{/if}}
+    </div>
+    
+    {{#if children.length}}
+      <div class="children ml-8 pl-4 border-l-2 border-gray-300">
+        {{#each children}}
+          {{> ycardHierarchyNode}}
+        {{/each}}
+      </div>
+    {{/if}}
+  </div>
+</template>

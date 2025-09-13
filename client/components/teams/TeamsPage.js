@@ -52,6 +52,9 @@ Template.teams.helpers({
       createdAt: queriedTeam.createdAt,
     };
   },
+  selectedTeamId() {
+    return Template.instance().selectedTeamId.get();
+  },
 });
 
 Template.teams.events({
