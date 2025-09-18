@@ -8,13 +8,16 @@
         <span class="badge bg-neutral text-neutral-content">Join Code: {{selectedTeam.code}}</span>
         <button id="copyTeamCode" class="btn btn-sm btn-outline btn-neutral">Copy Code</button>
       </div>
-      <h5 class="font-semibold mb-2">Collaborators:</h5>
-      <div class="flex flex-wrap gap-2">
+      <h5 class="font-semibold mb-2">Team Members:</h5>
+      <div class="flex flex-wrap gap-2 mb-6">
         {{#each selectedTeam.members}}
           <div class="badge badge-neutral">{{this.username}}</div>
         {{/each}}
       </div>
     </div>
+    
+    <!-- yCard Editor Section -->
+    {{> ycardEditor teamId=selectedTeamId}}
   {{else}}
     <div class="flex gap-4 mb-4">
       <button id="showCreateTeamForm" class="btn bg-primary hover:bg-primary-focus text-primary-content">Create Project</button>

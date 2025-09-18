@@ -52,6 +52,9 @@ Template.teams.helpers({
       createdAt: queriedTeam.createdAt,
     };
   },
+  selectedTeamId() {
+    return Template.instance().selectedTeamId.get();
+  },
 });
 
 Template.teams.events({
@@ -65,6 +68,9 @@ Template.teams.events({
   },
   'click #cancelCreateTeam'(e, t) {
     t.showCreateTeam.set(false);
+  },
+  'click #cancelJoinTeam'(e, t) {
+    t.showJoinTeam.set(false);
   },
   'submit #createTeamForm'(e, t) {
     e.preventDefault();

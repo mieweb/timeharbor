@@ -9,6 +9,7 @@ import './main.html';
 import './components/auth/AuthPage.html';
 import './components/layout/MainLayout.html';
 import './components/teams/TeamsPage.html';
+import './components/teams/YCardEditor.html';
 import './components/tickets/TicketsPage.html';
 import './components/home/HomePage.html';
 
@@ -16,6 +17,7 @@ import './components/home/HomePage.html';
 import './components/auth/AuthPage.js';
 import './components/layout/MainLayout.js';
 import './components/teams/TeamsPage.js';
+import './components/teams/YCardEditor.js';
 import './components/tickets/TicketsPage.js';
 import './components/home/HomePage.js';
 
