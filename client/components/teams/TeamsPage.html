@@ -1,8 +1,16 @@
 <template name="teams">
-  <h3 class="text-xl font-semibold mb-4">Projects & Teams</h3>
+  
   {{#if selectedTeam}}
     <div class="card bg-base-100 shadow p-6 mb-6">
-      <button id="backToTeams" class="btn btn-outline mb-4">&larr; Back to Projects</button>
+    <!-- Back button and title on same line -->
+    <div class="flex items-center gap-3 mb-4">
+      <button id="backToTeams" class="btn btn-circle btn-primary">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </button>
+      <h3 class="text-xl font-semibold">Projects & Teams</h3>
+    </div>
       <h4 class="text-lg font-bold mb-2">{{selectedTeam.name}}</h4>
       <div class="flex items-center gap-2 mb-4">
         <span class="badge bg-neutral text-neutral-content">Join Code: {{selectedTeam.code}}</span>
