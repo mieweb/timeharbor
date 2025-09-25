@@ -8,6 +8,7 @@ Template.teams.onCreated(function () {
   this.showJoinTeam = new ReactiveVar(false);
   this.selectedTeamId = new ReactiveVar(null);
   this.selectedTeamUsers = new ReactiveVar([]);
+  this.showYCardEditor = new ReactiveVar(false);
 
   this.autorun(() => {
     const selectedId = this.selectedTeamId.get();
@@ -51,6 +52,10 @@ Template.teams.helpers({
       leader: queriedTeam.leader,
       createdAt: queriedTeam.createdAt,
     };
+  },
+
+  showYCardEditor() {
+    return Template.instance().showYCardEditor.get();
   },
 });
 
@@ -116,4 +121,16 @@ Template.teams.events({
         });
     }
   },
+   'click #toggleYCardEditor'(e, t) {
+    // Toggle the editor visibility
+    const currentState = t.showYCardEditor.get();
+    t.showYCardEditor.set(!currentState);
+  },
+  
+  'click #closeYCardEditor'(e, t) {
+    t.showYCardEditor.set(false);
+  }
+
+
+
 });

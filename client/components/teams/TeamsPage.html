@@ -18,11 +18,86 @@
       Copy
       </button>
       </div>
-      <h5 class="font-semibold mb-2">Collaborators:</h5>
-      <div class="flex flex-wrap gap-2">
-        {{#each selectedTeam.members}}
-          <div class="badge badge-neutral">{{this.username}}</div>
-        {{/each}}
+      {{#if showYCardEditor}}
+      <div class="mb-6">
+        <!-- yCard Editor Header -->
+        <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-3 flex items-center justify-between rounded-t-lg">
+          <h3 class="text-lg font-semibold">yCard Editor</h3>
+          <div class="flex gap-2">
+            <button class="btn btn-sm bg-green-500 hover:bg-green-600 text-white border-none">Save Changes</button>
+            <button class="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white border-none">Validate YAML</button>
+            <button class="btn btn-sm bg-purple-500 hover:bg-purple-600 text-white border-none">Format Code</button>
+            <button class="btn btn-sm bg-red-500 hover:bg-red-600 text-white border-none">Reset</button>
+            <button id="closeYCardEditor" class="btn btn-sm btn-ghost text-white hover:bg-white hover:bg-opacity-20">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Editor Content -->
+        <div class="bg-gray-900 text-green-400 p-4 font-mono text-sm rounded-b-lg" style="height: 400px;">
+          <textarea id="ycardEditor" class="w-full h-full bg-transparent text-green-400 font-mono text-sm border-none outline-none resize-none" placeholder="# yCard Format - Human-friendly contact data">{{ycardContent}}</textarea>
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Collaborators Section -->
+      <div class="mb-6">
+        <!-- Header with blue background -->
+        <div class="bg-primary text-primary-content p-[5px] rounded-t-lg flex items-center justify-between">
+          <h5 class="text-lg font-semibold">Collaborators</h5>
+          <div class="flex gap-2">
+            <!-- Add collaborator button -->
+            <button class="btn btn-circle btn-sm bg-primary-content text-primary hover:bg-base-200">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+            </button>
+            <!-- Code editor button -->
+            <button id="toggleYCardEditor" class="btn btn-circle btn-sm bg-primary-content text-primary hover:bg-base-200">
+              <span class="text-sm font-mono">&lt;/&gt;</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Cards container -->
+        <div class="bg-base-100 rounded-b-lg p-4 border border-t-0">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {{#each selectedTeam.members}}
+              <div class="card bg-base-100 border border-base-300 p-4 rounded-lg">
+                <div class="mb-3">
+                  <h6 class="text-lg font-semibold text-base-content">{{this.username}}</h6>
+                </div>
+                
+                <div class="space-y-2 mb-4">
+                  <div>
+                    <span class="text-sm font-medium text-gray-600">Role:</span>
+                    <span class="text-sm text-base-content ml-2">
+                      {{#if (isTeamLeader this.id ../selectedTeam.leader)}}Administrator{{else}}Project Manager{{/if}}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <span class="text-sm font-medium text-gray-600">Organization:</span>
+                    <span class="text-sm text-base-content ml-2">TimeHarbor</span>
+                  </div>
+                  
+                  <div>
+                    <span class="text-sm font-medium text-gray-600">Email:</span>
+                    <span class="text-sm text-base-content ml-2">{{this.username}}@timeharbor.com</span>
+                  </div>
+                </div>
+                
+                <div class="flex gap-2">
+                  <button class="btn btn-sm btn-outline btn-primary flex-1">Edit</button>
+                  <button class="btn btn-sm btn-outline btn-info flex-1">Copy</button>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
       </div>
     </div>
   {{else}}
