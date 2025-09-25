@@ -1,60 +1,66 @@
 <template name="tickets">
   <h3 class="text-xl font-semibold mb-4">My Activities & Tasks</h3>
   {{#if userTeams.length}}
-    <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-      <label for="teamSelect" class="label">Select Project:</label>
-      <select id="teamSelect" class="select select-bordered">
-        {{#each userTeams}}
-          <option value="{{_id}}" {{isSelectedTeam _id}}>{{name}}</option>
-        {{/each}}
-      </select>
-      <button id="showCreateTicketForm" class="btn btn-primary">Create Activity</button>
-    </div>
-    <div class="mb-4 flex items-center gap-4">
-      {{#if isClockedInForTeam selectedTeamId}}
-        <button id="clockOutBtn" class="btn bg-neutral hover:bg-neutral-focus text-neutral-content">Stop Session</button>
-      {{else}}
-        <button id="clockInBtn" class="btn bg-gray-700 text-white hover:bg-opacity-90">Start Session</button>
-      {{/if}}
-    </div>
-    {{#if showCreateTicketForm}}
-      <form id="createTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="title" placeholder="Activity Title (e.g., 'Math Homework', 'Robot Assembly')" class="input input-bordered" required />
-        <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered" />
-        <div class="flex gap-2">
-          <input type="number" name="hours" min="0" placeholder="Hours" class="input input-bordered w-24" />
-          <input type="number" name="minutes" min="0" max="59" placeholder="Minutes" class="input input-bordered w-24" />
-          <input type="number" name="seconds" min="0" max="59" placeholder="Seconds" class="input input-bordered w-24" />
-        </div>
-        <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary">Create</button>
-          <button type="button" id="cancelCreateTicket" class="btn btn-outline">Cancel</button>
-        </div>
-      </form>
-    {{/if}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {{#each tickets}}
-        <div class="card bg-base-100 shadow-md p-4 {{#if isActive _id}}border border-slate-600{{/if}}">
-          <div class="ticket-title text-lg font-bold mb-2">{{title}}</div>
-          <div class="ticket-time mb-2"><span class="badge bg-gray-700 text-white">{{formatTime displayTime}}</span></div>
-          {{#if github}}
-            <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">Reference</a>
-          {{/if}}
-          <button class="activate-ticket {{getButtonClasses _id}} mt-2 w-full" 
-          data-id="{{_id}}"
-          title="{{getButtonTooltip _id}}">
-            {{#if isActive _id}}
-              Stop
-            {{else}}
-              Start
-            {{/if}}
-          </button>
-        </div>
+  <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+    <label for="teamSelect" class="label">Select Project:</label>
+    <select id="teamSelect" class="select select-bordered">
+      {{#each userTeams}}
+      <option value="{{_id}}" {{isSelectedTeam _id}}>{{name}}</option>
       {{/each}}
+    </select>
+    <button id="showCreateTicketForm" class="btn btn-primary">Create Activity</button>
+  </div>
+  <div class="mb-4 flex items-center gap-4">
+    {{#if isClockedInForTeam selectedTeamId}}
+    <button id="clockOutBtn" class="btn bg-neutral hover:bg-neutral-focus text-neutral-content">Stop Session</button>
+    {{else}}
+    <button id="clockInBtn" class="btn bg-gray-700 text-white hover:bg-opacity-90">Start Session</button>
+    {{/if}}
+  </div>
+  {{#if showCreateTicketForm}}
+  <form id="createTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
+    <div class="flex items-center gap-3">
+      <input type="text" name="title" placeholder="Activity Title (e.g., 'Math Homework', 'Robot Assembly')"
+        class="input input-bordered" required />
+      {{> ozwellButton}}
     </div>
+    <div class="flex items-center gap-3">
+      <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered" />
+      {{> ozwellButton}}
+    </div>
+    <div class="flex gap-2">
+      <input type="number" name="hours" min="0" placeholder="Hours" class="input input-bordered w-24" />
+      <input type="number" name="minutes" min="0" max="59" placeholder="Minutes" class="input input-bordered w-24" />
+      <input type="number" name="seconds" min="0" max="59" placeholder="Seconds" class="input input-bordered w-24" />
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">Create</button>
+      <button type="button" id="cancelCreateTicket" class="btn btn-outline">Cancel</button>
+    </div>
+  </form>
+  {{/if}}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {{#each tickets}}
+    <div class="card bg-base-100 shadow-md p-4 {{#if isActive _id}}border border-slate-600{{/if}}">
+      <div class="ticket-title text-lg font-bold mb-2">{{title}}</div>
+      <div class="ticket-time mb-2"><span class="badge bg-gray-700 text-white">{{formatTime displayTime}}</span></div>
+      {{#if github}}
+      <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">Reference</a>
+      {{/if}}
+      <button class="activate-ticket {{getButtonClasses _id}} mt-2 w-full" data-id="{{_id}}"
+        title="{{getButtonTooltip _id}}">
+        {{#if isActive _id}}
+        Stop
+        {{else}}
+        Start
+        {{/if}}
+      </button>
+    </div>
+    {{/each}}
+  </div>
   {{else}}
-    <div class="alert alert-info mt-4">
-      <p>Create or join a project to start tracking your activities and time.</p>
-    </div>
+  <div class="alert alert-info mt-4">
+    <p>Create or join a project to start tracking your activities and time.</p>
+  </div>
   {{/if}}
 </template>

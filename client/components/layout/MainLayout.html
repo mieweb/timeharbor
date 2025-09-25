@@ -7,29 +7,33 @@
       <a href="/" class="btn btn-ghost hover:bg-primary-focus">Home</a>
       <a href="/teams" class="btn btn-ghost hover:bg-primary-focus">Teams</a>
       <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Projects</a>
+      <a href="/settings" class="btn btn-ghost hover:bg-primary-focus">Settings</a>
     </nav>
     <div class="flex-none">
       <button id="logoutBtn" class="btn btn-outline btn-error" {{logoutBtnAttrs}}>
         {{#if isLogoutLoading}}
-          <span class="loading loading-spinner loading-sm"></span>
-          Logging out...
+        <span class="loading loading-spinner loading-sm"></span>
+        Logging out...
         {{else}}
-          Logout
+        Logout
         {{/if}}
       </button>
     </div>
   </header>
-  
+
   {{#if logoutMessage}}
-    <div class="alert alert-error mx-4 mb-4">
-      <span>{{logoutMessage}}</span>
-    </div>
+  <div class="alert alert-error mx-4 mb-4">
+    <span>{{logoutMessage}}</span>
+  </div>
   {{/if}}
-  
+
   <main class="container mx-auto px-4">
     {{> Template.dynamic template=main}}
   </main>
   <footer class="footer p-4 bg-base-200 text-base-content mt-8">
     <p>&copy; 2025 TimeHarbor - Your Personal Time Tracking Assistant</p>
   </footer>
+
+  <!-- Ozwell Modal -->
+  {{> ozwellModal}}
 </template>

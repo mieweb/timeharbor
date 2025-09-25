@@ -1,0 +1,195 @@
+<template name="ozwellModal">
+    <div id="ozwell-modal" class="modal {{#if isOzwellOpen}}modal-open{{/if}}">
+        <div class="transition-all duration-200 {{#if layoutIsSidecar}}fixed right-0 top-0 bottom-0 w-full max-w-xl shadow-xl border-l border-base-300 z-40 bg-base-100 flex flex-col pointer-events-auto{{else}}modal-box w-11/12 max-w-4xl h-[640px] max-h-[calc(100vh-2rem)] p-0 flex flex-col overflow-hidden bg-base-100{{/if}}">
+            <div class="px-6 py-4 bg-primary text-white flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold">Ozwell AI Assistant</h3>
+                    <p class="text-sm text-white/80">{{headerSubtitle}}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="ozwell-toggle-mode" class="btn btn-xs btn-ghost text-white">
+                        {{#if useMcpMode}}Use Native Chat{{else}}Use MCP Frame{{/if}}
+                    </button>
+                    <button id="ozwell-toggle-layout" class="btn btn-xs btn-ghost text-white">
+                        {{#if layoutIsSidecar}}Switch to Modal{{else}}Switch to Side Panel{{/if}}
+                    </button>
+                    <button id="ozwell-close" class="btn btn-sm btn-circle btn-ghost text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            {{#if recentsEnabled}}
+            {{#unless useMcpMode}}
+                {{#if hasRecentConversations}}
+                <div class="px-6 py-3 border-b border-base-200 bg-base-100 flex items-center justify-between gap-3">
+                    <span class="text-xs uppercase tracking-wide text-base-content/60">Recent chats</span>
+                    <button id="ozwell-new-chat" class="btn btn-xs btn-ghost">Start new chat</button>
+                </div>
+                <div class="px-6 py-2 border-b border-base-200 bg-base-100 flex flex-wrap gap-2">
+                    {{#each recentConversations}}
+                    <button class="resume-conversation btn btn-xs {{#if isCurrentConversation _id}}btn-primary text-primary-content{{else}}btn-outline{{/if}} max-w-full"
+                        data-id="{{_id}}" title="{{formatConversationTimestamp updatedAt label}}">
+                        <span class="text-xs font-medium truncate max-w-[10rem]">{{label}}</span>
+                    </button>
+                    {{/each}}
+                </div>
+                {{else}}
+                <div class="px-6 py-2 border-b border-base-200 bg-base-100">
+                    <button id="ozwell-new-chat" class="btn btn-xs btn-ghost">Start new chat</button>
+                </div>
+                {{/if}}
+            {{/unless}}
+            {{/if}}
+
+            {{#unless useMcpMode}}
+            {{#if selectedPrompt}}
+            <div class="px-6 py-3 border-b border-base-200 bg-base-100 flex items-start justify-between gap-3">
+                <div>
+                    <span class="text-xs uppercase tracking-wide text-base-content/60">Project Context</span>
+                    {{#if summaryVisible}}
+                    <div class="mt-2 p-3 rounded-xl bg-base-200 text-sm whitespace-pre-line leading-relaxed overflow-y-auto max-h-32">
+                        {{contextSummary}}
+                    </div>
+                    {{/if}}
+                </div>
+                <button id="toggle-context" class="btn btn-ghost btn-sm" title="Toggle context panel">
+                    <span class="w-6 h-6 rounded-full border border-base-300 flex items-center justify-center text-sm">
+                        i
+                    </span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-hidden flex flex-col bg-base-100">
+                <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                    {{#each messages}}
+                    <div class="flex {{messageWrapperClass role}}">
+                        <div class="max-w-xl px-4 py-3 rounded-2xl shadow-sm {{messageBubbleClass role}}">
+                            <p class="text-sm whitespace-pre-line leading-relaxed">{{content}}</p>
+                        </div>
+                    </div>
+                    {{/each}}
+
+                    {{#if showEmptyState}}
+                    <div class="flex justify-center pt-10 text-base-content/60 text-sm">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="loading loading-spinner loading-lg text-primary"></div>
+                            <p>Preparing your first draft…</p>
+                        </div>
+                    </div>
+                    {{/if}}
+
+                    {{#if isGenerating}}
+                    <div class="flex justify-start">
+                        <div class="max-w-xs px-4 py-3 rounded-2xl bg-base-200 text-sm flex items-center gap-2">
+                            <span class="loading loading-dots loading-sm"></span>
+                            <span>Generating response…</span>
+                        </div>
+                    </div>
+                    {{/if}}
+                </div>
+
+                {{#if suggestionsAvailable}}
+                <div class="px-6 pt-2 pb-3 border-t border-base-200 bg-base-100 flex-none">
+                    <p class="text-xs uppercase tracking-wide text-base-content/60 mb-2">Pick a suggestion to insert</p>
+                    <div class="space-y-2 overflow-y-auto pr-1" style="max-height: {{suggestionMaxHeight}}; padding-bottom:4px;">
+                        {{#each suggestions}}
+                        <label class="block cursor-pointer rounded-xl border border-base-300 hover:border-primary transition"
+                            data-index="{{index}}">
+                            <div class="flex items-start gap-3 px-3 py-2">
+                                <input type="radio" name="ozwell-suggestion" class="radio radio-sm mt-1"
+                                    value="{{index}}" {{checked index}} />
+                                <div class="flex-1 text-sm whitespace-pre-line leading-relaxed">{{text}}</div>
+                            </div>
+                        </label>
+                        {{/each}}
+                    </div>
+                </div>
+                {{/if}}
+            </div>
+
+            {{#if errorMessage}}
+            <div class="px-6 pb-2 text-sm text-error">{{errorMessage}}</div>
+            {{/if}}
+
+            <div class="px-6 py-4 border-t border-base-200 bg-base-100">
+                <form id="ozwell-composer" class="space-y-3">
+                    <div class="relative">
+                        <textarea id="ozwell-message-input" class="textarea textarea-bordered w-full min-h-[110px] resize-none pr-14"
+                            placeholder="Ask for revisions or follow-up context…" disabled={{composerDisabled}}>{{composerText}}</textarea>
+                        <button type="submit" id="ozwell-send" class="btn btn-primary btn-circle absolute bottom-3 right-3"
+                            disabled={{sendDisabled}}>
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M2.01 21l20.99-9L2.01 3 2 10l15 2-15 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="px-6 pb-6 pt-4 bg-base-100 border-t border-base-200 flex flex-wrap gap-3 justify-end">
+                <button id="ozwell-insert" class="btn btn-primary btn-sm" {{insertDisabled}}>Insert Suggestion</button>
+                <button id="ozwell-save-close" class="btn btn-neutral btn-sm" {{saveDisabled}}>Save &amp; Close</button>
+                <button id="ozwell-cancel" class="btn btn-outline btn-sm">Cancel</button>
+            </div>
+            {{else}}
+            <div class="p-6 space-y-5">
+                <div>
+                    <h4 class="text-lg font-semibold mb-2">How can Ozwell help?</h4>
+                    <p class="text-sm text-base-content/70">Pick a starter prompt to kick off the conversation.</p>
+                </div>
+                <div class="grid gap-3 grid-cols-1 lg:grid-cols-2">
+                    {{#each availablePrompts}}
+                    <button class="prompt-btn group flex items-start gap-3 rounded-xl border border-base-300 px-4 py-3 hover:bg-base-200 transition text-left"
+                        data-prompt-id="{{id}}">
+                        <span class="mt-1">
+                            <svg class="w-5 h-5 text-base-content/70 group-hover:text-primary" fill="currentColor" viewBox="0 0 24 24">
+                            {{#if (eq icon 'clock')}}
+                            <path
+                                d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.7L16.2,16.2Z" />
+                            {{else if (eq icon 'chart-bar')}}
+                            <path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z" />
+                            {{else if (eq icon 'link')}}
+                            <path
+                                d="M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z" />
+                            {{else if (eq icon 'pencil')}}
+                            <path
+                                d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
+                            {{else}}
+                            <path
+                                d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M5,19V5H19V19H5Z" />
+                            {{/if}}
+                            </svg>
+                        </span>
+                        <div class="flex-1">
+                            <div class="font-medium text-sm text-base-content group-hover:text-primary">{{title}}</div>
+                            <div class="text-xs text-base-content/60 leading-relaxed overflow-hidden">{{description}}</div>
+                        </div>
+                    </button>
+                    {{/each}}
+                </div>
+                <div>
+                    <button id="use-custom-prompt" class="btn btn-sm btn-ghost">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Use custom prompt
+                    </button>
+                </div>
+            </div>
+            {{/if}}
+            {{else}}
+            <div class="flex-1 bg-base-100">
+                <iframe id="ozwell-mcp-frame" src="/ozwell-frame.html" class="w-full h-full border-0"></iframe>
+            </div>
+            {{/unless}}
+        </div>
+        {{#unless layoutIsSidecar}}
+        <div class="modal-backdrop" id="ozwell-backdrop"></div>
+        {{/unless}}
+    </div>
+</template>

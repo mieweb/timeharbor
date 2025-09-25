@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ozwell MCP Frame</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.6);
+    }
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .message {
+      border-radius: 12px;
+      padding: 12px 14px;
+      line-height: 1.5;
+      max-width: 85%;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: #4f46e5;
+      color: white;
+    }
+    .message.assistant {
+      align-self: flex-start;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    form {
+      padding: 12px 16px 16px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      gap: 12px;
+    }
+    textarea {
+      flex: 1;
+      resize: none;
+      min-height: 60px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: inherit;
+      padding: 12px;
+    }
+    button {
+      border-radius: 12px;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      padding: 12px 18px;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <header>MCP Frame Prototype</header>
+  <div id="messages"></div>
+  <form id="composer">
+    <textarea id="input" placeholder="Ask Ozwell..." required></textarea>
+    <button type="submit">Send</button>
+  </form>
+  <script>
+    // NOTE(uid_future-mcp): This frame intentionally mirrors the interface of Ozwell's iframe
+    // but it is not using the real MCP wire protocol. It simply sends a prompt to the parent
+    // and expects a minimal model-response payload back. Replace this when integrating with
+    // Ozwell's official MCP transport.
+    const messagesEl = document.getElementById('messages');
+    const formEl = document.getElementById('composer');
+    const inputEl = document.getElementById('input');
+    let ready = false;
+
+    function appendMessage(role, text) {
+      const bubble = document.createElement('div');
+      bubble.className = `message ${role}`;
+      bubble.textContent = text;
+      messagesEl.appendChild(bubble);
+      messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
+    }
+
+    function postToParent(message) {
+      window.parent.postMessage({ source: 'ozwell-mcp-frame', ...message }, '*');
+    }
+
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data || data.source !== 'ozwell-modal-bridge') return;
+
+      if (data.type === 'mcp-ready') {
+        ready = true;
+        if (data.contextSummary) {
+          appendMessage('assistant', `Context loaded for ${data.contextSummary}`);
+        }
+      }
+
+      if (data.type === 'model-response') {
+        const text = data.payload?.content || '[No content received]';
+        appendMessage('assistant', text);
+        formEl.querySelector('button').disabled = false;
+      }
+
+      if (data.type === 'model-error') {
+        appendMessage('assistant', `Error: ${data.error || 'Unknown error'}`);
+        formEl.querySelector('button').disabled = false;
+      }
+    });
+
+    formEl.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const value = inputEl.value.trim();
+      if (!value || !ready) return;
+      appendMessage('user', value);
+      formEl.querySelector('button').disabled = true;
+      inputEl.value = '';
+      postToParent({
+        type: 'model-request',
+        payload: {
+          prompt: value
+        }
+      });
+    });
+
+    // announce to parent that we're ready
+    postToParent({ type: 'client-hello', version: '1.0' });
+  </script>
+</body>
+</html>
