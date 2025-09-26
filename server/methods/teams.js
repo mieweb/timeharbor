@@ -80,41 +80,41 @@ export const teamMethods = {
   },
   
   // Save yCard data for a team
-  saveYCardData(teamId, ycardContent) {
-    check(teamId, String);
-    check(ycardContent, String);
-    
-    if (!this.userId) {
-      throw new Meteor.Error('not-authorized', 'Must be logged in');
+  async saveYCardData(teamId, ycardContent) {
+  check(teamId, String);
+  check(ycardContent, String);
+  
+  if (!this.userId) {
+    throw new Meteor.Error('not-authorized', 'Must be logged in');
+  }
+  
+  // Use async version consistently
+  const team = await Teams.findOneAsync({ _id: teamId, members: this.userId });
+  if (!team) {
+    throw new Meteor.Error('not-authorized', 'Not a member of this team');
+  }
+  
+  // Use async update
+  await Teams.updateAsync(teamId, {
+    $set: {
+      ycardData: ycardContent,
+      ycardUpdatedAt: new Date(),
+      ycardUpdatedBy: this.userId
     }
-    
-    // Verify user is a member of the team
-    const team = Teams.findOne({ _id: teamId, members: this.userId });
-    if (!team) {
-      throw new Meteor.Error('not-authorized', 'Not a member of this team');
-    }
-    
-    // Save the yCard data to the team document
-    Teams.update(teamId, {
-      $set: {
-        ycardData: ycardContent,
-        ycardUpdatedAt: new Date(),
-        ycardUpdatedBy: this.userId
-      }
-    });
-    
+  });
+  
     return true;
   },
   
   // Get yCard data for a team
-  getYCardData(teamId) {
+  async getYCardData(teamId) {
     check(teamId, String);
     
     if (!this.userId) {
       throw new Meteor.Error('not-authorized', 'Must be logged in');
     }
     
-    const team = Teams.findOne({ _id: teamId, members: this.userId }, {
+    const team = await Teams.findOne({ _id: teamId, members: this.userId }, {
       fields: { ycardData: 1 }
     });
     

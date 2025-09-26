@@ -27,6 +27,15 @@ Template.teams.onCreated(function () {
     org: "TimeHarbor"
     org_unit: ""`);
 
+
+
+  this.autorun(() => {
+    const status = Meteor.status();
+    if (!status.connected) {
+      console.log('Meteor disconnected:', status);
+    }
+  });
+
   this.autorun(() => {
     const selectedId = this.selectedTeamId.get();
     if (selectedId) {
@@ -154,21 +163,31 @@ Template.teams.onCreated(function () {
   };
   
   this.saveYCardData = () => {
-    const content = this.ycardContent.get();
-    const teamId = this.selectedTeamId.get();
-    
-    Meteor.call('saveYCardData', teamId, content, (err) => {
-      if (err) {
-        document.getElementById('editorStatus').textContent = 'Save failed: ' + err.reason;
-      } else {
-        document.getElementById('editorStatus').textContent = 'Saved successfully ✓';
-      }
-    });
-  };
-
-
-
-
+  const content = this.ycardContent.get();
+  const teamId = this.selectedTeamId.get();
+  
+  if (!teamId) {
+    document.getElementById('editorStatus').textContent = 'Error: No team selected';
+    return;
+  }
+  
+  // Check if Meteor is connected
+  if (!Meteor.status().connected) {
+    document.getElementById('editorStatus').textContent = 'Error: Not connected to server';
+    return;
+  }
+  
+  document.getElementById('editorStatus').textContent = 'Saving...';
+  
+  Meteor.call('saveYCardData', teamId, content, (err, result) => {
+    if (err) {
+      console.error('Save error:', err);
+      document.getElementById('editorStatus').textContent = 'Save failed: ' + (err.reason || err.message);
+    } else {
+      document.getElementById('editorStatus').textContent = 'Saved successfully ✓';
+    }
+  });
+};
 
 
 
@@ -223,6 +242,9 @@ Template.teams.helpers({
   
   suggestionLeft() {
     return Template.instance().suggestionPosition.get().left;
+  },
+  isTeamLeader(userId, leaderId) {
+    return userId === leaderId;
   }
 });
 
@@ -357,6 +379,9 @@ people:
   },
   
   'click #saveYCardChanges'(e, t) {
+    console.log('Save button clicked');
+    console.log('Team ID:', t.selectedTeamId.get());
+    console.log('Content length:', t.ycardContent.get().length);
     t.saveYCardData();
   }
 
