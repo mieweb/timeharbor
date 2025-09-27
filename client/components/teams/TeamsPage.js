@@ -3,6 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams } from '../../../collections.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
+
 Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);
   this.showJoinTeam = new ReactiveVar(false);
@@ -26,6 +27,8 @@ Template.teams.onCreated(function () {
     email: ""
     org: "TimeHarbor"
     org_unit: ""`);
+
+    
 
 
 
@@ -162,7 +165,8 @@ Template.teams.onCreated(function () {
     document.getElementById('editorStatus').textContent = 'Code formatted';
   };
   
-  this.saveYCardData = () => {
+  
+this.saveYCardData = () => {
   const content = this.ycardContent.get();
   const teamId = this.selectedTeamId.get();
   
@@ -177,14 +181,34 @@ Template.teams.onCreated(function () {
     return;
   }
   
-  document.getElementById('editorStatus').textContent = 'Saving...';
+  document.getElementById('editorStatus').textContent = 'Processing yCard data...';
   
   Meteor.call('saveYCardData', teamId, content, (err, result) => {
     if (err) {
       console.error('Save error:', err);
       document.getElementById('editorStatus').textContent = 'Save failed: ' + (err.reason || err.message);
     } else {
-      document.getElementById('editorStatus').textContent = 'Saved successfully ✓';
+      console.log('Save result:', result);
+      
+      // Display success message with details
+      let statusMessage = result.message;
+      
+      if (result.errors && result.errors.length > 0) {
+        statusMessage += ' Check console for error details.';
+        console.warn('yCard processing errors:', result.errors);
+      }
+      
+      document.getElementById('editorStatus').textContent = statusMessage;
+      document.getElementById('userLookupStatus').textContent = 
+        `Added ${result.addedMembers} new members. Total: ${result.totalMembers}`;
+      
+      // Optionally refresh the team data to show new members
+      // Force reactivity update
+      const currentTeamId = this.selectedTeamId.get();
+      this.selectedTeamId.set(null);
+      Tracker.afterFlush(() => {
+        this.selectedTeamId.set(currentTeamId);
+      });
     }
   });
 };
