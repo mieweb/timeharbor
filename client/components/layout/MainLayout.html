@@ -9,15 +9,50 @@
       <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Projects</a>
     </nav>
     <div class="flex-none">
-      <button id="logoutBtn" class="btn btn-outline btn-error" {{logoutBtnAttrs}}>
-        {{#if isLogoutLoading}}
-          <span class="loading loading-spinner loading-sm"></span>
-          Logging out...
-        {{else}}
-          Logout
-        {{/if}}
-      </button>
+  <!-- Profile Dropdown -->
+    <div class="dropdown dropdown-end">
+      <div tabindex="0" role="button" class="btn btn-ghost hover:bg-primary-focus m-1" id="profileDropdown">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        Profile
+        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </div>
+      <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border">
+        <li>
+          <a id="contactInfo" class="text-base-content hover:bg-base-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Contact Info
+          </a>
+        </li>
+        <li>
+          <a id="orgChart" class="text-base-content hover:bg-base-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            Org Chart
+          </a>
+        </li>
+        <li class="border-t border-base-300 mt-1 pt-1">
+          <a id="logoutBtn" class="text-error hover:bg-error hover:text-error-content" {{logoutBtnAttrs}}>
+            {{#if isLogoutLoading}}
+              <span class="loading loading-spinner loading-sm"></span>
+              Logging out...
+            {{else}}
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              </svg>
+              Logout
+            {{/if}}
+          </a>
+        </li>
+      </ul>
     </div>
+  </div>
   </header>
   
   {{#if logoutMessage}}
