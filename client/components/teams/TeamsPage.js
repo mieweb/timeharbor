@@ -2,9 +2,32 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams } from '../../../collections.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
-
-
+import { YCardParser, yCardToVCard } from 'ycard';
 Template.teams.onCreated(function () {
+   const sampleYaml = `
+people:
+  - uid: john-doe
+    name: John
+    surname: Doe
+    title: Software Engineer
+    email: john.doe@example.com
+    org: Example Corp
+    phone:
+      - type: work
+        number: "+1-555-0123"
+  - uid: jane-smith
+    name: Jane
+    surname: Smith
+    title: Product Manager
+    email: jane.smith@example.com
+    org: Example Corp
+    manager: john-doe
+`;
+      const parser = new YCardParser();
+      const parsedData = parser.parse(sampleYaml);
+      console.log('Parsed yCard Data:', parsedData);
+      yCardToVCard(parsedData.data)
+
   this.showCreateTeam = new ReactiveVar(false);
   this.showJoinTeam = new ReactiveVar(false);
   this.selectedTeamId = new ReactiveVar(null);
@@ -159,10 +182,11 @@ Template.teams.onCreated(function () {
   
   this.formatYAMLContent = () => {
     // Basic formatting - in real implementation you'd use a YAML formatter
+ 
     const content = this.ycardContent.get();
-    const formatted = content.replace(/\t/g, '  '); // Replace tabs with spaces
-    this.ycardContent.set(formatted);
-    document.getElementById('editorStatus').textContent = 'Code formatted';
+  
+ 
+    
   };
   
   
