@@ -2,32 +2,11 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams } from '../../../collections.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
-import { YCardParser, yCardToVCard } from 'ycard';
-Template.teams.onCreated(function () {
-   const sampleYaml = `
-people:
-  - uid: john-doe
-    name: John
-    surname: Doe
-    title: Software Engineer
-    email: john.doe@example.com
-    org: Example Corp
-    phone:
-      - type: work
-        number: "+1-555-0123"
-  - uid: jane-smith
-    name: Jane
-    surname: Smith
-    title: Product Manager
-    email: jane.smith@example.com
-    org: Example Corp
-    manager: john-doe
-`;
-      const parser = new YCardParser();
-      const parsedData = parser.parse(sampleYaml);
-      console.log('Parsed yCard Data:', parsedData);
-      yCardToVCard(parsedData.data)
 
+import { parseYCard, yCardToVCard } from 'ycard';
+import YAML from 'yaml';
+
+Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);
   this.showJoinTeam = new ReactiveVar(false);
   this.selectedTeamId = new ReactiveVar(null);
@@ -40,20 +19,34 @@ people:
   this.suggestionPosition = new ReactiveVar({ top: 0, left: 0 });
   this.currentCursorPosition = new ReactiveVar(0);
 
+  // Initialize with proper yCard template
   this.ycardContent.set(`# yCard Format - Human-friendly contact data
-  people:
-  - uid: 
-    name: ""
-    surname: ""
-    title: ""
-    manager: null
-    email: ""
+people:
+  - uid: "new-user"
+    name: "John"
+    surname: "Doe"
+    title: "Team Member"
     org: "TimeHarbor"
-    org_unit: ""`);
+    email: "john@gmail.com"
+    phone:
+      - number: "7777777777"
+        type: work
+    address:
+      street: "1234 abby St"
+      city: "Belmont"
+      state: "California"
+      postal_code: "444444"
+      country: "USA"`);
 
-    
-
-
+      
+   const org = parseYCard(this.ycardContent.get());
+   console.log('Parsed yCard:', org);
+   // Then convert to vCard
+   const cards = yCardToVCard(org);
+   
+   console.log('Generated vCards:', cards);
+      
+      
 
   this.autorun(() => {
     const status = Meteor.status();
@@ -83,17 +76,79 @@ people:
     }
   });
 
+  // Function to generate YAML from team members
+  this.generateYAMLFromTeamMembers = () => {
+    const teamId = this.selectedTeamId.get();
+    if (!teamId) {
+      console.log('No team selected');
+      return;
+    }
+
+    Meteor.call('getUsers', null, teamId, (err, users) => {
+      if (err) {
+        console.error('Error fetching team members:', err);
+        document.getElementById('editorStatus').textContent = 'Error loading members';
+        return;
+      }
+
+      if (!users || users.length === 0) {
+        document.getElementById('editorStatus').textContent = 'No members to load';
+        return;
+      }
+
+      // Generate YAML content from users with full structure
+      const yamlData = {
+        people: users.map(user => {
+          const person = {
+            uid: user.id, // MongoDB generated _id
+            name: user.firstName || user.username,
+            surname: user.lastName || '',
+            title: user.title || 'Team Member',
+            org: user.organization || 'TimeHarbor',
+            email: user.email || `${user.username}@timeharbor.com`
+          };
+
+          // Add phone if available
+          if (user.phone && user.phone.length > 0) {
+            person.phone = user.phone;
+          } else {
+            person.phone = [{ number: '', type: 'work' }];
+          }
+
+          // Add address if available
+          if (user.address && user.address.street) {
+            person.address = user.address;
+          } else {
+            person.address = {
+              street: '',
+              city: '',
+              state: '',
+              postal_code: '',
+              country: 'USA'
+            };
+          }
+
+          return person;
+        })
+      };
+
+      // Convert to YAML string
+      const yamlString = YAML.stringify(yamlData);
+      const formattedYaml = `# yCard Format - Human-friendly contact data\n${yamlString}`;
+      
+      this.ycardContent.set(formattedYaml);
+      document.getElementById('editorStatus').textContent = `Loaded ${users.length} team members`;
+    });
+  };
 
   this.searchUsers = (searchTerm, textareaElement) => {
     if (searchTerm.length < 2) return;
     
-    // Call server method to search users
     Meteor.call('searchUsersByName', searchTerm, (err, users) => {
       if (!err && users) {
         this.userSuggestions.set(users);
         this.showUserSuggestions.set(users.length > 0);
         
-        // Calculate position for suggestions dropdown
         const rect = textareaElement.getBoundingClientRect();
         const cursorPosition = this.getCursorPosition(textareaElement);
         this.suggestionPosition.set({
@@ -105,19 +160,14 @@ people:
   };
   
   this.getCursorPosition = (textarea) => {
-    // Simple approximation - in real implementation you'd want more precise positioning
     return { top: 100, left: 20 };
   };
   
   this.fillUserData = (user) => {
     const currentContent = this.ycardContent.get();
-    const cursorPos = this.currentCursorPosition.get();
-    
-    // Find the current person block and fill in the data
     const lines = currentContent.split('\n');
     let personBlockStart = -1;
     
-    // Find the start of current person block
     for (let i = lines.length - 1; i >= 0; i--) {
       if (lines[i].trim().startsWith('- uid:')) {
         personBlockStart = i;
@@ -126,24 +176,28 @@ people:
     }
     
     if (personBlockStart !== -1) {
-      // Generate user data based on database user
       const nameParts = user.username.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       
-      // Replace the person block with filled data
       const newPersonBlock = [
-        `  - uid: ${user.username.toLowerCase().replace(/\s+/g, '-')}`,
-        `    name: "${firstName}"`,
-        `    surname: "${lastName}"`,
-        `    title: "${user.profile?.title || 'Team Member'}"`,
-        `    manager: ${user.profile?.manager || 'null'}`,
-        `    email: "${user.profile?.email || user.username + '@timeharbor.com'}"`,
-        `    org: "TimeHarbor"`,
-        `    org_unit: "${user.profile?.department || 'General'}"`
+        `  - uid: ${user._id}`,
+        `    name: ${firstName}`,
+        `    surname: ${lastName}`,
+        `    title: ${user.profile?.title || 'Team Member'}`,
+        `    org: TimeHarbor`,
+        `    email: ${user.profile?.email || user.username + '@timeharbor.com'}`,
+        `    phone:`,
+        `      - number: ""`,
+        `        type: work`,
+        `    address:`,
+        `      street: ""`,
+        `      city: ""`,
+        `      state: ""`,
+        `      postal_code: ""`,
+        `      country: "USA"`
       ];
       
-      // Find end of current person block
       let personBlockEnd = personBlockStart;
       for (let i = personBlockStart + 1; i < lines.length; i++) {
         if (lines[i].trim().startsWith('- uid:') || (!lines[i].startsWith('    ') && lines[i].trim() !== '')) {
@@ -152,7 +206,6 @@ people:
         personBlockEnd = i;
       }
       
-      // Replace the block
       const newLines = [
         ...lines.slice(0, personBlockStart),
         ...newPersonBlock,
@@ -160,8 +213,6 @@ people:
       ];
       
       this.ycardContent.set(newLines.join('\n'));
-      
-      // Update status
       document.getElementById('userLookupStatus').textContent = `Filled data for ${user.username}`;
     }
   };
@@ -169,79 +220,87 @@ people:
   this.validateYAMLContent = () => {
     const content = this.ycardContent.get();
     try {
-      // Basic YAML validation (you might want to use a proper YAML parser)
-      if (content.includes('people:')) {
-        document.getElementById('editorStatus').textContent = 'YAML Valid ✓';
+      const parsed = YAML.parse(content);
+      if (parsed.people && Array.isArray(parsed.people)) {
+        document.getElementById('editorStatus').textContent = `YAML Valid ✓ (${parsed.people.length} people)`;
       } else {
-        document.getElementById('editorStatus').textContent = 'YAML Invalid - missing people section';
+        document.getElementById('editorStatus').textContent = 'YAML Invalid - missing people array';
       }
     } catch (e) {
-      document.getElementById('editorStatus').textContent = 'YAML Invalid - syntax error';
+      document.getElementById('editorStatus').textContent = 'YAML Invalid: ' + e.message;
     }
   };
   
   this.formatYAMLContent = () => {
-    // Basic formatting - in real implementation you'd use a YAML formatter
- 
     const content = this.ycardContent.get();
-  
- 
-    
+    try {
+      const parsed = YAML.parse(content);
+      const formatted = YAML.stringify(parsed, { indent: 2 });
+      const withComment = `# yCard Format - Human-friendly contact data\n${formatted}`;
+      this.ycardContent.set(withComment);
+      document.getElementById('editorStatus').textContent = 'Code formatted ✓';
+    } catch (e) {
+      document.getElementById('editorStatus').textContent = 'Format failed: ' + e.message;
+    }
   };
   
-  
-this.saveYCardData = () => {
-  const content = this.ycardContent.get();
-  const teamId = this.selectedTeamId.get();
-  
-  if (!teamId) {
-    document.getElementById('editorStatus').textContent = 'Error: No team selected';
-    return;
-  }
-  
-  // Check if Meteor is connected
-  if (!Meteor.status().connected) {
-    document.getElementById('editorStatus').textContent = 'Error: Not connected to server';
-    return;
-  }
-  
-  document.getElementById('editorStatus').textContent = 'Processing yCard data...';
-  
-  Meteor.call('saveYCardData', teamId, content, (err, result) => {
-    if (err) {
-      console.error('Save error:', err);
-      document.getElementById('editorStatus').textContent = 'Save failed: ' + (err.reason || err.message);
-    } else {
-      console.log('Save result:', result);
-      
-      // Display success message with details
-      let statusMessage = result.message;
-      
-      if (result.errors && result.errors.length > 0) {
-        statusMessage += ' Check console for error details.';
-        console.warn('yCard processing errors:', result.errors);
-      }
-      
-      document.getElementById('editorStatus').textContent = statusMessage;
-      document.getElementById('userLookupStatus').textContent = 
-        `Added ${result.addedMembers} new members. Total: ${result.totalMembers}`;
-      
-      // Optionally refresh the team data to show new members
-      // Force reactivity update
-      const currentTeamId = this.selectedTeamId.get();
-      this.selectedTeamId.set(null);
-      Tracker.afterFlush(() => {
-        this.selectedTeamId.set(currentTeamId);
-      });
+  this.saveYCardData = () => {
+    const content = this.ycardContent.get();
+    const teamId = this.selectedTeamId.get();
+    
+    if (!teamId) {
+      document.getElementById('editorStatus').textContent = 'Error: No team selected';
+      return;
     }
-  });
-};
-
-
-
-
-
-
+    
+    if (!Meteor.status().connected) {
+      document.getElementById('editorStatus').textContent = 'Error: Not connected to server';
+      return;
+    }
+    
+    document.getElementById('editorStatus').textContent = 'Processing yCard data...';
+    
+    try {
+      // Parse YAML to yCard format
+      const yCardData = parseYCard(content);
+      console.log('Parsed yCard:', yCardData);
+      
+      // Convert yCard to vCard
+      const vCards = yCardToVCard(yCardData);
+      console.log('Generated vCards:', vCards);
+      
+      // Save to database
+      Meteor.call('saveYCardData', teamId, content, vCards, (err, result) => {
+        if (err) {
+          console.error('Save error:', err);
+          document.getElementById('editorStatus').textContent = 'Save failed: ' + (err.reason || err.message);
+        } else {
+          console.log('Save result:', result);
+          
+          let statusMessage = result.message;
+          
+          if (result.errors && result.errors.length > 0) {
+            statusMessage += ' Check console for error details.';
+            console.warn('yCard processing errors:', result.errors);
+          }
+          
+          document.getElementById('editorStatus').textContent = statusMessage;
+          document.getElementById('userLookupStatus').textContent = 
+            `Processed ${result.totalProcessed} members with vCard data`;
+          
+          // Refresh team data
+          const currentTeamId = this.selectedTeamId.get();
+          this.selectedTeamId.set(null);
+          Tracker.afterFlush(() => {
+            this.selectedTeamId.set(currentTeamId);
+          });
+        }
+      });
+    } catch (parseError) {
+      console.error('Parse error:', parseError);
+      document.getElementById('editorStatus').textContent = 'Parse failed: ' + parseError.message;
+    }
+  };
 });
 
 Template.teams.helpers({
@@ -265,29 +324,21 @@ Template.teams.helpers({
       createdAt: queriedTeam.createdAt,
     };
   },
-
   showYCardEditor() {
     return Template.instance().showYCardEditor.get();
   },
-
-  
-  
   ycardContent() {
     return Template.instance().ycardContent.get();
   },
-  
   showUserSuggestions() {
     return Template.instance().showUserSuggestions.get();
   },
-  
   userSuggestions() {
     return Template.instance().userSuggestions.get();
   },
-  
   suggestionTop() {
     return Template.instance().suggestionPosition.get().top;
   },
-  
   suggestionLeft() {
     return Template.instance().suggestionPosition.get().left;
   },
@@ -336,7 +387,7 @@ Template.teams.events({
   },
   'click #backToTeams'(e, t) {
     t.selectedTeamId.set(null);
-    t.selectedTeamUsers.set([]); // Clear users when going back
+    t.selectedTeamUsers.set([]);
   },
   'click #copyTeamCode'(e, t) {
     const teamId = Template.instance().selectedTeamId.get();
@@ -344,7 +395,6 @@ Template.teams.events({
     if (joinCode) {
       navigator.clipboard.writeText(joinCode)
         .then(() => {
-          // Optional: Add some visual feedback
           const btn = e.currentTarget;
           const originalText = btn.textContent;
           btn.textContent = 'Copied!';
@@ -358,33 +408,33 @@ Template.teams.events({
         });
     }
   },
-   'click #toggleYCardEditor'(e, t) {
-    // Toggle the editor visibility
+  'click #toggleYCardEditor'(e, t) {
     const currentState = t.showYCardEditor.get();
-    t.showYCardEditor.set(!currentState);
+    const newState = !currentState;
+    t.showYCardEditor.set(newState);
+    
+    // Auto-generate YAML from team members when opening editor
+    if (newState) {
+      setTimeout(() => {
+        t.generateYAMLFromTeamMembers();
+      }, 100);
+    }
   },
-  
-  
-  
   'click #closeYCardEditor'(e, t) {
     t.showYCardEditor.set(false);
     t.showUserSuggestions.set(false);
   },
-  
   'input #ycardEditor'(e, t) {
     const content = e.target.value;
     t.ycardContent.set(content);
     
-    // Check if user is typing a name
     const cursorPosition = e.target.selectionStart;
     t.currentCursorPosition.set(cursorPosition);
     
-    // Find the current line and check if it's a name field
     const lines = content.substring(0, cursorPosition).split('\n');
     const currentLine = lines[lines.length - 1];
     
-    // Look for name pattern: name: "partial_name"
-    const nameMatch = currentLine.match(/name:\s*"([^"]*)"?$/);
+    const nameMatch = currentLine.match(/name:\s*"?([^"\n]*)"?$/);
     if (nameMatch && nameMatch[1].length >= 2) {
       const searchTerm = nameMatch[1];
       t.searchUsers(searchTerm, e.target);
@@ -392,7 +442,6 @@ Template.teams.events({
       t.showUserSuggestions.set(false);
     }
   },
-  
   'click .user-suggestion'(e, t) {
     const userId = e.currentTarget.dataset.userId;
     const selectedUser = t.userSuggestions.get().find(u => u._id === userId);
@@ -403,36 +452,37 @@ Template.teams.events({
     
     t.showUserSuggestions.set(false);
   },
-  
   'click #validateYAML'(e, t) {
     t.validateYAMLContent();
   },
-  
   'click #formatCode'(e, t) {
     t.formatYAMLContent();
   },
-  
   'click #resetEditor'(e, t) {
     t.ycardContent.set(`# yCard Format - Human-friendly contact data
 people:
-  - uid: 
-    name: ""
-    surname: ""
-    title: ""
-    manager: null
-    email: ""
+  - uid: "new-user"
+    name: "John"      
+    surname: "Doe"
+    title: "Team Member"
     org: "TimeHarbor"
-    org_unit: ""`);
+    email: "john@gmail.com"
+    phone:
+      - number: "7777777777"
+        type: work
+    address:
+      street: "1234 abby St"
+      city: "Belmont"
+      state: "California"
+      postal_code: "444444"
+      country: "USA"`);
     t.showUserSuggestions.set(false);
+    document.getElementById('editorStatus').textContent = 'Editor reset';
   },
-  
   'click #saveYCardChanges'(e, t) {
     console.log('Save button clicked');
     console.log('Team ID:', t.selectedTeamId.get());
     console.log('Content length:', t.ycardContent.get().length);
     t.saveYCardData();
   }
-
-
-
 });

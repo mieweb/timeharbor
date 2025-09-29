@@ -95,30 +95,67 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             {{#each selectedTeam.members}}
               <div class="card bg-base-100 border border-base-300 p-4 rounded-lg">
-                <div class="mb-3">
-                  <h6 class="text-lg font-semibold text-base-content">{{this.username}}</h6>
+                <div class="mb-3 flex items-start justify-between">
+                  <div>
+                    <h6 class="text-lg font-semibold text-base-content">
+                      {{#if this.vCardData}}
+                        {{this.firstName}} {{this.lastName}}
+                      {{else}}
+                        {{this.username}}
+                      {{/if}}
+                    </h6>
+                    <p class="text-sm italic text-gray-500">{{this.title}}</p>
+                  </div>
+                  {{#if this.vCardData}}
+                    <span class="badge badge-success badge-xs">vCard ✓</span>
+                  {{/if}}
                 </div>
                 
                 <div class="space-y-2 mb-4">
                   <div>
-                    <span class="text-sm font-medium text-gray-600">Role:</span>
-                    <span class="text-sm text-base-content ml-2">
-                      {{this.profile.title}}
-                    </span>
-                  </div>
-                  
-                  <div>
-                    <span class="text-sm font-medium text-gray-600">Organization:</span>
-                    <span class="text-sm text-base-content ml-2">TimeHarbor</span>
+                    <span class="text-sm font-medium text-gray-600">Org:</span>
+                    <span class="text-sm text-base-content ml-2">{{this.organization}}</span>
                   </div>
                   
                   <div>
                     <span class="text-sm font-medium text-gray-600">Email:</span>
-                    <span class="text-sm text-base-content ml-2">{{this.username}}@timeharbor.com</span>
+                    <span class="text-sm text-base-content ml-2">{{this.email}}</span>
                   </div>
+                  
+                  {{#if this.phone}}
+                    {{#if this.phone.length}}
+                    <div>
+                      <span class="text-sm font-medium text-gray-600">Phone:</span>
+                      {{#each this.phone}}
+                        <div class="text-sm text-base-content ml-2">
+                          {{this.number}} <span class="text-xs text-gray-500">({{this.type}})</span>
+                        </div>
+                      {{/each}}
+                    </div>
+                    {{/if}}
+                  {{/if}}
+                  
+                  {{#if this.address}}
+                    {{#if this.address.street}}
+                    <div>
+                      <span class="text-sm font-medium text-gray-600">Address:</span>
+                      <div class="text-sm text-base-content ml-2">
+                        {{this.address.street}}<br>
+                        {{this.address.city}}, {{this.address.state}} {{this.address.postal_code}}<br>
+                        {{this.address.country}}
+                      </div>
+                    </div>
+                    {{/if}}
+                  {{/if}}
                 </div>
                 
-                
+                {{#if this.vCardData}}
+                <div class="pt-2 border-t border-base-300">
+                  <button class="btn btn-xs btn-outline" onclick="navigator.clipboard.writeText('{{this.vCardData}}').then(() => alert('vCard copied to clipboard!')).catch(() => alert('Failed to copy'))">
+                    Download vCard
+                  </button>
+                </div>
+                {{/if}}
               </div>
             {{/each}}
           </div>
@@ -157,4 +194,3 @@
     </div>
   {{/if}}
 </template>
-

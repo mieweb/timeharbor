@@ -1,17 +1,15 @@
 import { Meteor } from 'meteor/meteor';
-import { check } from 'meteor/check';
+import { check, Match } from 'meteor/check';
 import { Teams } from '../../collections.js';
 import { Accounts } from 'meteor/accounts-base';
 import YAML from 'js-yaml';
 
-// Global default password for new users
 const DEFAULT_PASSWORD = 'TempPass123!';
 
 function generateTeamCode() {
   return Math.random().toString(36).substr(2, 8).toUpperCase();
 }
 
-// Helper function to create user from yCard data
 async function createUserFromYCard(userData, creatorId) {
   check(userData, {
     username: String,
@@ -19,10 +17,12 @@ async function createUserFromYCard(userData, creatorId) {
     firstName: String,
     lastName: String,
     title: String,
-    department: String
+    department: Match.Optional(String),
+    phone: Match.Optional(Array),
+    address: Match.Optional(Object),
+    uid: Match.Optional(String)
   });
   
-  // Check if user already exists
   const existingUser = await Meteor.users.findOneAsync({
     $or: [
       { username: userData.username },
@@ -35,7 +35,6 @@ async function createUserFromYCard(userData, creatorId) {
     throw new Meteor.Error('user-exists', 'User already exists');
   }
   
-  // Create new user
   const userId = await Accounts.createUserAsync({
     username: userData.username,
     email: userData.email,
@@ -44,7 +43,9 @@ async function createUserFromYCard(userData, creatorId) {
       firstName: userData.firstName,
       lastName: userData.lastName,
       title: userData.title,
-      department: userData.department,
+      department: userData.department || 'General',
+      phone: userData.phone || [],
+      address: userData.address || {},
       createdBy: creatorId,
       createdAt: new Date()
     }
@@ -88,17 +89,13 @@ export const teamMethods = {
   },
 
   async getUsers(userIds, teamId = null) {
-    check(userIds, [String]);
-    
     if (!this.userId) {
       throw new Meteor.Error('not-authorized', 'Must be logged in');
     }
 
-    // If teamId is provided, get users from that specific team
     if (teamId) {
       check(teamId, String);
       
-      // Check if user is a member of the team
       const team = await Teams.findOneAsync({ 
         _id: teamId, 
         members: this.userId 
@@ -108,7 +105,6 @@ export const teamMethods = {
         throw new Meteor.Error('not-authorized', 'Not a member of this team');
       }
       
-      // Get all team members
       const users = await Meteor.users.find({ 
         _id: { $in: team.members } 
       }, {
@@ -121,7 +117,10 @@ export const teamMethods = {
           'profile.title': 1,
           'profile.department': 1,
           'profile.manager': 1,
-          'profile.organization': 1
+          'profile.organization': 1,
+          'profile.phone': 1,
+          'profile.address': 1,
+          'profile.vCardData': 1
         }
       }).fetchAsync();
       
@@ -135,19 +134,25 @@ export const teamMethods = {
         department: user.profile?.department || 'General',
         manager: user.profile?.manager || null,
         organization: user.profile?.organization || 'TimeHarbor',
+        phone: user.profile?.phone || [],
+        address: user.profile?.address || {},
+        vCardData: user.profile?.vCardData || null,
         isTeamLeader: team.leader === user._id,
         isTeamAdmin: team.admins?.includes(user._id) || false
       }));
     }
     
-    // Original functionality - get specific users by IDs
+    check(userIds, [String]);
     const users = await Meteor.users.find({ _id: { $in: userIds } }).fetchAsync();
     return users.map(user => ({ 
       id: user._id, 
       username: user.username,
       firstName: user.profile?.firstName || '',
       lastName: user.profile?.lastName || user.profile?.surname || '',
-      email: user.profile?.email || ''
+      email: user.profile?.email || '',
+      phone: user.profile?.phone || [],
+      address: user.profile?.address || {},
+      vCardData: user.profile?.vCardData || null
     }));
   },
 
@@ -158,8 +163,7 @@ export const teamMethods = {
       throw new Meteor.Error('not-authorized', 'Must be logged in');
     }
     
-    // Search for users with matching usernames
-    const regex = new RegExp(searchTerm, 'i'); // Case insensitive
+    const regex = new RegExp(searchTerm, 'i');
     
     const users = Meteor.users.find({
       $or: [
@@ -184,22 +188,21 @@ export const teamMethods = {
     return users;
   },
   
-  async saveYCardData(teamId, ycardContent) {
+  async saveYCardData(teamId, ycardContent, vCards) {
     check(teamId, String);
     check(ycardContent, String);
+    check(vCards, Array);
     
     if (!this.userId) {
       throw new Meteor.Error('not-authorized', 'Must be logged in');
     }
     
-    // Check if user is a member of the team
     const team = await Teams.findOneAsync({ _id: teamId, members: this.userId });
     if (!team) {
       throw new Meteor.Error('not-authorized', 'Not a member of this team');
     }
     
     try {
-      // Parse the YAML content
       const yamlData = YAML.load(ycardContent);
       console.log('Parsed YAML data:', yamlData);
       
@@ -207,89 +210,135 @@ export const teamMethods = {
       const errors = [];
       const teamMemberIds = new Set(team.members || []);
 
-      // Iterate over each person in the YAML
-      for (const person of yamlData.people) {
+      // Process each person and their corresponding vCard
+      for (let i = 0; i < yamlData.people.length; i++) {
+        const person = yamlData.people[i];
+        const vCard = vCards[i]; // Get corresponding vCard
+        
         try {
-          // Validate required fields
-          if (!person.username || !person.email) {
+          if (!person.name || !person.email) {
             console.log("Skipping person - missing required fields:", person);
-            errors.push(`Person missing required username or email: ${JSON.stringify(person)}`);
+            errors.push(`Person missing required name or email: ${JSON.stringify(person)}`);
             continue;
           }
           
-          console.log("Processing person:", person.username);
+          let userId = null;
+          let username = null;
           
-          // Check if user already exists
+          // If uid is provided and looks like a MongoDB ObjectId, try to find existing user by ID
+          if (person.uid && person.uid.length === 17) {
+            const existingUserById = await Meteor.users.findOneAsync({ _id: person.uid });
+            if (existingUserById) {
+              userId = existingUserById._id;
+              username = existingUserById.username;
+              console.log("Found existing user by uid:", username);
+            }
+          }
+          
+          // If not found by uid, generate username and search by email/username
+          if (!userId) {
+          // Ignore placeholder uid values like "new-user"
+          const useableUid = (person.uid && person.uid !== 'new-user') ? person.uid : null;
+          username = useableUid || `${person.name}-${person.surname || ''}`.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+          console.log("Processing person:", username);
+         }
+          
           const existingUser = await Meteor.users.findOneAsync({
             $or: [
               { 'emails.address': person.email },
               { 'profile.email': person.email },
-              { username: person.username }
+              { username: username }
             ]
           });
           
-          let userId;
-        
-          if (existingUser) {
-            // Update existing user's profile
-            await Meteor.users.updateAsync(existingUser._id, {
-              $set: {
-                'profile.firstName': person.name || person.username,
-                'profile.surname': person.surname || '',
-                'profile.title': person.title || 'Team Member',
-                'profile.manager': person.manager || null,
-                'profile.email': person.email,
-                'profile.organization': person.org || 'TimeHarbor',
-                'profile.department': person.org_unit || 'General',
-                'profile.updatedAt': new Date(),
-                'profile.updatedBy': this.userId
-              }
+          let finalUserId;
+          
+          // Prepare update data
+          const updateData = {
+            'profile.firstName': person.name || username,
+            'profile.surname': person.surname || '',
+            'profile.title': person.title || 'Team Member',
+            'profile.manager': person.manager || null,
+            'profile.email': person.email,
+            'profile.organization': person.org || 'TimeHarbor',
+            'profile.department': person.org_unit || 'General',
+            'profile.phone': person.phone || [],
+            'profile.address': person.address || {},
+            'profile.vCardData': vCard,
+            'profile.updatedAt': new Date(),
+            'profile.updatedBy': this.userId
+          };
+          
+          if (existingUser || userId) {
+            // Update existing user with full data including phone and address
+            const userIdToUpdate = userId || existingUser._id;
+            await Meteor.users.updateAsync(userIdToUpdate, {
+              $set: updateData
             });
             
-            userId = existingUser._id;
+            finalUserId = userIdToUpdate;
             processedUsers.push({
-              userId: userId,
-              username: person.username,
+              userId: finalUserId,
+              username: username,
               action: 'updated',
-              name: `${person.name || person.username} ${person.surname || ''}`.trim()
+              name: `${person.name || username} ${person.surname || ''}`.trim(),
+              vCardStored: true
             });
             
           } else {
-            // Create new user using the helper function
+            // Create new user
             try {
-              userId = await createUserFromYCard({
-                username: person.username,
+              finalUserId = await createUserFromYCard({
+                uid: person.uid || null,
+                username: username,
                 email: person.email,
-                firstName: person.name || person.username,
+                firstName: person.name || username,
                 lastName: person.surname || '',
                 title: person.title || 'Team Member',
-                department: person.org_unit || 'General'
+                department: person.org_unit || 'General',
+                phone: person.phone || [],
+                address: person.address || {}
               }, this.userId);
               
+              // Add vCard data to newly created user
+              await Meteor.users.updateAsync(finalUserId, {
+                $set: {
+                  'profile.vCardData': vCard,
+                  'profile.organization': person.org || 'TimeHarbor',
+                  'profile.manager': person.manager || null
+                }
+              });
+              
               processedUsers.push({
-                userId: userId,
-                username: person.username,
+                userId: finalUserId,
+                username: username,
                 action: 'created',
-                name: `${person.name || person.username} ${person.surname || ''}`.trim()
+                name: `${person.name || username} ${person.surname || ''}`.trim(),
+                vCardStored: true
               });
               
             } catch (createError) {
               if (createError.error === 'user-exists') {
-                // Handle race condition - user might have been created between our check and creation
                 const retryUser = await Meteor.users.findOneAsync({
                   $or: [
-                    { username: person.username },
+                    { username: username },
                     { 'emails.address': person.email }
                   ]
                 });
                 
                 if (retryUser) {
-                  userId = retryUser._id;
+                  // Add full data including vCard to found user
+                  await Meteor.users.updateAsync(retryUser._id, {
+                    $set: updateData
+                  });
+                  
+                  finalUserId = retryUser._id;
                   processedUsers.push({
-                    userId: userId,
-                    username: person.username,
+                    userId: finalUserId,
+                    username: username,
                     action: 'found_existing',
-                    name: `${person.name || person.username} ${person.surname || ''}`.trim()
+                    name: `${person.name || username} ${person.surname || ''}`.trim(),
+                    vCardStored: true
                   });
                 } else {
                   throw createError;
@@ -300,18 +349,18 @@ export const teamMethods = {
             }
           }
           
-          // Add user to team members if not already a member
-          if (userId && !teamMemberIds.has(userId)) {
-            teamMemberIds.add(userId);
+          // Add user to team if not already a member
+          if (finalUserId && !teamMemberIds.has(finalUserId)) {
+            teamMemberIds.add(finalUserId);
           }
           
         } catch (personError) {
-          console.error(`Error processing person ${person.username || 'unknown'}:`, personError);
-          errors.push(`Error processing ${person.username || 'unknown'}: ${personError.message}`);
+          console.error(`Error processing person ${person.name || 'unknown'}:`, personError);
+          errors.push(`Error processing ${person.name || 'unknown'}: ${personError.message}`);
         }
       }
       
-      // Update team with new member list
+      // Update team with member IDs only
       const updatedMemberIds = Array.from(teamMemberIds);
       
       await Teams.updateAsync(teamId, {
@@ -320,17 +369,17 @@ export const teamMethods = {
         }
       });
       
-      // Return detailed results
       return {
         success: true,
         totalProcessed: processedUsers.length,
         totalAttempted: yamlData.people.length,
         totalTeamMembers: updatedMemberIds.length,
+        vCardsStored: processedUsers.filter(u => u.vCardStored).length,
         errors: errors,
         processedUsers: processedUsers,
         message: errors.length > 0 
-          ? `Processed ${processedUsers.length}/${yamlData.people.length} users. ${errors.length} errors occurred.`
-          : `Successfully processed all ${processedUsers.length} users.`
+          ? `Processed ${processedUsers.length}/${yamlData.people.length} users with vCard data. ${errors.length} errors occurred.`
+          : `Successfully processed all ${processedUsers.length} users with vCard data.`
       };
       
     } catch (yamlError) {
@@ -339,7 +388,6 @@ export const teamMethods = {
     }
   },
 
-  // Get yCard data for a team
   async getYCardData(teamId) {
     check(teamId, String);
     
@@ -354,7 +402,6 @@ export const teamMethods = {
     return team?.ycardData || '';
   },
   
-  // Create a new user from yCard data (wrapper for the helper function)
   async createUserFromYCard(userData) {
     check(userData, {
       username: String,
@@ -362,7 +409,9 @@ export const teamMethods = {
       firstName: String,
       lastName: String,
       title: String,
-      department: String
+      department: String,
+      phone: Match.Optional(Array),
+      address: Match.Optional(Object)
     });
     
     if (!this.userId) {
