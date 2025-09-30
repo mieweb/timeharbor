@@ -10,12 +10,6 @@ import { stringifyVCard } from 'ycard';
 
 
 
-
-
-
-
-
-
 Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);
   this.showJoinTeam = new ReactiveVar(false);
@@ -50,16 +44,10 @@ people:
 
       
    const org = parseYCard(this.ycardContent.get());
-   //console.log('Parsed yCard:', org);
-   // Then convert to vCard
-   //const cards = yCardToVCard(org);
    
-   //console.log('Generated vCards:', cards);
-
-   // Convert yCard to vCard objects
    const vcardObjects = yCardToVCard(org);
 
-    // Convert vCard objects to string
+    
    const vcardString = stringifyVCard(vcardObjects);
     
 
@@ -351,6 +339,128 @@ people:
       document.getElementById('editorStatus').textContent = 'Parse failed: ' + parseError.message;
     }
   };
+
+
+  this.validateYAMLContent = () => {
+  const content = this.ycardContent.get();
+  const errors = [];
+  const warnings = [];
+  
+  try {
+    const parsed = YAML.parse(content);
+    
+    // Check if people array exists
+    if (!parsed.people) {
+      errors.push('Missing "people" array');
+      document.getElementById('editorStatus').textContent = ' YAML Invalid - missing people array';
+      return;
+    }
+    
+    if (!Array.isArray(parsed.people)) {
+      errors.push('"people" must be an array');
+      document.getElementById('editorStatus').textContent = ' YAML Invalid - people must be an array';
+      return;
+    }
+    
+    if (parsed.people.length === 0) {
+      warnings.push('No people defined in the array');
+    }
+    
+    // Validate each person
+    parsed.people.forEach((person, index) => {
+      const personNum = index + 1;
+      
+      // Required fields
+      if (!person.name || person.name.trim() === '') {
+        errors.push(`Person ${personNum}: Missing required field "name"`);
+      }
+      
+      if (!person.email || person.email.trim() === '') {
+        errors.push(`Person ${personNum}: Missing required field "email"`);
+      } else {
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(person.email)) {
+          errors.push(`Person ${personNum}: Invalid email format "${person.email}"`);
+        }
+      }
+      
+      // Optional but recommended fields
+      if (!person.uid || person.uid === 'new-user') {
+        warnings.push(`Person ${personNum} (${person.name}): No valid uid specified`);
+      }
+      
+      if (!person.surname || person.surname.trim() === '') {
+        warnings.push(`Person ${personNum} (${person.name}): Missing surname`);
+      }
+      
+      if (!person.title || person.title.trim() === '') {
+        warnings.push(`Person ${personNum} (${person.name}): Missing title`);
+      }
+      
+      // Validate phone structure if present
+      if (person.phone) {
+        if (!Array.isArray(person.phone)) {
+          errors.push(`Person ${personNum} (${person.name}): "phone" must be an array`);
+        } else {
+          person.phone.forEach((phoneEntry, phoneIndex) => {
+            if (typeof phoneEntry !== 'object') {
+              errors.push(`Person ${personNum} (${person.name}): Phone entry ${phoneIndex + 1} must be an object`);
+            } else {
+              if (!phoneEntry.number && phoneEntry.number !== '') {
+                errors.push(`Person ${personNum} (${person.name}): Phone entry ${phoneIndex + 1} missing "number" field`);
+              }
+              if (!phoneEntry.type) {
+                warnings.push(`Person ${personNum} (${person.name}): Phone entry ${phoneIndex + 1} missing "type" field`);
+              }
+            }
+          });
+        }
+      }
+      
+      // Validate address structure if present
+      if (person.address) {
+        if (typeof person.address !== 'object' || Array.isArray(person.address)) {
+          errors.push(`Person ${personNum} (${person.name}): "address" must be an object`);
+        } else {
+          const addressFields = ['street', 'city', 'state', 'postal_code', 'country'];
+          const missingAddressFields = addressFields.filter(field => !(field in person.address));
+          if (missingAddressFields.length > 0) {
+            warnings.push(`Person ${personNum} (${person.name}): Address missing fields: ${missingAddressFields.join(', ')}`);
+          }
+        }
+      }
+    });
+    
+    // Display results
+    if (errors.length > 0) {
+      const errorMsg = ` YAML Invalid - ${errors.length} error(s) found:\n${errors.join('\n')}`;
+      document.getElementById('editorStatus').textContent = errorMsg;
+      console.error('Validation errors:', errors);
+      
+      if (warnings.length > 0) {
+        console.warn('Validation warnings:', warnings);
+      }
+    } else if (warnings.length > 0) {
+      const warningMsg = ` YAML Valid but has ${warnings.length} warning(s) - Check console`;
+      document.getElementById('editorStatus').textContent = warningMsg;
+      console.warn('Validation warnings:', warnings);
+    } else {
+      document.getElementById('editorStatus').textContent = ` YAML Valid - ${parsed.people.length} people, no issues found`;
+    }
+    
+  } catch (e) {
+    document.getElementById('editorStatus').textContent = ` YAML Parse Error: ${e.message}`;
+    console.error('YAML parse error:', e);
+  }
+};
+
+
+
+
+
+
+
 });
 
 Template.teams.helpers({
@@ -598,5 +708,10 @@ people:
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
   
-}
+},
+ 
+'click #validateYAML'(e, t) {
+    t.validateYAMLContent();
+  }
+
 });
