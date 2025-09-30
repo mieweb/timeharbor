@@ -107,19 +107,31 @@
                     <p class="text-sm italic text-gray-500">{{this.title}}</p>
                   </div>
                   {{#if this.vCardData}}
-                    <span class="badge badge-success badge-xs">vCard ✓</span>
+                    <!-- <span class="badge badge-success badge-xs">vCard ✓</span> -->
                   {{/if}}
                 </div>
                 
                 <div class="space-y-2 mb-4">
                   <div>
                     <span class="text-sm font-medium text-gray-600">Org:</span>
-                    <span class="text-sm text-base-content ml-2">{{this.organization}}</span>
+                    <span class="text-sm text-base-content ml-2">
+                      {{#if this.vCardData.org}}
+                        {{#with this.vCardData.org}}{{this.[0]}}{{/with}}
+                      {{else}}
+                        {{this.organization}}
+                      {{/if}}
+                    </span>
                   </div>
                   
                   <div>
                     <span class="text-sm font-medium text-gray-600">Email:</span>
-                    <span class="text-sm text-base-content ml-2">{{this.email}}</span>
+                    <span class="text-sm text-base-content ml-2">
+                      {{#if this.vCardData.email}}
+                        {{#with this.vCardData.email}}{{this.[0].value}}{{/with}}
+                      {{else}}
+                        {{this.email}}
+                      {{/if}}
+                    </span>
                   </div>
                   
                   {{#if this.phone}}

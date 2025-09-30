@@ -99,6 +99,7 @@ people:
       // Generate YAML content from users with full structure
       const yamlData = {
         people: users.map(user => {
+          console.log("Mapping user to YAML:", user);
           const person = {
             uid: user.id, // MongoDB generated _id
             name: user.firstName || user.username,
