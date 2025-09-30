@@ -6,6 +6,16 @@ import { getUserTeams } from '../../utils/UserTeamUtils.js';
 import { parseYCard, yCardToVCard } from 'ycard';
 import YAML from 'yaml';
 
+import { stringifyVCard } from 'ycard';
+
+
+
+
+
+
+
+
+
 Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);
   this.showJoinTeam = new ReactiveVar(false);
@@ -40,12 +50,21 @@ people:
 
       
    const org = parseYCard(this.ycardContent.get());
-   console.log('Parsed yCard:', org);
+   //console.log('Parsed yCard:', org);
    // Then convert to vCard
-   const cards = yCardToVCard(org);
+   //const cards = yCardToVCard(org);
    
-   console.log('Generated vCards:', cards);
-      
+   //console.log('Generated vCards:', cards);
+
+   // Convert yCard to vCard objects
+   const vcardObjects = yCardToVCard(org);
+
+    // Convert vCard objects to string
+   const vcardString = stringifyVCard(vcardObjects);
+    
+
+   console.log("Generated vCard:", vcardString);
+          
       
 
   this.autorun(() => {
@@ -485,5 +504,69 @@ people:
     console.log('Team ID:', t.selectedTeamId.get());
     console.log('Content length:', t.ycardContent.get().length);
     t.saveYCardData();
+  },
+
+  'click .download-vcard-btn'(e, t) {
+  e.preventDefault();
+  
+  // Get the user ID from the button's data attribute
+  const userId = e.currentTarget.dataset.userId;
+  
+  // Find the user in the selected team members
+  const members = t.selectedTeamUsers.get();
+  const user = members.find(member => member.id === userId);
+  
+  
+  
+  if (!user) {
+    alert('User not found');
+    return;
   }
+  
+  // Create yCard data for THIS SINGLE USER (not an array)
+  const yamlData = {
+    people: [{  // Array with one person
+      uid: user.id,
+      name: user.firstName || user.username,
+      surname: user.lastName || '',
+      title: user.title || 'Team Member',
+      org: user.organization || 'TimeHarbor',
+      email: user.email || `${user.username}@timeharbor.com`,
+      phone: (user.phone && user.phone.length > 0) ? user.phone : [{ number: '', type: 'work' }],
+      address: (user.address && user.address.street) ? user.address : {
+        street: '',
+        city: '',
+        state: '',
+        postal_code: '',
+        country: 'USA'
+      }
+    }]
+  };
+  
+  
+  
+  // Convert to YAML string
+  const yamlString = YAML.stringify(yamlData);
+  const ycardContent = `# yCard Format - Human-friendly contact data\n${yamlString}`;
+  
+  
+  
+  // Parse and convert to vCard
+  const org = parseYCard(ycardContent);
+  const cards = yCardToVCard(org);
+  const vcardString = stringifyVCard(cards);
+  
+  console.log('Generated vCard for ' + user.firstName + ' ' + user.lastName + ':', vcardString);
+  
+  const blob = new Blob([vcardString], { type: 'text/vcard;charset=utf-8' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${user.firstName}_${user.lastName}.vcf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+  
+}
 });

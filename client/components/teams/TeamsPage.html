@@ -163,7 +163,9 @@
                 
                 {{#if this.vCardData}}
                 <div class="pt-2 border-t border-base-300">
-                  <button class="btn btn-xs btn-outline" onclick="navigator.clipboard.writeText('{{this.vCardData}}').then(() => alert('vCard copied to clipboard!')).catch(() => alert('Failed to copy'))">
+                  <button 
+                    class="btn btn-xs btn-outline download-vcard-btn" 
+                    data-user-id="{{this.id}}">
                     Download vCard
                   </button>
                 </div>
