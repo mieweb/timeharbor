@@ -56,6 +56,11 @@
               {{#each userSuggestions}}
                 <div class="user-suggestion px-3 py-2 hover:bg-gray-700 cursor-pointer text-white text-sm border-b border-gray-700 last:border-b-0" data-user-id="{{_id}}">
                   <div class="font-semibold">{{username}}</div>
+                   {{#if profile.firstName}}
+                    {{profile.firstName}} {{profile.lastName}}
+                   {{else}}
+                    {{username}}
+                   {{/if}}
                   <div class="text-xs text-gray-400">{{profile.email}}</div>
                 </div>
               {{/each}}

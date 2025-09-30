@@ -196,14 +196,14 @@ people:
     }
     
     if (personBlockStart !== -1) {
-      const nameParts = user.username.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const firstName = user.profile?.firstName || user.username;
+      const lastName = user.profile?.lastName || '';
       
       const newPersonBlock = [
         `  - uid: ${user._id}`,
-        `    name: ${firstName}`,
-        `    surname: ${lastName}`,
+        `    name: ${firstName }`,
+        `    surname: ${lastName }`,
         `    title: ${user.profile?.title || 'Team Member'}`,
         `    org: TimeHarbor`,
         `    email: ${user.profile?.email || user.username + '@timeharbor.com'}`,
