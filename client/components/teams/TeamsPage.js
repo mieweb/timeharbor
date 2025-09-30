@@ -200,16 +200,34 @@ people:
       const firstName = user.profile?.firstName || user.username;
       const lastName = user.profile?.lastName || '';
       
-      const newPersonBlock = [
-        `  - uid: ${user._id}`,
-        `    name: ${firstName }`,
-        `    surname: ${lastName }`,
-        `    title: ${user.profile?.title || 'Team Member'}`,
-        `    org: TimeHarbor`,
-        `    email: ${user.profile?.email || user.username + '@timeharbor.com'}`,
+      let phoneLines = [];
+    if (user.profile?.phone && user.profile.phone.length > 0) {
+      phoneLines.push(`    phone:`);
+      user.profile.phone.forEach(phone => {
+        phoneLines.push(`      - number: "${phone.number || ''}"`);
+        phoneLines.push(`        type: ${phone.type || 'work'}`);
+      });
+    } else {
+      phoneLines = [
         `    phone:`,
         `      - number: ""`,
-        `        type: work`,
+        `        type: work`
+      ];
+    }
+    
+    // Build address lines
+    let addressLines = [];
+    if (user.profile?.address && user.profile.address.street) {
+      addressLines = [
+        `    address:`,
+        `      street: "${user.profile.address.street || ''}"`,
+        `      city: "${user.profile.address.city || ''}"`,
+        `      state: "${user.profile.address.state || ''}"`,
+        `      postal_code: "${user.profile.address.postal_code || ''}"`,
+        `      country: "${user.profile.address.country || 'USA'}"`
+      ];
+    } else {
+      addressLines = [
         `    address:`,
         `      street: ""`,
         `      city: ""`,
@@ -217,14 +235,26 @@ people:
         `      postal_code: ""`,
         `      country: "USA"`
       ];
-      
-      let personBlockEnd = personBlockStart;
-      for (let i = personBlockStart + 1; i < lines.length; i++) {
-        if (lines[i].trim().startsWith('- uid:') || (!lines[i].startsWith('    ') && lines[i].trim() !== '')) {
-          break;
-        }
-        personBlockEnd = i;
+    }
+    
+    const newPersonBlock = [
+      `  - uid: ${user._id}`,
+      `    name: ${firstName}`,
+      `    surname: ${lastName}`,
+      `    title: ${user.profile?.title || 'Team Member'}`,
+      `    org: ${user.profile?.organization || 'TimeHarbor'}`,
+      `    email: ${user.profile?.email || user.username + '@timeharbor.com'}`,
+      ...phoneLines,
+      ...addressLines
+    ];
+    
+    let personBlockEnd = personBlockStart;
+    for (let i = personBlockStart + 1; i < lines.length; i++) {
+      if (lines[i].trim().startsWith('- uid:') || (!lines[i].startsWith('    ') && lines[i].trim() !== '')) {
+        break;
       }
+      personBlockEnd = i;
+    }
       
       const newLines = [
         ...lines.slice(0, personBlockStart),

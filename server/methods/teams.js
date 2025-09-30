@@ -181,7 +181,10 @@ export const teamMethods = {
         'profile.lastName': 1,
         'profile.title': 1,
         'profile.department': 1,
-        'profile.manager': 1
+        'profile.manager': 1,
+        'profile.phone': 1,           // ADD THIS
+        'profile.address': 1,         // ADD THIS
+        'profile.organization': 1
       }
     }).fetch();
     
