@@ -25,25 +25,28 @@ Template.teams.onCreated(function () {
 
   // Initialize with proper yCard template
   this.ycardContent.set(`# yCard Format - Human-friendly contact data
-people:
-  - uid: "new-user"
-    name: "John"
-    surname: "Doe"
-    title: "Team Member"
-    org: "TimeHarbor"
-    email: "john@gmail.com"
-    phone:
-      - number: "7777777777"
-        type: work
-    address:
-      street: "1234 abby St"
-      city: "Belmont"
-      state: "California"
-      postal_code: "444444"
-      country: "USA"`);
+  people:
+    - uid: new-user
+      name: Alice
+      surname: Smith
+      title: Engineer
+      org: ExampleCorp
+      email: alice.smith@example.com
+      phone:
+        - number: "+1-555-1234"
+          type: work
+      address:
+        street: "123 Main St"
+        city: "Metropolis"
+        state: "CA"
+        postal_code: "90210"
+        country: "USA"
+  `);
 
       
    const org = parseYCard(this.ycardContent.get());
+
+   console.log("Parsed yCard object:", org);
    
    const vcardObjects = yCardToVCard(org);
 
@@ -271,15 +274,107 @@ people:
   
   this.formatYAMLContent = () => {
     const content = this.ycardContent.get();
-    try {
-      const parsed = YAML.parse(content);
-      const formatted = YAML.stringify(parsed, { indent: 2 });
-      const withComment = `# yCard Format - Human-friendly contact data\n${formatted}`;
-      this.ycardContent.set(withComment);
-      document.getElementById('editorStatus').textContent = 'Code formatted ✓';
-    } catch (e) {
-      document.getElementById('editorStatus').textContent = 'Format failed: ' + e.message;
+    this.formatYAMLContent = () => {
+  const content = this.ycardContent.get();
+  
+  try {
+    // Step 1: Pre-process to fix common structural issues
+    let cleanedContent = content
+      // Fix "people: - uid:" on same line - split them
+      .replace(/people:\s*-\s+/i, 'people:\n  - ')
+      // Fix any key: - pattern (array on same line as key)
+      .replace(/(\w+):\s+-\s+/g, '$1:\n  - ')
+      // Remove multiple consecutive blank lines
+      .replace(/\n\s*\n\s*\n+/g, '\n\n')
+      // Remove trailing whitespace from each line
+      .replace(/[ \t]+$/gm, '')
+      // Remove leading whitespace before comments
+      .replace(/^\s+#/gm, '#')
+      // Fix spacing around colons
+      .replace(/:\s{2,}/g, ': ')
+      .replace(/:\s*([^\s\n])/g, ': $1')
+      .trim();
+    
+    // Step 2: Parse YAML
+    const parsed = YAML.parse(cleanedContent);
+    
+    // Step 3: Validate structure
+    if (!parsed || !parsed.people) {
+      document.getElementById('editorStatus').textContent = ' Format failed: Invalid structure - missing people array';
+      return;
     }
+    
+    // Step 4: Clean up data
+    if (Array.isArray(parsed.people)) {
+      parsed.people = parsed.people.map(person => {
+        const cleanPerson = {};
+        
+        Object.keys(person).forEach(key => {
+          let value = person[key];
+          
+          // Trim strings and remove extra spaces
+          if (typeof value === 'string') {
+            value = value.trim().replace(/\s{2,}/g, ' ');
+          }
+          
+          // Clean phone array
+          if (key === 'phone' && Array.isArray(value)) {
+            value = value.map(phone => ({
+              number: (phone.number || '').toString().trim(),
+              type: (phone.type || 'work').toString().trim()
+            }));
+          }
+          
+          // Clean address object
+          if (key === 'address' && typeof value === 'object' && !Array.isArray(value)) {
+            const cleanAddress = {};
+            Object.keys(value).forEach(addrKey => {
+              cleanAddress[addrKey] = typeof value[addrKey] === 'string' 
+                ? value[addrKey].trim() 
+                : value[addrKey];
+            });
+            value = cleanAddress;
+          }
+          
+          cleanPerson[key] = value;
+        });
+        
+        return cleanPerson;
+      });
+    }
+    
+    // Step 5: Stringify with proper formatting
+    const formatted = YAML.stringify(parsed, {
+      indent: 2,
+      lineWidth: 80,
+      sortKeys: false
+    });
+    
+    // Step 6: Post-process
+    let finalFormatted = formatted
+      .replace(/[ \t]+$/gm, '')
+      .replace(/\n*$/, '\n');
+    
+    // Step 7: Add header comment
+    const withComment = `# yCard Format - Human-friendly contact data\n${finalFormatted}`;
+    
+    this.ycardContent.set(withComment);
+    document.getElementById('editorStatus').textContent = ' Code formatted successfully';
+    
+  } catch (e) {
+    console.error('Format error:', e);
+    
+    // Better error reporting
+    if (e.mark) {
+      const lineNum = e.mark.line + 1;
+      const colNum = e.mark.column + 1;
+      document.getElementById('editorStatus').textContent = 
+        ` Format failed at line ${lineNum}, col ${colNum}: ${e.reason || e.message}`;
+    } else {
+      document.getElementById('editorStatus').textContent = ` Format failed: ${e.message}`;
+    }
+    }
+   };
   };
   
   this.saveYCardData = () => {
@@ -694,7 +789,7 @@ people:
   // Parse and convert to vCard
   const org = parseYCard(ycardContent);
   const cards = yCardToVCard(org);
-  const vcardString = stringifyVCard(cards);
+  const vcardString = stringifyVCard(cards,'3.0');
   
   console.log('Generated vCard for ' + user.firstName + ' ' + user.lastName + ':', vcardString);
   
