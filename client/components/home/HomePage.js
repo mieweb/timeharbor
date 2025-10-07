@@ -167,12 +167,12 @@ Template.home.onRendered(function () {
               const daySessionSeconds = Math.floor((overlapEnd - overlapStart) / 1000);
               totalSeconds += daySessionSeconds;
               
-              // Track first clock-in for this day
-              if (sessionStart >= dayStart && sessionStart <= dayEnd) {
-                if (!firstClockIn || sessionStart < firstClockIn) {
-                  firstClockIn = sessionStart;
-                }
-              }
+               // Track latest clock-in for this day
+               if (sessionStart >= dayStart && sessionStart <= dayEnd) {
+                 if (!firstClockIn || sessionStart > firstClockIn) {
+                   firstClockIn = sessionStart;
+                 }
+               }
               
               // Track last clock-out for this day
               if (clockEvent.endTime && clockEvent.endTime >= dayStart && clockEvent.endTime <= dayEnd) {
