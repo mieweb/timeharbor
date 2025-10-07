@@ -110,6 +110,7 @@ export const teamMethods = {
       }, {
         fields: {
           username: 1,
+          emails: 1,
           'profile.firstName': 1,
           'profile.lastName': 1,
           'profile.surname': 1,
@@ -129,7 +130,7 @@ export const teamMethods = {
         username: user.username,
         firstName: user.profile?.firstName || '',
         lastName: user.profile?.lastName || user.profile?.surname || '',
-        email: user.profile?.email || '',
+        email: user.profile?.email || user.emails?.[0]?.address || '',
         title: user.profile?.title || 'Team Member',
         department: user.profile?.department || 'General',
         manager: user.profile?.manager || null,
@@ -149,7 +150,7 @@ export const teamMethods = {
       username: user.username,
       firstName: user.profile?.firstName || '',
       lastName: user.profile?.lastName || user.profile?.surname || '',
-      email: user.profile?.email || '',
+      email: user.profile?.email || user.emails?.[0]?.address || '',
       phone: user.profile?.phone || [],
       address: user.profile?.address || {},
       vCardData: user.profile?.vCardData || null
@@ -176,6 +177,7 @@ export const teamMethods = {
       limit: 10,
       fields: {
         username: 1,
+        emails: 1,
         'profile.email': 1,
         'profile.firstName': 1,
         'profile.lastName': 1,

@@ -116,7 +116,7 @@ Template.teams.onCreated(function () {
             surname: user.lastName || '',
             title: user.title || 'Team Member',
             org: user.organization || 'TimeHarbor',
-            email: user.email || `${user.username}@timeharbor.com`
+            email: (user.email && user.email.length > 0) ? user.email : [""]
           };
 
           // Add phone if available
@@ -190,21 +190,35 @@ Template.teams.onCreated(function () {
       
       const firstName = user.profile?.firstName || user.username;
       const lastName = user.profile?.lastName || '';
+
+      let emailLines = [];
+      const userEmail = user.profile?.email || user.emails?.[0]?.address || '';
+      if (userEmail) {
+        emailLines = [
+          `    email:`,
+          `      - "${userEmail}"`
+        ];
+      } else {
+        emailLines = [
+          `    email:`,
+          `      - ""`
+        ];
+      }
       
       let phoneLines = [];
-    if (user.profile?.phone && user.profile.phone.length > 0) {
-      phoneLines.push(`    phone:`);
-      user.profile.phone.forEach(phone => {
-        phoneLines.push(`      - number: "${phone.number || ''}"`);
-        phoneLines.push(`        type: ${phone.type || 'work'}`);
-      });
-    } else {
-      phoneLines = [
-        `    phone:`,
-        `      - number: ""`,
-        `        type: work`
-      ];
-    }
+      if (user.profile?.phone && user.profile.phone.length > 0) {
+        phoneLines.push(`    phone:`);
+        user.profile.phone.forEach(phone => {
+          phoneLines.push(`      - number: "${phone.number || ''}"`);
+          phoneLines.push(`        type: ${phone.type || 'work'}`);
+        });
+      } else {
+        phoneLines = [
+          `    phone:`,
+          `      - number: ""`,
+          `        type: work`
+        ];
+      }
     
     // Build address lines
     let addressLines = [];
@@ -234,7 +248,7 @@ Template.teams.onCreated(function () {
       `    surname: ${lastName}`,
       `    title: ${user.profile?.title || 'Team Member'}`,
       `    org: ${user.profile?.organization || 'TimeHarbor'}`,
-      `    email: ${user.profile?.email || user.username + '@timeharbor.com'}`,
+      ...emailLines,
       ...phoneLines,
       ...addressLines
     ];
@@ -766,7 +780,7 @@ people:
       surname: user.lastName || '',
       title: user.title || 'Team Member',
       org: user.organization || 'TimeHarbor',
-      email: user.email || `${user.username}@timeharbor.com`,
+      email: (user.email && user.email.length > 0) ? user.email : [""],
       phone: (user.phone && user.phone.length > 0) ? user.phone : [{ number: '', type: 'work' }],
       address: (user.address && user.address.street) ? user.address : {
         street: '',
