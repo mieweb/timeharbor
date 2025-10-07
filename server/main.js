@@ -1,7 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 import { ServiceConfiguration } from 'meteor/service-configuration';
-import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
+import { Tickets, Teams, Sessions, ClockEvents, OzwellPrompts } from '../collections.js';
 // Import authentication methods
 import { authMethods } from './methods/auth.js';
 // Import team methods
@@ -16,11 +16,15 @@ import './methods/calendar.js';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
+// Import Ozwell methods
+import { ozwellMethods } from './methods/ozwell.js';
+import { ozwellPromptMethods } from './methods/ozwellPrompts.js';
+import { referenceAssistantMethods } from './methods/referenceAssistant.js';
 Meteor.startup(async () => {
   // Configure Google OAuth from environment variables
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  
+
   if (googleClientId && googleClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
       { service: 'google' },
@@ -41,7 +45,7 @@ Meteor.startup(async () => {
   // Configure GitHub OAuth from environment variables
   const githubClientId = process.env.HUB_CLIENT_ID;
   const githubClientSecret = process.env.HUB_CLIENT_SECRET;
-  
+
   if (githubClientId && githubClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
       { service: 'github' },
@@ -70,7 +74,7 @@ Meteor.startup(async () => {
         // of how bad actors could play.
         return Accounts.findUserByEmail(serviceData.email);
       }
-      
+
       if (serviceName === "github") {
         // For GitHub, we can use the email from the service data
         // GitHub provides email in serviceData.email
@@ -104,6 +108,104 @@ Meteor.startup(async () => {
     const code = Math.random().toString(36).substr(2, 8).toUpperCase();
     await Teams.updateAsync(team._id, { $set: { code } });
   }
+
+  // Initialize Ozwell default prompts directly (not as a method call since we're in startup)
+  const promptCount = await OzwellPrompts.find().countAsync();
+  if (promptCount === 0) {
+    const defaultPrompts = [
+      {
+        id: 'draft-time-entry',
+        title: 'Help me draft a time entry',
+        description: 'Get assistance writing a detailed time entry for your work',
+        template: `Help me write a detailed time entry for my work today. Here's what I'm working on:
+
+Project: {{teamName}}
+{{#if currentTicket}}
+Current Activity: {{currentTicket.title}}
+{{#if currentTicket.description}}
+Notes/Reference: {{currentTicket.description}}
+{{/if}}
+{{/if}}
+
+{{#if recentActivity}}
+Recent activities in this project:
+{{#each recentActivity}}
+- {{title}}{{#if description}} ({{description}}){{/if}}
+{{/each}}
+{{/if}}
+
+Please help me write a professional time entry that describes what I accomplished, any challenges I faced, and next steps. Make it detailed enough for project tracking but concise for time logging.`,
+        category: 'time-tracking',
+        contexts: ['ticket-form', 'time-entry'],
+        icon: 'clock',
+        systemMessage: 'You are a professional time tracking assistant. Help users write clear, detailed time entries that capture their work accomplishments, challenges, and progress. Focus on being specific and actionable.',
+        createdAt: new Date()
+      },
+      {
+        id: 'summarize-daily-activity',
+        title: 'Summarize my activity today',
+        description: 'Create a summary of your work activities for the day',
+        template: `Please create a summary of my work activities for today.
+
+Project: {{teamName}}
+User: {{user.username}}
+
+{{#if recentActivity}}
+Activities worked on:
+{{#each recentActivity}}
+- {{title}}{{#if description}} - {{description}}{{/if}}
+  Time spent: {{totalTime}} seconds
+  Last updated: {{lastUpdated}}
+{{/each}}
+{{/if}}
+
+Please provide:
+1. A brief overview of what I accomplished today
+2. Key highlights or milestones reached
+3. Any blockers or challenges encountered
+4. Suggested priorities for tomorrow
+
+Make it suitable for sharing with team members or for personal reflection.`,
+        category: 'reporting',
+        contexts: ['end-of-day', 'summary'],
+        icon: 'chart-bar',
+        systemMessage: 'You are a professional work summary assistant. Help users create clear, organized summaries of their daily work that highlight accomplishments, identify challenges, and suggest next steps.',
+        createdAt: new Date()
+      },
+      {
+        id: 'improve-activity-description',
+        title: 'Improve my activity description',
+        description: 'Get help making your activity description more clear and detailed',
+        template: `Please help me improve this activity description:
+
+Current text: "{{currentText}}"
+
+{{#if currentTicket}}
+Activity: {{currentTicket.title}}
+{{/if}}
+Project: {{teamName}}
+
+Please help me:
+1. Make the description more clear and specific
+2. Add relevant technical details if appropriate
+3. Ensure it's useful for future reference
+4. Make it professional and well-structured
+
+Keep the core meaning but enhance clarity, detail, and usefulness for project tracking.`,
+        category: 'writing',
+        contexts: ['ticket-form', 'note-taking'],
+        icon: 'pencil',
+        systemMessage: 'You are a professional writing assistant specializing in technical documentation. Help users write clear, detailed, and well-structured activity descriptions that are useful for project tracking and future reference.',
+        createdAt: new Date()
+      }
+    ];
+
+    for (const prompt of defaultPrompts) {
+      await OzwellPrompts.insertAsync(prompt);
+    }
+
+    console.log('Initialized', defaultPrompts.length, 'default Ozwell prompts');
+  }
 });
 
 Meteor.publish('userTeams', function () {
@@ -126,9 +228,9 @@ Meteor.publish('teamDetails', function (teamId) {
 Meteor.publish('teamMembers', async function (teamIds) {
   // Filter out null/undefined values before validation
   const validTeamIds = teamIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   check(validTeamIds, [String]);
-  
+
   if (!this.userId) return this.ready();
 
   // Allow if user is a member, leader, or admin of the requested teams
@@ -150,9 +252,9 @@ Meteor.publish('teamMembers', async function (teamIds) {
 Meteor.publish('teamTickets', function (teamIds) {
   // Filter out null/undefined values before validation
   const validTeamIds = teamIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   check(validTeamIds, [String]);
-  
+
   // Publish all tickets for these teams (not just created by current user)
   return Tickets.find({ teamId: { $in: validTeamIds } });
 });
@@ -166,9 +268,9 @@ Meteor.publish('clockEventsForUser', function () {
 Meteor.publish('clockEventsForTeams', async function (teamIds) {
   // Filter out null/undefined values before validation
   const validTeamIds = teamIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   check(validTeamIds, [String]);
-  
+
   if (!this.userId) return this.ready();
 
   // Publish clock events for teams the user leads OR admins
@@ -189,8 +291,8 @@ Meteor.publish('adminTeamTickets', async function (teamId) {
   if (!this.userId) return this.ready();
 
   // Check if user is admin/leader of the team
-  const team = await Teams.findOneAsync({ 
-    _id: teamId, 
+  const team = await Teams.findOneAsync({
+    _id: teamId,
     $or: [
       { leader: this.userId },
       { admins: this.userId }
@@ -206,16 +308,16 @@ Meteor.publish('adminTeamTickets', async function (teamId) {
 Meteor.publish('usersByIds', async function (userIds) {
   // Filter out null/undefined values before validation
   const validUserIds = userIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   if (validUserIds.length === 0) {
     return this.ready();
   }
-  
+
   check(validUserIds, [String]);
-  
+
   // Only publish users that are in teams the current user is a member, leader, or admin of
   const userTeams = await Teams.find({ $or: [{ members: this.userId }, { leader: this.userId }, { admins: this.userId }] }).fetchAsync();
-  
+
   // Filter out null/undefined values and flatten the arrays safely
   const allowedUserIds = Array.from(new Set(
     userTeams.flatMap(team => {
@@ -225,22 +327,22 @@ Meteor.publish('usersByIds', async function (userIds) {
       return [...members, ...admins, leader].filter(id => id !== null && id !== undefined);
     })
   ));
-  
+
   const filteredUserIds = validUserIds.filter(id => allowedUserIds.includes(id));
-  
+
   if (filteredUserIds.length === 0) {
     return this.ready();
   }
-  
-  return Meteor.users.find({ _id: { $in: filteredUserIds } }, { 
-    fields: { 
-      'emails.address': 1, 
-      'services.google.email': 1, 
+
+  return Meteor.users.find({ _id: { $in: filteredUserIds } }, {
+    fields: {
+      'emails.address': 1,
+      'services.google.email': 1,
       'services.google.name': 1,
       'services.github.username': 1,
       'profile': 1,
       'username': 1
-    } 
+    }
   });
 });
 
@@ -249,6 +351,9 @@ Meteor.methods({
   ...teamMethods,
   ...ticketMethods,
   ...clockEventMethods,
+  ...ozwellMethods,
+  ...ozwellPromptMethods,
+  ...referenceAssistantMethods,
 
   'participants.create'(name) {
     check(name, String);

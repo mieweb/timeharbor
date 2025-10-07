@@ -66,6 +66,18 @@ FlowRouter.route('/admin', {
   }
 });
 
+FlowRouter.route('/settings', {
+  name: 'settings',
+  action() {
+    if (!Meteor.userId()) {
+      currentScreen.set('authPage');
+      return;
+    }
+    currentScreen.set('mainLayout');
+    currentRouteTemplate.set('settings');
+  }
+});
+
 // Fallback route for unknown paths
 FlowRouter.route('*', {
   name: 'notFound',
@@ -86,7 +98,8 @@ export const navigateToRoute = (routeName, params = {}) => {
     teams: '/teams',
     tickets: '/tickets',
     calendar: '/calendar',
-    admin: '/admin'
+    admin: '/admin',
+    settings: '/settings'
   };
   
   if (routes[routeName]) {
