@@ -17,6 +17,7 @@
     </div>
   </div>
 
+
   <!-- Date Filter (reused from HomePage) -->
   <div class="mb-6 flex flex-wrap items-center gap-4">
     <label class="font-medium text-base-content">Date Range:</label>
@@ -35,8 +36,18 @@
 
   <!-- Session Details Grid -->
   <div class="card bg-base-100 shadow p-6">
-    <h5 class="text-lg font-semibold text-base-content mb-4">Session Details</h5>
-    <div id="timesheetGrid" class="ag-theme-alpine w-full h-96"></div>
+    <div class="flex items-center justify-between mb-4">
+      <h5 class="text-lg font-semibold text-base-content">Session Details</h5>
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-base-content opacity-70" id="sessionCount">Loading...</span>
+        <button id="refreshData" class="btn btn-sm btn-outline btn-primary" title="Refresh Data">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="timesheetGrid" class="ag-theme-alpine w-full h-96 border border-base-300 rounded-lg"></div>
   </div>
 
   <!-- Summary Stats -->
