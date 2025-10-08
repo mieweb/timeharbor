@@ -102,12 +102,18 @@ Template.teams.events({
     if (joinCode) {
       navigator.clipboard.writeText(joinCode)
         .then(() => {
-          // Optional: Add some visual feedback
           const btn = e.currentTarget;
           const originalText = btn.textContent;
+          const originalClasses = btn.className;
+          
+          // Change to green success button
           btn.textContent = 'Copied!';
+          btn.className = 'btn btn-sm btn-success';
+          
+          // Reset after 2 seconds
           setTimeout(() => {
             btn.textContent = originalText;
+            btn.className = originalClasses;
           }, 2000);
         })
         .catch(err => {
