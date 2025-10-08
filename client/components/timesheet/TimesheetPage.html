@@ -1,0 +1,63 @@
+<template name="timesheet">
+  <div class="flex items-center gap-4 mb-6">
+    <button id="backToHome" class="btn btn-outline btn-primary">&larr; Back to Dashboard</button>
+    <h3 class="text-2xl font-bold text-base-content">Individual Timesheet</h3>
+  </div>
+
+  <!-- User Info Card -->
+  <div class="card bg-base-100 shadow p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h4 class="text-xl font-semibold text-base-content">{{userName}}</h4>
+        <p class="text-base-content opacity-70">{{userEmail}}</p>
+      </div>
+      <div class="text-right">
+        <div class="badge badge-primary badge-lg">Total Hours: {{totalHours}}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Date Filter (reused from HomePage) -->
+  <div class="mb-6 flex flex-wrap items-center gap-4">
+    <label class="font-medium text-base-content">Date Range:</label>
+    <input type="date" id="start-date" class="input input-bordered" value="{{startDate}}">
+    <span class="opacity-60">to</span>
+    <input type="date" id="end-date" class="input input-bordered" value="{{endDate}}">
+    <div class="flex items-center gap-2">
+      <button id="apply-range" class="btn btn-sm {{#if isPresetSelected 'custom'}}btn-primary{{else}}btn-outline{{/if}}">Apply</button>
+      <button id="preset-today" class="btn btn-sm {{#if isPresetSelected 'today'}}btn-primary{{else}}btn-outline{{/if}}">Today</button>
+      <button id="preset-yesterday" class="btn btn-sm {{#if isPresetSelected 'yesterday'}}btn-primary{{else}}btn-outline{{/if}}">Yesterday</button>
+      <button id="preset-last7" class="btn btn-sm {{#if isPresetSelected 'last7'}}btn-primary{{else}}btn-outline{{/if}}">Last 7 Days</button>
+      <button id="preset-thisweek" class="btn btn-sm {{#if isPresetSelected 'thisweek'}}btn-primary{{else}}btn-outline{{/if}}">This Week</button>
+      <button id="preset-last14" class="btn btn-sm {{#if isPresetSelected 'last14'}}btn-primary{{else}}btn-outline{{/if}}">Last 14 Days</button>
+    </div>
+  </div>
+
+  <!-- Session Details Grid -->
+  <div class="card bg-base-100 shadow p-6">
+    <h5 class="text-lg font-semibold text-base-content mb-4">Session Details</h5>
+    <div id="timesheetGrid" class="ag-theme-alpine w-full h-96"></div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+    <div class="card bg-base-100 shadow p-4">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-primary">{{totalSessions}}</div>
+        <div class="text-sm text-base-content opacity-70">Total Sessions</div>
+      </div>
+    </div>
+    <div class="card bg-base-100 shadow p-4">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-primary">{{averageSessionHours}}</div>
+        <div class="text-sm text-base-content opacity-70">Avg Session Length</div>
+      </div>
+    </div>
+    <div class="card bg-base-100 shadow p-4">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-primary">{{workingDays}}</div>
+        <div class="text-sm text-base-content opacity-70">Working Days</div>
+      </div>
+    </div>
+  </div>
+</template>
