@@ -1,7 +1,7 @@
 <template name="home">
   <div class="mb-8">
-    <h2 class="text-2xl font-bold text-gray-900 mb-4">Welcome to TimeHarbor</h2>
-    <p class="text-gray-600 mb-6">
+    <h2 class="text-2xl font-bold text-base-content mb-4">Welcome to TimeHarbor</h2>
+    <p class="text-base-content opacity-70 mb-6">
       Track your time efficiently across teams and projects.
     </p>
   </div>
@@ -17,14 +17,14 @@
         <input type="date" id="start-date" class="input input-bordered" value="{{startDate}}">
         <span class="opacity-60">to</span>
         <input type="date" id="end-date" class="input input-bordered" value="{{endDate}}">
-        <div class="flex items-center gap-2">
-          <button id="apply-range" class="btn btn-sm btn-primary">Apply</button>
-          <button id="preset-today" class="btn btn-sm btn-outline">Today</button>
-          <button id="preset-yesterday" class="btn btn-sm btn-outline">Yesterday</button>
-          <button id="preset-last7" class="btn btn-sm btn-outline">Last 7 Days</button>
-          <button id="preset-last14" class="btn btn-sm btn-outline">Last 14 Days</button>
-          <button id="preset-thisweek" class="btn btn-sm btn-outline">This Week</button>
-        </div>
+         <div class="flex items-center gap-2">
+           <button id="apply-range" class="btn btn-sm {{#if isPresetSelected 'custom'}}btn-primary{{else}}btn-outline{{/if}}">Apply</button>
+           <button id="preset-today" class="btn btn-sm {{#if isPresetSelected 'today'}}btn-primary{{else}}btn-outline{{/if}}">Today</button>
+           <button id="preset-yesterday" class="btn btn-sm {{#if isPresetSelected 'yesterday'}}btn-primary{{else}}btn-outline{{/if}}">Yesterday</button>
+           <button id="preset-last7" class="btn btn-sm {{#if isPresetSelected 'last7'}}btn-primary{{else}}btn-outline{{/if}}">Last 7 Days</button>
+           <button id="preset-thisweek" class="btn btn-sm {{#if isPresetSelected 'thisweek'}}btn-primary{{else}}btn-outline{{/if}}">This Week</button>
+           <button id="preset-last14" class="btn btn-sm {{#if isPresetSelected 'last14'}}btn-primary{{else}}btn-outline{{/if}}">Last 14 Days</button>
+         </div>
       </div>
 
       <!-- Team Summary Grid -->

@@ -205,8 +205,8 @@ Template.tickets.helpers({
     const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
     const hasOtherActiveTicket = Template.instance().activeTicketId.get() && Template.instance().activeTicketId.get() !== ticketId;
     
-    if (isActive) return 'btn btn-outline btn-neutral';
-    if (hasActiveSession && !hasOtherActiveTicket) return 'btn btn-outline btn-neutral';
+    if (isActive) return 'btn btn-outline btn-primary';
+    if (hasActiveSession && !hasOtherActiveTicket) return 'btn btn-outline btn-primary';
     if (hasActiveSession && hasOtherActiveTicket) return 'btn btn-disabled';
     return 'btn btn-disabled';
   },

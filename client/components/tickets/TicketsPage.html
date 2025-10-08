@@ -12,9 +12,9 @@
     </div>
     <div class="mb-4 flex items-center gap-4">
       {{#if isClockedInForTeam selectedTeamId}}
-        <button id="clockOutBtn" class="btn bg-neutral hover:bg-neutral-focus text-neutral-content">Stop Session</button>
+        <button id="clockOutBtn" class="btn btn-outline btn-primary">Stop Session</button>
       {{else}}
-        <button id="clockInBtn" class="btn bg-gray-700 text-white hover:bg-opacity-90">Start Session</button>
+        <button id="clockInBtn" class="btn btn-outline btn-primary">Start Session</button>
       {{/if}}
     </div>
     {{#if showCreateTicketForm}}
