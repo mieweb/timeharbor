@@ -14,6 +14,7 @@ Template.home.onCreated(function () {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   template.startDate = new ReactiveVar(todayStr); // default start: today
   template.endDate = new ReactiveVar(todayStr);   // default end: today
+  template.selectedPreset = new ReactiveVar('today'); // track which preset is selected
   
   this.autorun(() => {
     // userTeams and clockEventsForUser subscriptions moved to MainLayout
@@ -305,6 +306,11 @@ Template.home.helpers({
   // Helper to get user name in template
   getDisplayName(userId) {
     return getUserName(userId);
+  },
+  
+  // Helper to check if a preset button should be highlighted
+  isPresetSelected(presetName) {
+    return Template.instance().selectedPreset.get() === presetName;
   }
 });
 
@@ -314,6 +320,7 @@ Template.home.events({
     const end = t.$('#end-date').val();
     if (start) t.startDate.set(start);
     if (end) t.endDate.set(end);
+    t.selectedPreset.set('custom'); // mark as custom selection
   },
   'click #preset-today'(e, t) {
     const today = new Date();
@@ -322,6 +329,7 @@ Template.home.events({
     t.endDate.set(todayStr);
     t.$('#start-date').val(todayStr);
     t.$('#end-date').val(todayStr);
+    t.selectedPreset.set('today');
   },
   'click #preset-yesterday'(e, t) {
     const yesterday = new Date();
@@ -331,6 +339,7 @@ Template.home.events({
     t.endDate.set(yesterdayStr);
     t.$('#start-date').val(yesterdayStr);
     t.$('#end-date').val(yesterdayStr);
+    t.selectedPreset.set('yesterday');
   },
   'click #preset-last7'(e, t) {
     const end = new Date();
@@ -342,6 +351,7 @@ Template.home.events({
     t.endDate.set(endStr);
     t.$('#start-date').val(startStr);
     t.$('#end-date').val(endStr);
+    t.selectedPreset.set('last7');
   },
   'click #preset-last14'(e, t) {
     const end = new Date();
@@ -353,6 +363,7 @@ Template.home.events({
     t.endDate.set(endStr);
     t.$('#start-date').val(startStr);
     t.$('#end-date').val(endStr);
+    t.selectedPreset.set('last14');
   },
   'click #preset-thisweek'(e, t) {
     const now = new Date();
@@ -368,5 +379,6 @@ Template.home.events({
     t.endDate.set(sundayStr);
     t.$('#start-date').val(mondayStr);
     t.$('#end-date').val(sundayStr);
+    t.selectedPreset.set('thisweek');
   }
 });
