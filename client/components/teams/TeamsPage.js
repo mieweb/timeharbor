@@ -566,10 +566,6 @@ Template.teams.onCreated(function () {
 
 
 
-
-
-
-
 });
 
 Template.teams.helpers({
@@ -578,6 +574,10 @@ Template.teams.helpers({
   },
   showJoinTeam() {
     return Template.instance().showJoinTeam.get();
+  },
+
+  modalChecked() {
+    return Template.instance().showYCardEditor.get() ? 'checked' : '';
   },
   userTeams: getUserTeams,
   selectedTeam() {
@@ -686,12 +686,32 @@ Template.teams.events({
     if (newState) {
       setTimeout(() => {
         t.generateYAMLFromTeamMembers();
+        const modalCheckbox = document.getElementById('ycardEditorModal');
+        if (modalCheckbox) {
+          modalCheckbox.checked = true;
+        }
       }, 100);
     }
   },
   'click #closeYCardEditor'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    
     t.showYCardEditor.set(false);
     t.showUserSuggestions.set(false);
+    
+    const modalCheckbox = document.getElementById('ycardEditorModal');
+    if (modalCheckbox) {
+      modalCheckbox.checked = false;
+    }
+  },
+
+  'change #ycardEditorModal'(e, t) {
+    // Sync the modal state with the reactive var
+    t.showYCardEditor.set(e.target.checked);
+    if (!e.target.checked) {
+      t.showUserSuggestions.set(false);
+    }
   },
   'input #ycardEditor'(e, t) {
     const content = e.target.value;
