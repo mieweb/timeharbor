@@ -9,6 +9,7 @@ import './components/tickets/TicketsPage.html';
 import './components/home/HomePage.html';
 import './components/calendar/CalendarPage.html';
 import './components/admin/admin.html';
+import './components/timesheet/TimesheetPage.html';
 
 // Import component JS files
 import './components/auth/AuthPage.js';
@@ -18,6 +19,10 @@ import './components/tickets/TicketsPage.js';
 import './components/home/HomePage.js';
 import './components/calendar/CalendarPage.js';
 import './components/admin/admin.js';
+import './components/timesheet/TimesheetPage.js';
 
 // Import routing configuration
 import './routes.js';
+
+// Import utilities
+import './utils/DateUtils.js';

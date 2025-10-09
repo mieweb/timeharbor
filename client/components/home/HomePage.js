@@ -1,8 +1,10 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { formatTime, formatDate, calculateTotalTime } from '../../utils/TimeUtils.js';
 import { getTeamName, getUserEmail, getUserName } from '../../utils/UserTeamUtils.js';
+import { dateToLocalString, formatDateForDisplay } from '../../utils/DateUtils.js';
 import { Grid } from 'ag-grid-community';
 import { isTeamsLoading } from '../layout/MainLayout.js';
 
@@ -11,7 +13,7 @@ Template.home.onCreated(function () {
   
   // Initialize reactive variables for team dashboard using local timezone
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = dateToLocalString(today);
   template.startDate = new ReactiveVar(todayStr); // default start: today
   template.endDate = new ReactiveVar(todayStr);   // default end: today
   template.selectedPreset = new ReactiveVar('today'); // track which preset is selected
@@ -51,13 +53,18 @@ Template.home.onRendered(function () {
   // Column definitions for daily breakdown
   const columnDefs = [
     { headerName: 'Date', field: 'date', flex: 1, sortable: true, filter: 'agDateColumnFilter',
-      valueFormatter: p => {
-        // Parse date string and display in local format
-        const dateParts = p.value.split('-');
-        const localDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-        return localDate.toLocaleDateString();
-      } },
-    { headerName: 'Team Member', field: 'displayName', flex: 1.5, sortable: true, filter: 'agTextColumnFilter' },
+      valueFormatter: p => formatDateForDisplay(p.value) },
+    { 
+      headerName: 'Team Member', field: 'displayName', flex: 1.5, sortable: true, filter: 'agTextColumnFilter',
+      cellRenderer: (params) => {
+        return `<span class="cursor-pointer text-primary hover:text-primary-focus hover:underline" 
+                       data-user-id="${params.data.userId}" 
+                       data-user-name="${params.value}"
+                       onclick="window.viewUserTimesheet('${params.data.userId}', '${params.value}')">
+                  ${params.value}
+                </span>`;
+      }
+    },
     { headerName: 'Email', field: 'userEmail', flex: 1.5, sortable: true, filter: 'agTextColumnFilter' },
     { 
       headerName: 'Hours', field: 'totalSeconds', flex: 1, sortable: true, filter: 'agNumberColumnFilter',
@@ -238,6 +245,13 @@ Template.home.onRendered(function () {
         }
       }
     });
+
+    // Make the viewUserTimesheet function globally available
+    window.viewUserTimesheet = (userId, userName) => {
+      console.log(`Viewing timesheet for user: ${userName} (${userId})`);
+      // Navigate to timesheet page
+      FlowRouter.go(`/timesheet/${userId}`);
+    };
   });
 
   // Reactive updates: respond to date changes and collection updates

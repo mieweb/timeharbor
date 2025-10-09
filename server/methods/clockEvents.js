@@ -1,6 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
-import { ClockEvents, Tickets } from '../../collections.js';
+import { ClockEvents, Tickets, Teams } from '../../collections.js';
 import { stopTicketInClockEvent } from '../utils/ClockEventHelpers.js';
 
 export const clockEventMethods = {
@@ -99,5 +99,91 @@ export const clockEventMethods = {
     check(now, Number);
     if (!this.userId) throw new Meteor.Error('not-authorized');
     await stopTicketInClockEvent(clockEventId, ticketId, now, ClockEvents);
+  },
+
+  async getUserTimesheetData(userId, startDate, endDate) {
+    check(userId, String);
+    check(startDate, String);
+    check(endDate, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    // Check if current user has permission to view this user's data
+    // Only allow if current user is a leader/admin of a team that includes the target user
+    const userTeams = await Teams.find({
+      $or: [
+        { members: this.userId },
+        { leader: this.userId },
+        { admins: this.userId }
+      ]
+    }).fetchAsync();
+
+    const hasPermission = userTeams.some(team => 
+      team.members?.includes(userId) || 
+      team.leader === userId || 
+      team.admins?.includes(userId)
+    );
+
+    if (!hasPermission) {
+      throw new Meteor.Error('not-authorized', 'You can only view timesheet data for team members');
+    }
+
+    // Parse dates
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T23:59:59');
+
+    // Fetch clock events for the user in the date range
+    const clockEvents = await ClockEvents.find({
+      userId: userId,
+      startTimestamp: { $gte: start, $lte: end }
+    }).fetchAsync();
+
+    // Process and enrich the data
+    const sessionData = clockEvents.map(event => {
+      const startTime = new Date(event.startTimestamp);
+      const endTime = event.endTime ? new Date(event.endTime) : null;
+      const duration = endTime ? (endTime - startTime) / 1000 : null;
+
+      // Get related data
+      const activity = event.ticketId ? Tickets.findOne(event.ticketId) : null;
+      const team = event.teamId ? Teams.findOne(event.teamId) : null;
+
+      return {
+        id: event._id,
+        date: startTime.toISOString().split('T')[0], // YYYY-MM-DD format
+        startTime: startTime,
+        endTime: endTime,
+        duration: duration,
+        isActive: !endTime,
+        activityTitle: activity?.title || null,
+        teamName: team?.name || null,
+        ticketId: event.ticketId,
+        teamId: event.teamId,
+        accumulatedTime: event.accumulatedTime || 0
+      };
+    });
+
+    // Sort by start time (most recent first)
+    sessionData.sort((a, b) => b.startTime - a.startTime);
+
+    // Calculate summary statistics
+    const totalSeconds = sessionData.reduce((sum, session) => sum + (session.duration || 0), 0);
+    const totalSessions = sessionData.length;
+    const completedSessions = sessionData.filter(s => s.duration).length;
+    const averageSessionSeconds = completedSessions > 0 ? 
+      sessionData.reduce((sum, session) => sum + (session.duration || 0), 0) / completedSessions : 0;
+    
+    const uniqueDates = new Set(sessionData.map(s => s.date));
+    const workingDays = uniqueDates.size;
+
+    return {
+      sessions: sessionData,
+      summary: {
+        totalSeconds,
+        totalSessions,
+        completedSessions,
+        averageSessionSeconds,
+        workingDays
+      }
+    };
   },
 }; 
