@@ -26,7 +26,7 @@
           <h5 class="text-lg font-semibold">Collaborators</h5>
           <div class="flex gap-2">
             <!-- Add collaborator button -->
-            <button class="btn btn-circle btn-sm bg-primary-content text-primary hover:bg-base-200">
+            <button id="showAddCollaboratorModal" class="btn btn-circle btn-sm bg-primary-content text-primary hover:bg-base-200">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
               </svg>
@@ -40,7 +40,7 @@
         
         <!-- Cards container -->
         <div class="bg-base-100 rounded-b-lg p-4 border border-t-0">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             {{#each selectedTeam.members}}
               <div class="card bg-base-100 border border-base-300 p-4 rounded-lg">
                 <div class="mb-3 flex items-start justify-between">
@@ -107,12 +107,19 @@
                 </div>
                 
                 {{#if this.vCardData}}
-                <div class="pt-2 border-t border-base-300">
-                  <button 
-                    class="btn btn-xs btn-outline download-vcard-btn" 
-                    data-user-id="{{this.id}}">
-                    Download vCard
-                  </button>
+                <div class="grid grid-cols-5 gap-4 pt-2 border-t border-base-300">
+                  <div class="col-span-5 flex items-center gap-2">
+                    <button 
+                      class="btn btn-xs btn-outline download-vcard-btn" 
+                      data-user-id="{{this.id}}">
+                      Download vCard
+                    </button>
+                    <button 
+                      class="btn btn-xs btn-outline edit-vcard-btn" 
+                      data-user-id="{{this.id}}">
+                      Edit
+                    </button>
+                  </div>
                 </div>
                 {{/if}}
               </div>
@@ -161,7 +168,7 @@
       <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-3 flex items-center justify-between rounded-t-lg -mx-6 -mt-6 mb-4">
         <h3 class="text-lg font-semibold">yCard Editor</h3>
         <div class="flex gap-2">
-          <button id="saveYCardChanges" class="btn btn-sm bg-cyan-500 hover:bg-cyan-600 text-white border-none">Save Changes</button>
+          <button id="saveYCardChanges" class="btn btn-sm bg-green-500 hover:bg-green-600 text-white border-none">Save Changes</button>
           <button id="validateYAML" class="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white border-none">Validate YAML</button>
           <button id="formatCode" class="btn btn-sm bg-purple-500 hover:bg-purple-600 text-white border-none">Format Code</button>
           <button id="resetEditor" class="btn btn-sm bg-red-500 hover:bg-red-600 text-white border-none">Reset</button>
@@ -173,24 +180,13 @@
         </div>
       </div>
       
-      <!-- Status Bar -->
-      <div class="bg-gray-800 text-white px-4 py-2 text-xs flex items-center justify-between rounded">
-        <div id="editorStatus" class="text-gray-300">Ready</div>
-        <div id="userLookupStatus" class="text-gray-300"></div>
-      </div>
-      
       <!-- Editor Content -->
-      <div class="bg-gray-900 text-green-400 p-4 font-mono text-sm rounded-b-lg relative mt-2" style="height: 400px;">
-        <textarea 
-          id="ycardEditor" 
-          class="w-full h-full bg-transparent text-green-400 font-mono text-sm border-none outline-none resize-none" 
-          placeholder="# Start typing to create yCard entries..."
-          spellcheck="false"
-          style="user-select: text; -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text;">{{ycardContent}}</textarea>
+      <div class="bg-gray-900 rounded-lg relative" style="height: 400px;">
+        <div id="ycardEditor" style="height: 100%;"></div>
         
         <!-- Autocomplete dropdown -->
         {{#if showUserSuggestions}}
-        <div id="userSuggestions" class="absolute bg-gray-800 border border-gray-600 rounded shadow-lg z-10 max-h-40 overflow-y-auto" style="top: {{suggestionTop}}px; left: {{suggestionLeft}}px; min-width: 200px;">
+        <div id="userSuggestions" class="absolute bg-gray-800 border border-gray-600 rounded shadow-lg z-50 max-h-40 overflow-y-auto" style="top: {{suggestionTop}}px; left: {{suggestionLeft}}px; min-width: 200px;">
           {{#each userSuggestions}}
             <div class="user-suggestion px-3 py-2 hover:bg-gray-700 cursor-pointer text-white text-sm border-b border-gray-700 last:border-b-0" data-user-id="{{_id}}">
               <div class="font-semibold">{{username}}</div>
@@ -211,9 +207,106 @@
         </div>
         {{/if}}
       </div>
-
-      
     </div>
     <label class="modal-backdrop" for="ycardEditorModal"></label>
+  </div>
+
+  <!-- Add Collaborator Modal -->
+  <input type="checkbox" id="addCollaboratorModal" class="modal-toggle" />
+  <div class="modal">
+    <div class="modal-box max-w-2xl">
+      <!-- Header -->
+      <div class=" bg-[var(--color-primary)] text-white px-4 py-3 flex items-center justify-between rounded-t-lg -mx-6 -mt-6 mb-4">
+        <h3 class="text-lg font-semibold">Add New Collaborator</h3>
+        <button id="closeAddCollaboratorModal" class="btn btn-sm btn-ghost text-white hover:bg-white hover:bg-opacity-20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="addCollaboratorForm" class="space-y-4">
+        <!-- Name Fields -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">First Name <span class="text-red-500">*</span></span>
+            </label>
+            <input type="text" name="firstName" placeholder="John" class="input input-bordered" required />
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Last Name <span class="text-red-500">*</span></span>
+            </label>
+            <input type="text" name="lastName" placeholder="Doe" class="input input-bordered" required />
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Title</span>
+          </label>
+          <input type="text" name="title" placeholder="Software Engineer" class="input input-bordered" />
+        </div>
+
+        <!-- Organization -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Organization</span>
+          </label>
+          <input type="text" name="organization" placeholder="TimeHarbor" class="input input-bordered" />
+        </div>
+
+        <!-- Email -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Email <span class="text-red-500">*</span></span>
+          </label>
+          <input type="email" name="email" placeholder="john.doe@example.com" class="input input-bordered" required />
+        </div>
+
+        <!-- Phone -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Phone</span>
+          </label>
+          <div class="grid grid-cols-3 gap-2">
+            <input type="text" name="phoneNumber" placeholder="+1-555-0123" class="input input-bordered col-span-2" />
+            <select name="phoneType" class="select select-bordered">
+              <option value="work">Work</option>
+              <option value="home">Home</option>
+              <option value="mobile">Mobile</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Address -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Address</span>
+          </label>
+          <div class="space-y-2">
+            <input type="text" name="street" placeholder="Street Address" class="input input-bordered w-full" />
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" name="city" placeholder="City" class="input input-bordered" />
+              <input type="text" name="state" placeholder="State" class="input input-bordered" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" name="postalCode" placeholder="Postal Code" class="input input-bordered" />
+              <input type="text" name="country" placeholder="Country" class="input input-bordered" value="USA" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-2 justify-end pt-4">
+          <label for="addCollaboratorModal" class="btn btn-outline">Cancel</label>
+          <button type="submit" class="btn btn-primary">Add Collaborator</button>
+        </div>
+      </form>
+    </div>
+    <label class="modal-backdrop" for="addCollaboratorModal"></label>
   </div>
 </template>

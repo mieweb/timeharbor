@@ -841,6 +841,84 @@ people:
  
 'click #validateYAML'(e, t) {
     t.validateYAMLContent();
+  },
+
+
+
+ 'click .edit-vcard-btn'(e, t) {
+    e.preventDefault(); 
+    
+    alert("hi");
+
+ } ,
+ // Add to Template.teams.events section:
+
+'click #showAddCollaboratorModal'(e, t) {
+  e.preventDefault();
+  const modal = document.getElementById('addCollaboratorModal');
+  if (modal) {
+    modal.checked = true;
   }
+},
+
+'click #closeAddCollaboratorModal'(e, t) {
+  e.preventDefault();
+  const modal = document.getElementById('addCollaboratorModal');
+  if (modal) {
+    modal.checked = false;
+  }
+},
+
+'submit #addCollaboratorForm'(e, t) {
+  e.preventDefault();
+  
+  const formData = {
+    firstName: e.target.firstName.value.trim(),
+    lastName: e.target.lastName.value.trim(),
+    title: e.target.title.value.trim() || 'Team Member',
+    organization: e.target.organization.value.trim() || 'TimeHarbor',
+    email: e.target.email.value.trim(),
+    phone: [{
+      number: e.target.phoneNumber.value.trim() || '',
+      type: e.target.phoneType.value
+    }],
+    address: {
+      street: e.target.street.value.trim() || '',
+      city: e.target.city.value.trim() || '',
+      state: e.target.state.value.trim() || '',
+      postal_code: e.target.postalCode.value.trim() || '',
+      country: e.target.country.value.trim() || 'USA'
+    }
+  };
+  
+  const teamId = t.selectedTeamId.get();
+  
+  if (!teamId) {
+    alert('Error: No team selected');
+    return;
+  }
+  
+  // Call your Meteor method to add the collaborator
+  Meteor.call('addCollaboratorToTeam', teamId, formData, (err, result) => {
+    if (err) {
+      alert('Error adding collaborator: ' + err.reason);
+    } else {
+      alert('Collaborator added successfully!');
+      
+      // Close modal
+      document.getElementById('addCollaboratorModal').checked = false;
+      
+      // Reset form
+      e.target.reset();
+      
+      // Refresh team data
+      const currentTeamId = t.selectedTeamId.get();
+      t.selectedTeamId.set(null);
+      Tracker.afterFlush(() => {
+        t.selectedTeamId.set(currentTeamId);
+      });
+    }
+  });
+} 
 
 });
