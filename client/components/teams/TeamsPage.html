@@ -182,7 +182,13 @@
       
       <!-- Editor Content -->
       <div class="bg-gray-900 rounded-lg relative" style="height: 400px;">
-        <div id="ycardEditor" style="height: 100%;"></div>
+       <textarea 
+          id="ycardEditor" 
+          class="w-full h-full bg-transparent text-green-400 font-mono text-sm border-none outline-none resize-none" 
+          placeholder="# Start typing to create yCard entries..."
+          spellcheck="false"
+          style="user-select: text; -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text;">{{ycardContent}}</textarea>
+        
         
         <!-- Autocomplete dropdown -->
         {{#if showUserSuggestions}}
