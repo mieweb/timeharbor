@@ -424,5 +424,120 @@ export const teamMethods = {
     }
     
     return await createUserFromYCard(userData, this.userId);
+  },
+
+  async addCollaboratorToTeam(teamId, userData) {
+  check(teamId, String);
+  check(userData, {
+    firstName: String,
+    lastName: String,
+    title: String,
+    organization: String,
+    email: String,
+    phone: Array,
+    address: Object
+  });
+  
+  if (!this.userId) {
+    throw new Meteor.Error('not-authorized', 'Must be logged in');
   }
+  
+  // Verify user is a member/admin of the team
+  const team = await Teams.findOneAsync({ 
+    _id: teamId, 
+    members: this.userId 
+  });
+  
+  if (!team) {
+    throw new Meteor.Error('not-authorized', 'Not a member of this team');
+  }
+  
+  // Check if user already exists by email
+  const existingUser = await Meteor.users.findOneAsync({
+    $or: [
+      { 'emails.address': userData.email },
+      { 'profile.email': userData.email }
+    ]
+  });
+  
+  let userId;
+  
+  if (existingUser) {
+    // User exists, just add to team if not already a member
+    userId = existingUser._id;
+    
+    if (!team.members.includes(userId)) {
+      await Teams.updateAsync(teamId, {
+        $addToSet: { members: userId }
+      });
+    }
+    
+    // Update user profile with new data
+    await Meteor.users.updateAsync(userId, {
+      $set: {
+        'profile.firstName': userData.firstName,
+        'profile.lastName': userData.lastName,
+        'profile.title': userData.title,
+        'profile.organization': userData.organization,
+        'profile.email': userData.email,
+        'profile.phone': userData.phone,
+        'profile.address': userData.address,
+        'profile.updatedAt': new Date(),
+        'profile.updatedBy': this.userId
+      }
+    });
+    
+    return {
+      success: true,
+      userId: userId,
+      action: 'updated',
+      message: 'Existing user updated and added to team'
+    };
+    
+  } else {
+    // Create new user
+    const username = `${userData.firstName.toLowerCase()}.${userData.lastName.toLowerCase()}`.replace(/\s+/g, '');
+    const password = 'TempPass123!'; // Default password
+    
+    try {
+      userId = await Accounts.createUserAsync({
+        username: username,
+        email: userData.email,
+        password: password,
+        profile: {
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          title: userData.title,
+          organization: userData.organization,
+          email: userData.email,
+          phone: userData.phone,
+          address: userData.address,
+          createdBy: this.userId,
+          createdAt: new Date()
+        }
+      });
+      
+      // Add new user to team
+      await Teams.updateAsync(teamId, {
+        $addToSet: { members: userId }
+      });
+      
+      return {
+        success: true,
+        userId: userId,
+        action: 'created',
+        message: 'New user created and added to team',
+        defaultPassword: password
+      };
+      
+    } catch (createError) {
+      console.error('Error creating user:', createError);
+      throw new Meteor.Error('create-failed', 'Failed to create new user: ' + createError.message);
+    }
+  }
+}
+
+
+
 };
+
