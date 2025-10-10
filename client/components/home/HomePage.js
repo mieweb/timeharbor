@@ -461,5 +461,9 @@ Template.home.events({
   
   'click #viewMyTimesheet': (e, t) => {
     FlowRouter.go(`/timesheet/${Meteor.userId()}`);
+  },
+  
+  'click #joinTeam': (e, t) => {
+    FlowRouter.go('/teams');
   }
 });
