@@ -1,24 +1,63 @@
-<template name="codeEditor">
-  <div class="code-editor-container relative">
-    <h3>Monaco Code Editor</h3>
-    <div id="monaco-editor" style="width: 100%; height: 400px; border: 1px solid #ccc;"></div>
-    
-    <!-- Autocomplete dropdown (copied from teams template) -->
-    {{#if showUserSuggestions}}
-    <div id="userSuggestions" class="absolute bg-gray-800 border border-gray-600 rounded shadow-lg z-10 max-h-40 overflow-y-auto" style="top: {{suggestionTop}}px; left: {{suggestionLeft}}px; min-width: 200px;">
-      {{#each userSuggestions}}
-        <div class="user-suggestion px-3 py-2 hover:bg-gray-700 cursor-pointer text-white text-sm border-b border-gray-700 last:border-b-0" data-user-id="{{_id}}">
-          <div class="font-semibold">{{username}}</div>
-          <div class="text-xs text-gray-400">{{profile.email}}</div>
+<template name="ycardEditor">
+  <!-- yCard Editor Modal -->
+  <input type="checkbox" id="ycardEditorModal" class="modal-toggle" />
+  <div class="modal">
+    <div class="modal-box w-11/12 max-w-5xl">
+      <!-- yCard Editor Header -->
+      <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-3 flex items-center justify-between rounded-t-lg -mx-6 -mt-6 mb-4">
+        <h3 class="text-lg font-semibold">yCard Editor</h3>
+        <div class="flex gap-2">
+          <button id="saveYCardChanges" class="btn btn-sm bg-cyan-500 hover:bg-cyan-600 text-white border-none">Save Changes</button>
+          <button id="validateYAML" class="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white border-none">Validate YAML</button>
+          <button id="formatCode" class="btn btn-sm bg-purple-500 hover:bg-purple-600 text-white border-none">Format Code</button>
+          <button id="resetEditor" class="btn btn-sm bg-red-500 hover:bg-red-600 text-white border-none">Reset</button>
+          <button id="closeYCardEditor" class="btn btn-sm btn-ghost text-white hover:bg-white hover:bg-opacity-20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
         </div>
-      {{/each}}
-      {{#unless userSuggestions.length}}
-        <div class="px-3 py-2 text-gray-400 text-sm">
-          No users found. 
-          <button id="createNewUser" class="text-blue-400 hover:underline ml-1">Create new user?</button>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="bg-gray-800 text-white px-4 py-2 text-xs flex items-center justify-between rounded">
+        <div id="editorStatus" class="text-gray-300">Ready</div>
+        <div id="userLookupStatus" class="text-gray-300"></div>
+      </div>
+      
+      <!-- Editor Content -->
+      <div class="bg-gray-900 rounded-lg relative" style="height: 400px;">
+        <textarea 
+          id="ycardEditor" 
+          class="w-full h-full bg-transparent text-green-400 font-mono text-sm border-none outline-none resize-none" 
+          placeholder="# Start typing to create yCard entries..."
+          spellcheck="false"
+          style="user-select: text; -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text;">{{ycardContent}}</textarea>
+        
+        <!-- Autocomplete dropdown -->
+        {{#if showUserSuggestions}}
+        <div id="userSuggestions" class="absolute bg-gray-800 border border-gray-600 rounded shadow-lg z-50 max-h-40 overflow-y-auto" style="top: {{suggestionTop}}px; left: {{suggestionLeft}}px; min-width: 200px;">
+          {{#each userSuggestions}}
+            <div class="user-suggestion px-3 py-2 hover:bg-gray-700 cursor-pointer text-white text-sm border-b border-gray-700 last:border-b-0" data-user-id="{{_id}}">
+              <div class="font-semibold">{{username}}</div>
+              {{#if profile.firstName}}
+                {{profile.firstName}} {{profile.lastName}}
+              {{else}}
+                {{username}}
+              {{/if}}
+              <div class="text-xs text-gray-400">{{profile.email}}</div>
+            </div>
+          {{/each}}
+          {{#unless userSuggestions.length}}
+            <div class="px-3 py-2 text-gray-400 text-sm">
+              No users found. 
+              <button id="createNewUser" class="text-blue-400 hover:underline ml-1">Create new user?</button>
+            </div>
+          {{/unless}}
         </div>
-      {{/unless}}
+        {{/if}}
+      </div>
     </div>
-    {{/if}}
+    <label class="modal-backdrop" for="ycardEditorModal"></label>
   </div>
 </template>
