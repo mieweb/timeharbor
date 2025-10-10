@@ -1,5 +1,6 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
+import { Meteor } from 'meteor/meteor';
 
 // Authentication-specific reactive variables
 const currentScreen = new ReactiveVar('authPage');
@@ -72,4 +73,11 @@ if (Template.authPage) {
     });
   },
   });
+  Template.authPage.onCreated(function () {
+    // Initialization logic can go here if needed in the future
+    if(Meteor.userId()) {
+      currentScreen.set('mainLayout');
+    }
+  });
 }
+
