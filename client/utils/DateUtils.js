@@ -42,3 +42,34 @@ export const formatDateForDisplay = (dateString) => {
   const localDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
   return localDate.toLocaleDateString();
 };
+
+// Get start and end timestamps for a specific date
+export const getDayBoundaries = (date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  return {
+    start: new Date(year, month, day, 0, 0, 0, 0).getTime(),
+    end: new Date(year, month, day, 23, 59, 59, 999).getTime()
+  };
+};
+
+// Get start and end timestamps for current week
+export const getWeekBoundaries = () => {
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay()); // Sunday
+  const weekEnd = new Date(today);
+  weekEnd.setDate(today.getDate() + (6 - today.getDay())); // Saturday
+  
+  return {
+    start: getDayBoundaries(weekStart).start,
+    end: getDayBoundaries(weekEnd).end
+  };
+};
+
+// Get start and end timestamps for today
+export const getTodayBoundaries = () => {
+  const today = new Date();
+  return getDayBoundaries(today);
+};
