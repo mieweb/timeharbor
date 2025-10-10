@@ -36,6 +36,14 @@ Template.codemirrorEditor.onCreated(function() {
       this.teamId.set(sessionTeamId);
     }
   });
+
+  this.autorun(() => {
+    const teamId = this.teamId.get();
+    if (teamId && this.editorView) {
+      // Editor is ready and we have a teamId, load the data!
+      loadTeamData(this);
+    }
+  });
   
   // Log helper function
   this.addLog = (type, message) => {
@@ -183,7 +191,7 @@ people:
   // Load team data if teamId exists
   const teamId = template.teamId.get();
   if (teamId) {
-    template.loadTeamData();
+    loadTeamData(template);
   }
 });
 
@@ -206,6 +214,9 @@ Template.codemirrorEditor.helpers({
   
   editorLogs() {
     return Template.instance().editorLogs.get();
+  },
+  eq(a, b) {
+    return a === b;
   }
 });
 
@@ -396,31 +407,65 @@ Template.codemirrorEditor.events({
   
   // History button
   'click #btnHistory'(e, template) {
-    e.preventDefault();
-    const isShowing = template.showHistoryPanel.get();
-    template.showHistoryPanel.set(!isShowing);
-    
-    // Close logs panel if open
-    if (!isShowing) {
-      template.showLogsPanel.set(false);
+  e.preventDefault();
+  const isShowing = template.showHistoryPanel.get();
+  const newState = !isShowing;
+  
+  // Close logs panel if opening history
+  if (newState) {
+    template.showLogsPanel.set(false);
+  }
+  
+  const panel = document.getElementById('historyPanel');
+  if (panel) {
+    if (newState) {
+      // Show panel
+      panel.style.display = 'flex';
+      setTimeout(() => {
+        template.showHistoryPanel.set(true);
+      }, 10);
+    } else {
+      // Hide panel
+      template.showHistoryPanel.set(false);
+      setTimeout(() => {
+        panel.style.display = 'none';
+      }, 300);
     }
-    
-    template.addLog('info', isShowing ? 'History panel closed' : 'History panel opened');
-  },
+  }
+  
+  template.addLog('info', newState ? 'History panel opened' : 'History panel closed');
+},
   
   // Logs button
   'click #btnLogs'(e, template) {
-    e.preventDefault();
-    const isShowing = template.showLogsPanel.get();
-    template.showLogsPanel.set(!isShowing);
-    
-    // Close history panel if open
-    if (!isShowing) {
-      template.showHistoryPanel.set(false);
+  e.preventDefault();
+  const isShowing = template.showLogsPanel.get();
+  const newState = !isShowing;
+  
+  // Close history panel if opening logs
+  if (newState) {
+    template.showHistoryPanel.set(false);
+  }
+  
+  const panel = document.getElementById('logsPanel');
+  if (panel) {
+    if (newState) {
+      // Show panel
+      panel.style.display = 'flex';
+      setTimeout(() => {
+        template.showLogsPanel.set(true);
+      }, 10);
+    } else {
+      // Hide panel
+      template.showLogsPanel.set(false);
+      setTimeout(() => {
+        panel.style.display = 'none';
+      }, 300);
     }
-    
-    template.addLog('info', isShowing ? 'Logs panel closed' : 'Logs panel opened');
-  },
+  }
+  
+  template.addLog('info', newState ? 'Logs panel opened' : 'Logs panel closed');
+},
   
   // Diff button
   'click #btnDiff'(e, template) {
@@ -494,20 +539,35 @@ Template.codemirrorEditor.events({
   
   // Close history panel
   'click #closeHistoryPanel'(e, template) {
-    e.preventDefault();
-    template.showHistoryPanel.set(false);
-  },
+  e.preventDefault();
+  const panel = document.getElementById('historyPanel');
+  template.showHistoryPanel.set(false);
+  if (panel) {
+    setTimeout(() => {
+      panel.style.display = 'none';
+    }, 300);
+  }
+},
   
   // Close logs panel
   'click #closeLogsPanel'(e, template) {
-    e.preventDefault();
-    template.showLogsPanel.set(false);
-  },
+  e.preventDefault();
+  const panel = document.getElementById('logsPanel');
+  template.showLogsPanel.set(false);
+  if (panel) {
+    setTimeout(() => {
+      panel.style.display = 'none';
+    }, 300);
+  }
+},
 });
 
-// Helper method to load team data
-Template.codemirrorEditor.loadTeamData = function() {
-  const template = Template.instance();
+
+
+
+
+// Helper function to load team data
+function loadTeamData(template) {
   const teamId = template.teamId.get();
   
   if (!teamId) {
@@ -517,7 +577,7 @@ Template.codemirrorEditor.loadTeamData = function() {
   
   template.addLog('info', `Loading data for team: ${teamId}`);
   
-  // Call Meteor method to get team users
+  // Call Meteor method to get team users from MongoDB
   Meteor.call('getUsers', null, teamId, (err, users) => {
     if (err) {
       template.addLog('error', `Failed to load team data: ${err.message}`);
@@ -530,7 +590,7 @@ Template.codemirrorEditor.loadTeamData = function() {
       return;
     }
 
-    template.addLog('success', `Loaded ${users.length} team members`);
+    template.addLog('success', `Loaded ${users.length} team members from MongoDB`);
     
     // Generate YAML content from users
     import('yaml').then((YAML) => {
@@ -587,4 +647,4 @@ Template.codemirrorEditor.loadTeamData = function() {
       }
     });
   });
-};
+}

@@ -2,7 +2,7 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams } from '../../../collections.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
-//import { parseYCard, yCardToVCard, stringifyVCard } from 'ycard';
+import { parseYCard, yCardToVCard, stringifyVCard } from 'ycard';
 import YAML from 'yaml';
 
 import './TeamsPage.html';
@@ -145,18 +145,12 @@ Template.teams.events({
     
     // Open the editor modal
     setTimeout(() => {
-      const modalCheckbox = document.getElementById('codemirrorEditorModal');
-      if (modalCheckbox) {
-        modalCheckbox.checked = true;
+      const modal = document.getElementById('codemirrorEditorModal');
+      if (modal) {
+        modal.checked = true;
       }
       
-      // Trigger the editor to load team data
-      const editorView = Blaze.getView(document.getElementById('codemirrorEditorModal'));
-      if (editorView && editorView.templateInstance) {
-        const editorInstance = editorView.templateInstance();
-        editorInstance.teamId.set(teamId);
-        editorInstance.generateYAMLFromTeamMembers();
-      }
+      
     }, 100);
   },
 

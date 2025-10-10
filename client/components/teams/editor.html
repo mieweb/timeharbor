@@ -9,8 +9,7 @@
         <div class="flex items-center justify-between gap-3">
           <h3 class="text-lg font-semibold whitespace-nowrap">yCard YAML Editor</h3>
 
-
-      <!-- Toolbar Buttons - Single Line -->
+          <!-- Toolbar Buttons - Single Line -->
           <div class="flex items-center gap-1.5 flex-1 justify-end">
             <!-- Theme Toggle -->
             <button id="btnThemeToggle" class="btn btn-xs bg-slate-700 hover:bg-slate-800 text-white border-none gap-1 px-2" title="Toggle Light/Dark Mode">
@@ -19,9 +18,9 @@
               </svg>
               <span class="text-xs" id="themeButtonText">Dark</span>
             </button>
-         </div> 
-          <!-- Toolbar Buttons - Single Line -->
-          <div class="flex items-center gap-1.5 flex-1 justify-end">
+            
+            <div class="w-px h-6 bg-white bg-opacity-30 mx-1"></div>
+            
             <!-- Undo -->
             <button id="btnUndo" class="btn btn-xs bg-orange-500 hover:bg-orange-600 text-white border-none gap-1 px-2" title="Undo (Ctrl+Z)">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +109,7 @@
         </div>
         
         <!-- History Side Panel (Initially Hidden) -->
-        <div id="historyPanel" class="w-80 bg-base-200 border-l border-base-300 overflow-y-auto hidden flex-col">
+        <div id="historyPanel" class="w-80 bg-base-200 border-l border-base-300 overflow-y-auto flex-col transition-all duration-300 ease-in-out {{#unless showHistoryPanel}}translate-x-full{{/unless}}" style="{{#unless showHistoryPanel}}display: none;{{/unless}}">
           <div class="p-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-200 z-10">
             <h4 class="font-semibold text-lg">Edit History</h4>
             <button id="closeHistoryPanel" class="btn btn-sm btn-circle btn-ghost">
@@ -126,7 +125,7 @@
         </div>
         
         <!-- Logs Side Panel (Initially Hidden) -->
-        <div id="logsPanel" class="w-80 bg-base-200 border-l border-base-300 overflow-y-auto hidden flex-col">
+        <div id="logsPanel" class="w-80 bg-base-200 border-l border-base-300 overflow-y-auto flex-col transition-all duration-300 ease-in-out {{#unless showLogsPanel}}translate-x-full{{/unless}}" style="{{#unless showLogsPanel}}display: none;{{/unless}}">
           <div class="p-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-200 z-10">
             <h4 class="font-semibold text-lg">Editor Logs</h4>
             <button id="closeLogsPanel" class="btn btn-sm btn-circle btn-ghost">
@@ -135,9 +134,34 @@
               </svg>
             </button>
           </div>
-          <div id="logsContent" class="p-4 font-mono text-xs">
-            <!-- Log entries will be populated here -->
-            <div class="text-sm text-gray-500 italic">No logs yet</div>
+          
+          <!-- LOGS CONTENT - ONLY VISIBLE IN THIS PANEL -->
+          <div id="logsContent" class="p-4 font-mono text-xs space-y-2">
+            {{#if editorLogs.length}}
+              {{#each editorLogs}}
+                <div class="flex items-start gap-2 text-xs border-b border-base-300 pb-2">
+                  <!-- Log type icon and color -->
+                  <span class="flex-shrink-0 mt-0.5 font-bold
+                    {{#if (eq this.type 'success')}}text-green-500{{/if}}
+                    {{#if (eq this.type 'error')}}text-red-500{{/if}}
+                    {{#if (eq this.type 'warning')}}text-yellow-500{{/if}}
+                    {{#if (eq this.type 'info')}}text-blue-500{{/if}}">
+                    {{#if (eq this.type 'success')}}✓{{/if}}
+                    {{#if (eq this.type 'error')}}✗{{/if}}
+                    {{#if (eq this.type 'warning')}}⚠{{/if}}
+                    {{#if (eq this.type 'info')}}ℹ{{/if}}
+                  </span>
+                  
+                  <!-- Timestamp -->
+                  <span class="text-gray-500 flex-shrink-0 font-mono">{{this.timestamp}}</span>
+                  
+                  <!-- Message -->
+                  <span class="flex-1 break-words">{{this.message}}</span>
+                </div>
+              {{/each}}
+            {{else}}
+              <div class="text-sm text-gray-500 italic">No logs yet</div>
+            {{/if}}
           </div>
         </div>
         
