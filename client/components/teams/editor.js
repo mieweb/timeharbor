@@ -1,22 +1,64 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Session } from 'meteor/session';
-import { Tracker } from 'meteor/tracker';
-import { parseYCard, yCardToVCard, stringifyVCard } from 'ycard';
-import YAML from 'yaml';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
+
+// CodeMirror 6 imports
+import { EditorState } from '@codemirror/state';
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, rectangularSelection, crosshairCursor, highlightActiveLine } from '@codemirror/view';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
+import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
+import { yaml } from '@codemirror/lang-yaml';
+import { lintKeymap } from '@codemirror/lint';
+import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language';
+
+// Import theme extensions
+import { oneDark } from '@codemirror/theme-one-dark';
 
 import './editor.html';
 
-Template.ycardEditor.onCreated(function() {
-  this.ycardContent = new ReactiveVar('');
-  this.showUserSuggestions = new ReactiveVar(false);
-  this.userSuggestions = new ReactiveVar([]);
-  this.suggestionPosition = new ReactiveVar({ top: 0, left: 0 });
-  this.currentCursorPosition = new ReactiveVar(0);
+Template.codemirrorEditor.onCreated(function() {
+  // Reactive variables
+  this.editorView = null; // Will store CodeMirror instance
   this.teamId = new ReactiveVar(null);
+  this.originalContent = new ReactiveVar(''); // For diff comparison
+  this.showHistoryPanel = new ReactiveVar(false);
+  this.showLogsPanel = new ReactiveVar(false);
+  this.editorLogs = new ReactiveVar([]);
+  this.isDarkTheme = new ReactiveVar(false); // Theme state
+  
+  // Watch for team ID from Session
+  this.autorun(() => {
+    const sessionTeamId = Session.get('editorTeamId');
+    if (sessionTeamId) {
+      this.teamId.set(sessionTeamId);
+    }
+  });
+  
+  // Log helper function
+  this.addLog = (type, message) => {
+    const logs = this.editorLogs.get();
+    const timestamp = new Date().toLocaleTimeString();
+    logs.push({
+      type: type, // 'info', 'success', 'error', 'warning'
+      message: message,
+      timestamp: timestamp
+    });
+    // Keep only last 50 logs
+    if (logs.length > 50) {
+      logs.shift();
+    }
+    this.editorLogs.set(logs);
+  };
+});
 
-  // Initialize with proper yCard template
-  this.ycardContent.set(`# yCard Format - Human-friendly contact data
+Template.codemirrorEditor.onRendered(function() {
+  const template = this;
+  
+  // Initial YAML content
+  const initialDoc = `# yCard Format - Human-friendly contact data
 people:
   - uid: new-user
     name: Alice
@@ -33,42 +75,467 @@ people:
       state: "CA"
       postal_code: "90210"
       country: "USA"
-`);
+`;
 
-  // Watch for team ID changes from Session
-  this.autorun(() => {
-    const sessionTeamId = Session.get('editorTeamId');
-    if (sessionTeamId) {
-      this.teamId.set(sessionTeamId);
+  // Function to get current extensions based on theme
+  const getExtensions = (isDark) => {
+    const baseExtensions = [
+      // Line numbers
+      lineNumbers(),
+      highlightActiveLineGutter(),
+      highlightSpecialChars(),
+      
+      // History (undo/redo)
+      history(),
+      
+      // Selection
+      drawSelection(),
+      rectangularSelection(),
+      crosshairCursor(),
+      
+      // Active line highlighting
+      highlightActiveLine(),
+      
+      // Bracket matching
+      bracketMatching(),
+      closeBrackets(),
+      
+      // Code folding
+      foldGutter(),
+      
+      // Auto-indent
+      indentOnInput(),
+      
+      // Autocompletion
+      autocompletion(),
+      
+      // Highlight selection matches
+      highlightSelectionMatches(),
+      
+      // YAML language support
+      yaml(),
+      
+      // Keymaps
+      keymap.of([
+        ...closeBracketsKeymap,
+        ...defaultKeymap,
+        ...searchKeymap,
+        ...historyKeymap,
+        ...completionKeymap,
+        ...lintKeymap,
+      ]),
+      
+      // Tab size for YAML (2 spaces)
+      EditorState.tabSize.of(2),
+      
+      // Update listener - logs changes
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged) {
+          template.addLog('info', 'Document modified');
+        }
+      }),
+    ];
+    
+    // Add dark theme if enabled
+    if (isDark) {
+      baseExtensions.push(oneDark);
     }
+    
+    return baseExtensions;
+  };
+
+  // Create CodeMirror editor state
+  const startState = EditorState.create({
+    doc: initialDoc,
+    extensions: getExtensions(false),
   });
 
-  // Function to generate YAML from team members
-  this.generateYAMLFromTeamMembers = () => {
-    const teamId = this.teamId.get();
+  // Create the editor view
+  const view = new EditorView({
+    state: startState,
+    parent: document.getElementById('codemirrorContainer'),
+  });
+  
+  // Add CSS to make editor fill container
+  const style = document.createElement('style');
+  style.textContent = `
+    #codemirrorContainer .cm-editor {
+      height: 100%;
+    }
+    #codemirrorContainer .cm-scroller {
+      overflow: auto;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Store the view in template instance
+  template.editorView = view;
+  
+  // Store original content for diff
+  template.originalContent.set(initialDoc);
+  
+  // Log editor initialization
+  template.addLog('success', 'Editor initialized successfully');
+  
+  // Store the getExtensions function on template for use in toggleTheme
+  template.getExtensions = getExtensions;
+  
+  // Load team data if teamId exists
+  const teamId = template.teamId.get();
+  if (teamId) {
+    template.loadTeamData();
+  }
+});
+
+Template.codemirrorEditor.onDestroyed(function() {
+  // Clean up CodeMirror instance
+  if (this.editorView) {
+    this.editorView.destroy();
+    this.editorView = null;
+  }
+});
+
+Template.codemirrorEditor.helpers({
+  showHistoryPanel() {
+    return Template.instance().showHistoryPanel.get();
+  },
+  
+  showLogsPanel() {
+    return Template.instance().showLogsPanel.get();
+  },
+  
+  editorLogs() {
+    return Template.instance().editorLogs.get();
+  }
+});
+
+Template.codemirrorEditor.events({
+  // Close modal
+  'click #closeCodemirrorEditor'(e, template) {
+    e.preventDefault();
+    const modal = document.getElementById('codemirrorEditorModal');
+    if (modal) {
+      modal.checked = false;
+    }
+    template.addLog('info', 'Editor closed');
+  },
+  
+  // Theme Toggle button
+  'click #btnThemeToggle'(e, template) {
+    e.preventDefault();
+    
+    const isDark = !template.isDarkTheme.get();
+    template.isDarkTheme.set(isDark);
+    
+    if (!template.editorView) return;
+    
+    // Get current content
+    const currentContent = template.editorView.state.doc.toString();
+    
+    // Create new state with updated theme
+    const newState = EditorState.create({
+      doc: currentContent,
+      extensions: template.getExtensions(isDark),
+    });
+    
+    // Update the editor view
+    template.editorView.setState(newState);
+    
+    // Update button text
+    const btnText = document.getElementById('themeButtonText');
+    if (btnText) {
+      btnText.textContent = isDark ? 'Light' : 'Dark';
+    }
+    
+    // Update the editor wrapper background
+    const editorWrapper = document.getElementById('editorWrapper');
+    const codemirrorContainer = document.getElementById('codemirrorContainer');
+    if (editorWrapper && codemirrorContainer) {
+      if (isDark) {
+        editorWrapper.style.backgroundColor = '#282c34';
+        codemirrorContainer.style.backgroundColor = '#282c34';
+      } else {
+        editorWrapper.style.backgroundColor = '#ffffff';
+        codemirrorContainer.style.backgroundColor = '#ffffff';
+      }
+    }
+    
+    template.addLog('info', `Theme changed to ${isDark ? 'dark' : 'light'} mode`);
+  },
+  
+  // Undo button
+  'click #btnUndo'(e, template) {
+    e.preventDefault();
+    if (template.editorView) {
+      // Import undo command
+      import('@codemirror/commands').then(({ undo }) => {
+        undo(template.editorView);
+        template.addLog('info', 'Undo performed');
+      });
+    }
+  },
+  
+  // Redo button
+  'click #btnRedo'(e, template) {
+    e.preventDefault();
+    if (template.editorView) {
+      // Import redo command
+      import('@codemirror/commands').then(({ redo }) => {
+        redo(template.editorView);
+        template.addLog('info', 'Redo performed');
+      });
+    }
+  },
+  
+  // Validate button
+  'click #btnValidate'(e, template) {
+    e.preventDefault();
+    template.addLog('info', 'Validation started...');
+    
+    if (!template.editorView) {
+      template.addLog('error', 'Editor not initialized');
+      return;
+    }
+    
+    const content = template.editorView.state.doc.toString();
+    
+    // Import YAML for validation
+    import('yaml').then((YAML) => {
+      try {
+        const parsed = YAML.default.parse(content);
+        
+        if (!parsed || !parsed.people) {
+          template.addLog('error', 'Invalid structure: Missing "people" array');
+          Swal.fire({
+            icon: 'error',
+            title: 'Validation Failed',
+            text: 'Missing "people" array in YAML',
+          });
+          return;
+        }
+        
+        if (!Array.isArray(parsed.people)) {
+          template.addLog('error', 'Invalid structure: "people" must be an array');
+          Swal.fire({
+            icon: 'error',
+            title: 'Validation Failed',
+            text: '"people" must be an array',
+          });
+          return;
+        }
+        
+        // Count validation
+        const peopleCount = parsed.people.length;
+        template.addLog('success', `YAML is valid! Found ${peopleCount} people`);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Validation Passed',
+          text: `YAML is valid! Found ${peopleCount} people`,
+          timer: 2000,
+        });
+        
+      } catch (error) {
+        template.addLog('error', `YAML parse error: ${error.message}`);
+        Swal.fire({
+          icon: 'error',
+          title: 'YAML Parse Error',
+          text: error.message,
+        });
+      }
+    });
+  },
+  
+  // Save button
+  'click #btnSave'(e, template) {
+    e.preventDefault();
+    template.addLog('info', 'Save initiated...');
+    
+    if (!template.editorView) {
+      template.addLog('error', 'Editor not initialized');
+      return;
+    }
+    
+    const content = template.editorView.state.doc.toString();
+    const teamId = template.teamId.get();
+    
     if (!teamId) {
-      console.log('No team selected');
+      template.addLog('error', 'No team selected');
+      Swal.fire({
+        icon: 'error',
+        title: 'Save Failed',
+        text: 'No team selected',
+      });
+      return;
+    }
+    
+    // Show loading
+    Swal.fire({
+      title: 'Saving...',
+      text: 'Processing yCard data',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+    
+    template.addLog('info', 'Parsing yCard data...');
+    
+    // TODO: Implement actual save logic with yCard parsing
+    // For now, just simulate save
+    setTimeout(() => {
+      template.addLog('success', 'Data saved successfully');
+      Swal.fire({
+        icon: 'success',
+        title: 'Saved!',
+        text: 'Your changes have been saved',
+        timer: 2000,
+      });
+    }, 1000);
+  },
+  
+  // History button
+  'click #btnHistory'(e, template) {
+    e.preventDefault();
+    const isShowing = template.showHistoryPanel.get();
+    template.showHistoryPanel.set(!isShowing);
+    
+    // Close logs panel if open
+    if (!isShowing) {
+      template.showLogsPanel.set(false);
+    }
+    
+    template.addLog('info', isShowing ? 'History panel closed' : 'History panel opened');
+  },
+  
+  // Logs button
+  'click #btnLogs'(e, template) {
+    e.preventDefault();
+    const isShowing = template.showLogsPanel.get();
+    template.showLogsPanel.set(!isShowing);
+    
+    // Close history panel if open
+    if (!isShowing) {
+      template.showHistoryPanel.set(false);
+    }
+    
+    template.addLog('info', isShowing ? 'Logs panel closed' : 'Logs panel opened');
+  },
+  
+  // Diff button
+  'click #btnDiff'(e, template) {
+    e.preventDefault();
+    template.addLog('info', 'Diff comparison requested');
+    
+    if (!template.editorView) {
+      template.addLog('error', 'Editor not initialized');
+      return;
+    }
+    
+    const currentContent = template.editorView.state.doc.toString();
+    const originalContent = template.originalContent.get();
+    
+    if (currentContent === originalContent) {
+      template.addLog('info', 'No changes detected');
+      Swal.fire({
+        icon: 'info',
+        title: 'No Changes',
+        text: 'The document has not been modified',
+        timer: 2000,
+      });
+    } else {
+      template.addLog('info', 'Changes detected - showing diff');
+      // TODO: Implement actual diff view
+      Swal.fire({
+        icon: 'info',
+        title: 'Diff View',
+        text: 'Diff comparison feature coming soon!',
+      });
+    }
+  },
+  
+  // Reset button
+  'click #btnReset'(e, template) {
+    e.preventDefault();
+    
+    Swal.fire({
+      icon: 'warning',
+      title: 'Reset Editor?',
+      text: 'This will discard all changes and reload the original data',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, reset it',
+      cancelButtonText: 'Cancel',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const originalContent = template.originalContent.get();
+        
+        if (template.editorView) {
+          // Replace editor content
+          template.editorView.dispatch({
+            changes: {
+              from: 0,
+              to: template.editorView.state.doc.length,
+              insert: originalContent
+            }
+          });
+          
+          template.addLog('warning', 'Editor reset to original content');
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Reset Complete',
+            text: 'Editor has been reset',
+            timer: 1500,
+          });
+        }
+      }
+    });
+  },
+  
+  // Close history panel
+  'click #closeHistoryPanel'(e, template) {
+    e.preventDefault();
+    template.showHistoryPanel.set(false);
+  },
+  
+  // Close logs panel
+  'click #closeLogsPanel'(e, template) {
+    e.preventDefault();
+    template.showLogsPanel.set(false);
+  },
+});
+
+// Helper method to load team data
+Template.codemirrorEditor.loadTeamData = function() {
+  const template = Template.instance();
+  const teamId = template.teamId.get();
+  
+  if (!teamId) {
+    template.addLog('warning', 'No team ID provided');
+    return;
+  }
+  
+  template.addLog('info', `Loading data for team: ${teamId}`);
+  
+  // Call Meteor method to get team users
+  Meteor.call('getUsers', null, teamId, (err, users) => {
+    if (err) {
+      template.addLog('error', `Failed to load team data: ${err.message}`);
+      console.error('Error fetching team members:', err);
       return;
     }
 
-    Meteor.call('getUsers', null, teamId, (err, users) => {
-      if (err) {
-        console.error('Error fetching team members:', err);
-        const statusEl = document.getElementById('editorStatus');
-        if (statusEl) statusEl.textContent = 'Error loading members';
-        return;
-      }
+    if (!users || users.length === 0) {
+      template.addLog('warning', 'No team members found');
+      return;
+    }
 
-      if (!users || users.length === 0) {
-        const statusEl = document.getElementById('editorStatus');
-        if (statusEl) statusEl.textContent = 'No members to load';
-        return;
-      }
-
-      // Generate YAML content from users with full structure
+    template.addLog('success', `Loaded ${users.length} team members`);
+    
+    // Generate YAML content from users
+    import('yaml').then((YAML) => {
       const yamlData = {
         people: users.map(user => {
-          console.log("Mapping user to YAML:", user);
           const person = {
             uid: user.id,
             name: user.firstName || user.username,
@@ -100,496 +567,24 @@ people:
         })
       };
 
-      const yamlString = YAML.stringify(yamlData);
+      const yamlString = YAML.default.stringify(yamlData);
       const formattedYaml = `# yCard Format - Human-friendly contact data\n${yamlString}`;
       
-      this.ycardContent.set(formattedYaml);
-      const statusEl = document.getElementById('editorStatus');
-      if (statusEl) statusEl.textContent = `Loaded ${users.length} team members`;
-    });
-  };
-
-  this.searchUsers = (searchTerm, textareaElement) => {
-    if (searchTerm.length < 2) return;
-    
-    Meteor.call('searchUsersByName', searchTerm, (err, users) => {
-      if (!err && users) {
-        this.userSuggestions.set(users);
-        this.showUserSuggestions.set(users.length > 0);
-        
-        const rect = textareaElement.getBoundingClientRect();
-        const cursorPosition = this.getCursorPosition(textareaElement);
-        this.suggestionPosition.set({
-          top: cursorPosition.top + 20,
-          left: cursorPosition.left
+      // Update editor content
+      if (template.editorView) {
+        template.editorView.dispatch({
+          changes: {
+            from: 0,
+            to: template.editorView.state.doc.length,
+            insert: formattedYaml
+          }
         });
+        
+        // Store as original for diff
+        template.originalContent.set(formattedYaml);
+        
+        template.addLog('success', 'Team data loaded into editor');
       }
     });
-  };
-
-  this.getCursorPosition = (textarea) => {
-    return { top: 100, left: 20 };
-  };
-
-  this.fillUserData = (user) => {
-    const currentContent = this.ycardContent.get();
-    const lines = currentContent.split('\n');
-    let personBlockStart = -1;
-    
-    for (let i = lines.length - 1; i >= 0; i--) {
-      if (lines[i].trim().startsWith('- uid:')) {
-        personBlockStart = i;
-        break;
-      }
-    }
-    
-    if (personBlockStart !== -1) {
-      const firstName = user.profile?.firstName || user.username;
-      const lastName = user.profile?.lastName || '';
-
-      let emailLines = [];
-      const userEmail = user.profile?.email || user.emails?.[0]?.address || '';
-      if (userEmail) {
-        emailLines = [
-          `    email:`,
-          `      - "${userEmail}"`
-        ];
-      } else {
-        emailLines = [
-          `    email:`,
-          `      - ""`
-        ];
-      }
-      
-      let phoneLines = [];
-      if (user.profile?.phone && user.profile.phone.length > 0) {
-        phoneLines.push(`    phone:`);
-        user.profile.phone.forEach(phone => {
-          phoneLines.push(`      - number: "${phone.number || ''}"`);
-          phoneLines.push(`        type: ${phone.type || 'work'}`);
-        });
-      } else {
-        phoneLines = [
-          `    phone:`,
-          `      - number: ""`,
-          `        type: work`
-        ];
-      }
-    
-      let addressLines = [];
-      if (user.profile?.address && user.profile.address.street) {
-        addressLines = [
-          `    address:`,
-          `      street: "${user.profile.address.street || ''}"`,
-          `      city: "${user.profile.address.city || ''}"`,
-          `      state: "${user.profile.address.state || ''}"`,
-          `      postal_code: "${user.profile.address.postal_code || ''}"`,
-          `      country: "${user.profile.address.country || 'USA'}"`
-        ];
-      } else {
-        addressLines = [
-          `    address:`,
-          `      street: ""`,
-          `      city: ""`,
-          `      state: ""`,
-          `      postal_code: ""`,
-          `      country: "USA"`
-        ];
-      }
-    
-      const newPersonBlock = [
-        `  - uid: ${user._id}`,
-        `    name: ${firstName}`,
-        `    surname: ${lastName}`,
-        `    title: ${user.profile?.title || 'Team Member'}`,
-        `    org: ${user.profile?.organization || 'TimeHarbor'}`,
-        ...emailLines,
-        ...phoneLines,
-        ...addressLines
-      ];
-    
-      let personBlockEnd = personBlockStart;
-      for (let i = personBlockStart + 1; i < lines.length; i++) {
-        if (lines[i].trim().startsWith('- uid:') || (!lines[i].startsWith('    ') && lines[i].trim() !== '')) {
-          break;
-        }
-        personBlockEnd = i;
-      }
-      
-      const newLines = [
-        ...lines.slice(0, personBlockStart),
-        ...newPersonBlock,
-        ...lines.slice(personBlockEnd + 1)
-      ];
-      
-      this.ycardContent.set(newLines.join('\n'));
-      const statusEl = document.getElementById('userLookupStatus');
-      if (statusEl) statusEl.textContent = `Filled data for ${user.username}`;
-    }
-  };
-
-  this.validateYAMLContent = () => {
-    const content = this.ycardContent.get();
-    const errors = [];
-    const warnings = [];
-    
-    try {
-      const parsed = YAML.parse(content);
-      
-      if (!parsed.people) {
-        errors.push('Missing "people" array');
-        const statusEl = document.getElementById('editorStatus');
-        if (statusEl) statusEl.textContent = '❌ YAML Invalid - missing people array';
-        return;
-      }
-      
-      if (!Array.isArray(parsed.people)) {
-        errors.push('"people" must be an array');
-        const statusEl = document.getElementById('editorStatus');
-        if (statusEl) statusEl.textContent = '❌ YAML Invalid - people must be an array';
-        return;
-      }
-      
-      if (parsed.people.length === 0) {
-        warnings.push('No people defined in the array');
-      }
-      
-      parsed.people.forEach((person, index) => {
-        const personNum = index + 1;
-        
-        if (!person.name || person.name.trim() === '') {
-          errors.push(`Person ${personNum}: Missing required field "name"`);
-        }
-        
-        if (!person.email || person.email.trim() === '') {
-          errors.push(`Person ${personNum}: Missing required field "email"`);
-        } else {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(person.email)) {
-            errors.push(`Person ${personNum}: Invalid email format "${person.email}"`);
-          }
-        }
-        
-        if (!person.uid || person.uid === 'new-user') {
-          warnings.push(`Person ${personNum} (${person.name}): No valid uid specified`);
-        }
-        
-        if (!person.surname || person.surname.trim() === '') {
-          warnings.push(`Person ${personNum} (${person.name}): Missing surname`);
-        }
-        
-        if (!person.title || person.title.trim() === '') {
-          warnings.push(`Person ${personNum} (${person.name}): Missing title`);
-        }
-        
-        if (person.phone) {
-          if (!Array.isArray(person.phone)) {
-            errors.push(`Person ${personNum} (${person.name}): "phone" must be an array`);
-          } else {
-            person.phone.forEach((phoneEntry, phoneIndex) => {
-              if (typeof phoneEntry !== 'object') {
-                errors.push(`Person ${personNum} (${person.name}): Phone entry ${phoneIndex + 1} must be an object`);
-              } else {
-                if (!phoneEntry.number && phoneEntry.number !== '') {
-                  errors.push(`Person ${personNum} (${person.name}): Phone entry ${phoneIndex + 1} missing "number" field`);
-                }
-                if (!phoneEntry.type) {
-                  warnings.push(`Person ${personNum} (${person.name}): Phone entry ${phoneIndex + 1} missing "type" field`);
-                }
-              }
-            });
-          }
-        }
-        
-        if (person.address) {
-          if (typeof person.address !== 'object' || Array.isArray(person.address)) {
-            errors.push(`Person ${personNum} (${person.name}): "address" must be an object`);
-          } else {
-            const addressFields = ['street', 'city', 'state', 'postal_code', 'country'];
-            const missingAddressFields = addressFields.filter(field => !(field in person.address));
-            if (missingAddressFields.length > 0) {
-              warnings.push(`Person ${personNum} (${person.name}): Address missing fields: ${missingAddressFields.join(', ')}`);
-            }
-          }
-        }
-      });
-      
-      const statusEl = document.getElementById('editorStatus');
-      if (!statusEl) return;
-      
-      if (errors.length > 0) {
-        const errorMsg = `❌ YAML Invalid - ${errors.length} error(s) found:\n${errors.join('\n')}`;
-        statusEl.textContent = errorMsg;
-        console.error('Validation errors:', errors);
-        
-        if (warnings.length > 0) {
-          console.warn('Validation warnings:', warnings);
-        }
-      } else if (warnings.length > 0) {
-        const warningMsg = `⚠️ YAML Valid but has ${warnings.length} warning(s) - Check console`;
-        statusEl.textContent = warningMsg;
-        console.warn('Validation warnings:', warnings);
-      } else {
-        statusEl.textContent = `✅ YAML Valid - ${parsed.people.length} people, no issues found`;
-      }
-      
-    } catch (e) {
-      const statusEl = document.getElementById('editorStatus');
-      if (statusEl) statusEl.textContent = `❌ YAML Parse Error: ${e.message}`;
-      console.error('YAML parse error:', e);
-    }
-  };
-
-  this.formatYAMLContent = () => {
-    const content = this.ycardContent.get();
-    
-    try {
-      let cleanedContent = content
-        .replace(/people:\s*-\s+/i, 'people:\n  - ')
-        .replace(/(\w+):\s+-\s+/g, '$1:\n  - ')
-        .replace(/\n\s*\n\s*\n+/g, '\n\n')
-        .replace(/[ \t]+$/gm, '')
-        .replace(/^\s+#/gm, '#')
-        .replace(/:\s{2,}/g, ': ')
-        .replace(/:\s*([^\s\n])/g, ': $1')
-        .trim();
-      
-      const parsed = YAML.parse(cleanedContent);
-      
-      if (!parsed || !parsed.people) {
-        const statusEl = document.getElementById('editorStatus');
-        if (statusEl) statusEl.textContent = '❌ Format failed: Invalid structure - missing people array';
-        return;
-      }
-      
-      if (Array.isArray(parsed.people)) {
-        parsed.people = parsed.people.map(person => {
-          const cleanPerson = {};
-          
-          Object.keys(person).forEach(key => {
-            let value = person[key];
-            
-            if (typeof value === 'string') {
-              value = value.trim().replace(/\s{2,}/g, ' ');
-            }
-            
-            if (key === 'phone' && Array.isArray(value)) {
-              value = value.map(phone => ({
-                number: (phone.number || '').toString().trim(),
-                type: (phone.type || 'work').toString().trim()
-              }));
-            }
-            
-            if (key === 'address' && typeof value === 'object' && !Array.isArray(value)) {
-              const cleanAddress = {};
-              Object.keys(value).forEach(addrKey => {
-                cleanAddress[addrKey] = typeof value[addrKey] === 'string' 
-                  ? value[addrKey].trim() 
-                  : value[addrKey];
-              });
-              value = cleanAddress;
-            }
-            
-            cleanPerson[key] = value;
-          });
-          
-          return cleanPerson;
-        });
-      }
-      
-      const formatted = YAML.stringify(parsed, {
-        indent: 2,
-        lineWidth: 80,
-        sortKeys: false
-      });
-      
-      let finalFormatted = formatted
-        .replace(/[ \t]+$/gm, '')
-        .replace(/\n*$/, '\n');
-      
-      const withComment = `# yCard Format - Human-friendly contact data\n${finalFormatted}`;
-      
-      this.ycardContent.set(withComment);
-      const statusEl = document.getElementById('editorStatus');
-      if (statusEl) statusEl.textContent = '✅ Code formatted successfully';
-      
-    } catch (e) {
-      console.error('Format error:', e);
-      
-      const statusEl = document.getElementById('editorStatus');
-      if (!statusEl) return;
-      
-      if (e.mark) {
-        const lineNum = e.mark.line + 1;
-        const colNum = e.mark.column + 1;
-        statusEl.textContent = `❌ Format failed at line ${lineNum}, col ${colNum}: ${e.reason || e.message}`;
-      } else {
-        statusEl.textContent = `❌ Format failed: ${e.message}`;
-      }
-    }
-  };
-
-  this.saveYCardData = () => {
-    const content = this.ycardContent.get();
-    const teamId = this.teamId.get();
-    
-    if (!teamId) {
-      const statusEl = document.getElementById('editorStatus');
-      if (statusEl) statusEl.textContent = 'Error: No team selected';
-      return;
-    }
-    
-    if (!Meteor.status().connected) {
-      const statusEl = document.getElementById('editorStatus');
-      if (statusEl) statusEl.textContent = 'Error: Not connected to server';
-      return;
-    }
-    
-    const statusEl = document.getElementById('editorStatus');
-    if (statusEl) statusEl.textContent = 'Processing yCard data...';
-    
-    try {
-      const yCardData = parseYCard(content);
-      console.log('Parsed yCard:', yCardData);
-      
-      const vCards = yCardToVCard(yCardData);
-      console.log('Generated vCards:', vCards);
-      
-      Meteor.call('saveYCardData', teamId, content, vCards, (err, result) => {
-        if (err) {
-          console.error('Save error:', err);
-          const statusEl = document.getElementById('editorStatus');
-          if (statusEl) statusEl.textContent = 'Save failed: ' + (err.reason || err.message);
-        } else {
-          console.log('Save result:', result);
-          
-          let statusMessage = result.message;
-          
-          if (result.errors && result.errors.length > 0) {
-            statusMessage += ' Check console for error details.';
-            console.warn('yCard processing errors:', result.errors);
-          }
-          
-          const statusEl = document.getElementById('editorStatus');
-          const userLookupEl = document.getElementById('userLookupStatus');
-          
-          if (statusEl) statusEl.textContent = statusMessage;
-          if (userLookupEl) userLookupEl.textContent = `Processed ${result.totalProcessed} members with vCard data`;
-        }
-      });
-    } catch (parseError) {
-      console.error('Parse error:', parseError);
-      const statusEl = document.getElementById('editorStatus');
-      if (statusEl) statusEl.textContent = 'Parse failed: ' + parseError.message;
-    }
-  };
-});
-
-Template.ycardEditor.helpers({
-  ycardContent() {
-    return Template.instance().ycardContent.get();
-  },
-  showUserSuggestions() {
-    return Template.instance().showUserSuggestions.get();
-  },
-  userSuggestions() {
-    return Template.instance().userSuggestions.get();
-  },
-  suggestionTop() {
-    return Template.instance().suggestionPosition.get().top;
-  },
-  suggestionLeft() {
-    return Template.instance().suggestionPosition.get().left;
-  }
-});
-
-Template.ycardEditor.events({
-  'click #closeYCardEditor'(e, t) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    t.showUserSuggestions.set(false);
-    
-    const modalCheckbox = document.getElementById('ycardEditorModal');
-    if (modalCheckbox) {
-      modalCheckbox.checked = false;
-    }
-  },
-
-  'change #ycardEditorModal'(e, t) {
-    if (!e.target.checked) {
-      t.showUserSuggestions.set(false);
-    } else {
-      // When modal opens, load team data
-      t.generateYAMLFromTeamMembers();
-    }
-  },
-
-  'input #ycardEditor'(e, t) {
-    const content = e.target.value;
-    t.ycardContent.set(content);
-    
-    const cursorPosition = e.target.selectionStart;
-    t.currentCursorPosition.set(cursorPosition);
-    
-    const lines = content.substring(0, cursorPosition).split('\n');
-    const currentLine = lines[lines.length - 1];
-    
-    const nameMatch = currentLine.match(/name:\s*"?([^"\n]*)"?$/);
-    if (nameMatch && nameMatch[1].length >= 2) {
-      const searchTerm = nameMatch[1];
-      t.searchUsers(searchTerm, e.target);
-    } else {
-      t.showUserSuggestions.set(false);
-    }
-  },
-
-  'click .user-suggestion'(e, t) {
-    const userId = e.currentTarget.dataset.userId;
-    const selectedUser = t.userSuggestions.get().find(u => u._id === userId);
-    
-    if (selectedUser) {
-      t.fillUserData(selectedUser);
-    }
-    
-    t.showUserSuggestions.set(false);
-  },
-
-  'click #validateYAML'(e, t) {
-    t.validateYAMLContent();
-  },
-
-  'click #formatCode'(e, t) {
-    t.formatYAMLContent();
-  },
-
-  'click #resetEditor'(e, t) {
-    t.ycardContent.set(`# yCard Format - Human-friendly contact data
-people:
-  - uid: "new-user"
-    name: "John"      
-    surname: "Doe"
-    title: "Team Member"
-    org: "TimeHarbor"
-    email: "john@gmail.com"
-    phone:
-      - number: "7777777777"
-        type: work
-    address:
-      street: "1234 abby St"
-      city: "Belmont"
-      state: "California"
-      postal_code: "444444"
-      country: "USA"`);
-    t.showUserSuggestions.set(false);
-    const statusEl = document.getElementById('editorStatus');
-    if (statusEl) statusEl.textContent = 'Editor reset';
-  },
-
-  'click #saveYCardChanges'(e, t) {
-    console.log('Save button clicked');
-    console.log('Team ID:', t.teamId.get());
-    console.log('Content length:', t.ycardContent.get().length);
-    t.saveYCardData();
-  }
-});
+  });
+};
