@@ -1,7 +1,13 @@
 <template name="timesheet">
   <div class="flex items-center gap-4 mb-6">
     <button id="backToHome" class="btn btn-outline btn-primary">&larr; Back to Dashboard</button>
-    <h3 class="text-2xl font-bold text-base-content">Individual Timesheet</h3>
+    <h3 class="text-2xl font-bold text-base-content">
+      {{#if isOwnTimesheet}}
+        📊 My Timesheet
+      {{else}}
+        Individual Timesheet
+      {{/if}}
+    </h3>
   </div>
 
   <!-- User Info Card -->

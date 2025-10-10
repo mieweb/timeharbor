@@ -161,35 +161,48 @@ Template.timesheet.onCreated(function () {
   // Subscribe to data
   this.autorun(() => {
     const userId = instance.userId;
+    const currentUserId = Meteor.userId();
+    
     if (userId) {
-      // Subscribe to clock events for teams where user is leader/admin
-      const leaderTeams = Teams.find({ leader: Meteor.userId() }).fetch();
-      const adminTeams = Teams.find({ admins: Meteor.userId() }).fetch();
-      const allTeamIds = [...leaderTeams, ...adminTeams].map(t => t._id);
+      // Check if user is viewing their own timesheet or if current user is admin/leader
+      const isViewingOwnTimesheet = userId === currentUserId;
+      const leaderTeams = Teams.find({ leader: currentUserId }).fetch();
+      const adminTeams = Teams.find({ admins: currentUserId }).fetch();
+      const isAdminOrLeader = leaderTeams.length > 0 || adminTeams.length > 0;
       
-      if (allTeamIds.length) {
-        this.subscribe('clockEventsForTeams', allTeamIds);
-        this.subscribe('teamTickets', allTeamIds);
-      }
-      
-      // Subscribe to user teams for user info
-      this.subscribe('userTeams');
-      
-      // Subscribe to user data for all team members to display names properly
-      const allTeams = Teams.find({
-        $or: [
-          { members: Meteor.userId() },
-          { leader: Meteor.userId() },
-          { admins: Meteor.userId() }
-        ]
-      }).fetch();
-      
-      const allMembers = Array.from(new Set(
-        allTeams.flatMap(t => [...(t.members || []), ...(t.admins || []), t.leader].filter(id => id))
-      ));
-      
-      if (allMembers.length) {
-        this.subscribe('usersByIds', allMembers);
+      if (isViewingOwnTimesheet) {
+        // Regular team member viewing their own timesheet
+        this.subscribe('clockEventsForUser'); // Only their own clock events
+        this.subscribe('userTeams'); // Teams they're part of
+        this.subscribe('teamTickets', Teams.find({ members: currentUserId }).fetch().map(t => t._id));
+      } else if (isAdminOrLeader) {
+        // Admin/leader viewing team member timesheet
+        const allTeamIds = [...leaderTeams, ...adminTeams].map(t => t._id);
+        
+        if (allTeamIds.length) {
+          this.subscribe('clockEventsForTeams', allTeamIds);
+          this.subscribe('teamTickets', allTeamIds);
+        }
+        
+        // Subscribe to user teams for user info
+        this.subscribe('userTeams');
+        
+        // Subscribe to user data for all team members to display names properly
+        const allTeams = Teams.find({
+          $or: [
+            { members: currentUserId },
+            { leader: currentUserId },
+            { admins: currentUserId }
+          ]
+        }).fetch();
+        
+        const allMembers = Array.from(new Set(
+          allTeams.flatMap(t => [...(t.members || []), ...(t.admins || []), t.leader].filter(id => id))
+        ));
+        
+        if (allMembers.length) {
+          this.subscribe('usersByIds', allMembers);
+        }
       }
     }
   });
@@ -214,7 +227,9 @@ Template.timesheet.onCreated(function () {
     if (!userId) return [];
     
     const dateRange = createDateRange(startDate.get(), endDate.get());
+    
     // Filter clock events for the specific user we're viewing
+    // For own timesheet: use userId directly, for admin view: also filter by userId
     const clockEvents = ClockEvents.find({ userId }).fetch();
     
     if (clockEvents.length === 0) return [];
@@ -286,6 +301,10 @@ Template.timesheet.helpers({
   userEmail: () => {
     const userId = Template.instance().userId;
     return userId ? getUserEmail(userId) : 'Unknown Email';
+  },
+  isOwnTimesheet: () => {
+    const userId = Template.instance().userId;
+    return userId === Meteor.userId();
   },
   startDate: () => Template.instance().startDate.get(),
   endDate: () => Template.instance().endDate.get(),
