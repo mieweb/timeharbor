@@ -465,5 +465,9 @@ Template.home.events({
   
   'click #joinTeam': (e, t) => {
     FlowRouter.go('/teams');
+  },
+  
+  'click #viewGuide': (e, t) => {
+    FlowRouter.go('/guide');
   }
 });

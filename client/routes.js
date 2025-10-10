@@ -72,6 +72,16 @@ FlowRouter.route('/timesheet/:userId', {
   }
 });
 
+// User Guide route
+FlowRouter.route('/guide', {
+  name: 'guide',
+  action() {
+    requireAuth(this, FlowRouter.go);
+    currentScreen.set('mainLayout');
+    currentRouteTemplate.set('userGuide');
+  }
+});
+
 // 404 fallback
 FlowRouter.route('*', {
   name: 'notFound',
