@@ -14,6 +14,7 @@ import { yaml } from '@codemirror/lang-yaml';
 import { lintKeymap } from '@codemirror/lint';
 import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language';
 
+
 // Import theme extensions
 import { oneDark } from '@codemirror/theme-one-dark';
 
@@ -28,6 +29,8 @@ Template.codemirrorEditor.onCreated(function() {
   this.showLogsPanel = new ReactiveVar(false);
   this.editorLogs = new ReactiveVar([]);
   this.isDarkTheme = new ReactiveVar(false); // Theme state
+  this.dataLoaded = false; // NON-REACTIVE FLAG to prevent reload loop
+  
   
   // Watch for team ID from Session
   this.autorun(() => {
@@ -37,13 +40,7 @@ Template.codemirrorEditor.onCreated(function() {
     }
   });
 
-  this.autorun(() => {
-    const teamId = this.teamId.get();
-    if (teamId && this.editorView) {
-      // Editor is ready and we have a teamId, load the data!
-      loadTeamData(this);
-    }
-  });
+  
   
   // Log helper function
   this.addLog = (type, message) => {
@@ -64,7 +61,7 @@ Template.codemirrorEditor.onCreated(function() {
 
 Template.codemirrorEditor.onRendered(function() {
   const template = this;
-  
+ 
   // Initial YAML content
   const initialDoc = `# yCard Format - Human-friendly contact data
 people:
@@ -88,6 +85,8 @@ people:
   // Function to get current extensions based on theme
   const getExtensions = (isDark) => {
     const baseExtensions = [
+      // Ensure the editor is editable
+      EditorView.editable.of(true),
       // Line numbers
       lineNumbers(),
       highlightActiveLineGutter(),
@@ -179,6 +178,30 @@ people:
   // Store the view in template instance
   template.editorView = view;
   
+  // Ensure the editor receives focus and pointer events so the user can select/type
+  try {
+    // Focus the editor
+    view.focus();
+
+    // Enable pointer events and user selection on the editor DOM
+    const editorDom = document.querySelector('#codemirrorContainer .cm-editor');
+    if (editorDom) {
+      editorDom.style.pointerEvents = 'auto';
+      editorDom.style.userSelect = 'text';
+      editorDom.style.zIndex = '100000';
+      // Also enable selection on the content area if present
+      const content = editorDom.querySelector('.cm-content');
+      if (content) {
+        content.style.userSelect = 'text';
+        content.style.pointerEvents = 'auto';
+        content.style.zIndex = '100001';
+      }
+    }
+  } catch (e) {
+    // Non-fatal - log for debugging
+    template.addLog('warning', 'Unable to programmatically focus editor: ' + e.message);
+  }
+  
   // Store original content for diff
   template.originalContent.set(initialDoc);
   
@@ -188,10 +211,11 @@ people:
   // Store the getExtensions function on template for use in toggleTheme
   template.getExtensions = getExtensions;
   
-  // Load team data if teamId exists
+  // FIXED: Load team data ONCE when page loads
   const teamId = template.teamId.get();
-  if (teamId) {
+  if (teamId && !template.dataLoaded) {
     loadTeamData(template);
+    template.dataLoaded = true; // Prevent future automatic reloads
   }
 });
 
@@ -407,65 +431,65 @@ Template.codemirrorEditor.events({
   
   // History button
   'click #btnHistory'(e, template) {
-  e.preventDefault();
-  const isShowing = template.showHistoryPanel.get();
-  const newState = !isShowing;
-  
-  // Close logs panel if opening history
-  if (newState) {
-    template.showLogsPanel.set(false);
-  }
-  
-  const panel = document.getElementById('historyPanel');
-  if (panel) {
+    e.preventDefault();
+    const isShowing = template.showHistoryPanel.get();
+    const newState = !isShowing;
+    
+    // Close logs panel if opening history
     if (newState) {
-      // Show panel
-      panel.style.display = 'flex';
-      setTimeout(() => {
-        template.showHistoryPanel.set(true);
-      }, 10);
-    } else {
-      // Hide panel
-      template.showHistoryPanel.set(false);
-      setTimeout(() => {
-        panel.style.display = 'none';
-      }, 300);
+      template.showLogsPanel.set(false);
     }
-  }
-  
-  template.addLog('info', newState ? 'History panel opened' : 'History panel closed');
-},
+    
+    const panel = document.getElementById('historyPanel');
+    if (panel) {
+      if (newState) {
+        // Show panel
+        panel.style.display = 'flex';
+        setTimeout(() => {
+          template.showHistoryPanel.set(true);
+        }, 10);
+      } else {
+        // Hide panel
+        template.showHistoryPanel.set(false);
+        setTimeout(() => {
+          panel.style.display = 'none';
+        }, 300);
+      }
+    }
+    
+    template.addLog('info', newState ? 'History panel opened' : 'History panel closed');
+  },
   
   // Logs button
   'click #btnLogs'(e, template) {
-  e.preventDefault();
-  const isShowing = template.showLogsPanel.get();
-  const newState = !isShowing;
-  
-  // Close history panel if opening logs
-  if (newState) {
-    template.showHistoryPanel.set(false);
-  }
-  
-  const panel = document.getElementById('logsPanel');
-  if (panel) {
+    e.preventDefault();
+    const isShowing = template.showLogsPanel.get();
+    const newState = !isShowing;
+    
+    // Close history panel if opening logs
     if (newState) {
-      // Show panel
-      panel.style.display = 'flex';
-      setTimeout(() => {
-        template.showLogsPanel.set(true);
-      }, 10);
-    } else {
-      // Hide panel
-      template.showLogsPanel.set(false);
-      setTimeout(() => {
-        panel.style.display = 'none';
-      }, 300);
+      template.showHistoryPanel.set(false);
     }
-  }
-  
-  template.addLog('info', newState ? 'Logs panel opened' : 'Logs panel closed');
-},
+    
+    const panel = document.getElementById('logsPanel');
+    if (panel) {
+      if (newState) {
+        // Show panel
+        panel.style.display = 'flex';
+        setTimeout(() => {
+          template.showLogsPanel.set(true);
+        }, 10);
+      } else {
+        // Hide panel
+        template.showLogsPanel.set(false);
+        setTimeout(() => {
+          panel.style.display = 'none';
+        }, 300);
+      }
+    }
+    
+    template.addLog('info', newState ? 'Logs panel opened' : 'Logs panel closed');
+  },
   
   // Diff button
   'click #btnDiff'(e, template) {
@@ -539,32 +563,28 @@ Template.codemirrorEditor.events({
   
   // Close history panel
   'click #closeHistoryPanel'(e, template) {
-  e.preventDefault();
-  const panel = document.getElementById('historyPanel');
-  template.showHistoryPanel.set(false);
-  if (panel) {
-    setTimeout(() => {
-      panel.style.display = 'none';
-    }, 300);
-  }
-},
+    e.preventDefault();
+    const panel = document.getElementById('historyPanel');
+    template.showHistoryPanel.set(false);
+    if (panel) {
+      setTimeout(() => {
+        panel.style.display = 'none';
+      }, 300);
+    }
+  },
   
   // Close logs panel
   'click #closeLogsPanel'(e, template) {
-  e.preventDefault();
-  const panel = document.getElementById('logsPanel');
-  template.showLogsPanel.set(false);
-  if (panel) {
-    setTimeout(() => {
-      panel.style.display = 'none';
-    }, 300);
-  }
-},
+    e.preventDefault();
+    const panel = document.getElementById('logsPanel');
+    template.showLogsPanel.set(false);
+    if (panel) {
+      setTimeout(() => {
+        panel.style.display = 'none';
+      }, 300);
+    }
+  },
 });
-
-
-
-
 
 // Helper function to load team data
 function loadTeamData(template) {

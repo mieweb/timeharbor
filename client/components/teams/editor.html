@@ -105,7 +105,8 @@
         
         <!-- CodeMirror Editor Container -->
         <div class="flex-1 relative">
-          <div id="codemirrorContainer" class="h-full w-full"></div>
+          <!-- Ensure this container sits above the modal backdrop and accepts pointer events -->
+          <div id="codemirrorContainer" class="h-full w-full" tabindex="0" style="position:relative; z-index:9999; pointer-events:auto; user-select:text;"></div>
         </div>
         
         <!-- History Side Panel (Initially Hidden) -->
