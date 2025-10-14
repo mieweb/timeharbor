@@ -463,6 +463,10 @@ Template.home.events({
     FlowRouter.go(`/timesheet/${Meteor.userId()}`);
   },
   
+  'click #reportIssue': (e, t) => {
+    window.open('https://github.com/mieweb/timeharbor/issues/new', '_blank');
+  },
+  
   'click #joinTeam': (e, t) => {
     FlowRouter.go('/teams');
   },
