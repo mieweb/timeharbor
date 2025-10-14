@@ -41,10 +41,10 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agDateColumnFilter',
     valueFormatter: p => {
-      if (!p.value) return p.data?.isActive ? '🟢 Active' : 'No clock-in';
+      if (!p.value) return 'Not clocked-out';
       return new Date(p.value).toLocaleTimeString();
     },
-    cellClass: p => p.data?.isActive ? 'text-success font-bold' : 'text-base-content'
+    cellClass: 'text-base-content'
   },
   { 
     headerName: 'Duration', 
@@ -82,9 +82,10 @@ const COLUMN_DEFINITIONS = [
     flex: 0.6, 
     sortable: true, 
     filter: 'agSetColumnFilter',
-    valueFormatter: p => p.value ? '🟢 Active' : '✅ Completed',
+    valueFormatter: p => p.value ? 'Active' : 'Completed',
     cellClass: p => p.value ? 'text-success font-bold' : 'text-base-content opacity-70',
-    filterParams: { values: ['Active', 'Completed'] }
+    filterParams: { values: ['Active', 'Completed'] },
+    cellRenderer: p => p.value ? '<span class="text-success font-bold">Active</span>' : '<span class="text-base-content opacity-70">Completed</span>'
   }
 ];
 
