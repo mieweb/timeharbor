@@ -57,7 +57,7 @@ const COLUMN_DEFINITIONS = [
     comparator: (valueA, valueB) => (valueA || 0) - (valueB || 0)
   },
   { 
-    headerName: 'Activity', 
+    headerName: 'Ticket', 
     field: 'activityTitle', 
     flex: 1.5, 
     sortable: true, 
