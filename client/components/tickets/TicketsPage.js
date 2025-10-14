@@ -167,7 +167,8 @@ Template.tickets.helpers({
     });
   },
   isActive(ticketId) {
-    return Template.instance().activeTicketId.get() === ticketId;
+    const ticket = Tickets.findOne(ticketId);
+    return ticket && ticket.startTimestamp && !ticket.endTime;
   },
   formatTime,
   githubLink(github) {
@@ -200,25 +201,23 @@ Template.tickets.helpers({
     } : null;
   },
   getButtonClasses(ticketId) {
-    const isActive = Template.instance().activeTicketId.get() === ticketId;
+    const ticket = Tickets.findOne(ticketId);
+    const isActive = ticket && ticket.startTimestamp && !ticket.endTime;
     const teamId = Template.instance().selectedTeamId.get();
     const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
-    const hasOtherActiveTicket = Template.instance().activeTicketId.get() && Template.instance().activeTicketId.get() !== ticketId;
     
     if (isActive) return 'btn btn-outline btn-primary';
-    if (hasActiveSession && !hasOtherActiveTicket) return 'btn btn-outline btn-primary';
-    if (hasActiveSession && hasOtherActiveTicket) return 'btn btn-disabled';
+    if (hasActiveSession) return 'btn btn-outline btn-primary';
     return 'btn btn-disabled';
   },
   getButtonTooltip(ticketId) {
-    const isActive = Template.instance().activeTicketId.get() === ticketId;
+    const ticket = Tickets.findOne(ticketId);
+    const isActive = ticket && ticket.startTimestamp && !ticket.endTime;
     const teamId = Template.instance().selectedTeamId.get();
     const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
-    const hasOtherActiveTicket = Template.instance().activeTicketId.get() && Template.instance().activeTicketId.get() !== ticketId;
     
     if (isActive) return 'Click to stop this activity';
-    if (hasActiveSession && !hasOtherActiveTicket) return 'Click to start this activity';
-    if (hasActiveSession && hasOtherActiveTicket) return 'Stop the current activity first';
+    if (hasActiveSession) return 'Click to start this activity';
     return 'Start a session first to begin activities';
   }
 });
@@ -279,7 +278,8 @@ Template.tickets.events({
   
   async 'click .activate-ticket'(e, t) {
     const ticketId = e.currentTarget.dataset.id;
-    const isActive = t.activeTicketId.get() === ticketId;
+    const ticket = Tickets.findOne(ticketId);
+    const isActive = ticket && ticket.startTimestamp && !ticket.endTime;
     const teamId = t.selectedTeamId.get();
     const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
     
@@ -289,10 +289,9 @@ Template.tickets.events({
         return;
       }
       
-      await ticketManager.switchTicket(ticketId, t, clockEvent);
+      await ticketManager.startTicket(ticketId, t, clockEvent);
     } else {
       await ticketManager.stopTicket(ticketId, clockEvent);
-      t.activeTicketId.set(null);
     }
   },
   
