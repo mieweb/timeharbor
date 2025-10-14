@@ -45,13 +45,13 @@ const getColumnDefinitions = () => [
   },
   { 
     headerName: 'Clock-in', field: 'firstClockIn', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
-    valueFormatter: p => p.value ? formatDate(p.value) : 'No activity'
+    valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No activity'
   },
   { 
     headerName: 'Clock-out', field: 'lastClockOut', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
     valueFormatter: p => {
       if (!p.value) return p.data?.hasActiveSession ? 'Active' : '-';
-      return formatDate(p.value);
+      return new Date(p.value).toLocaleTimeString();
     }
   },
   { 

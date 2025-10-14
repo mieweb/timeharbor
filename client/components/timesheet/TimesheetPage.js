@@ -31,7 +31,7 @@ const COLUMN_DEFINITIONS = [
     flex: 1, 
     sortable: true, 
     filter: 'agDateColumnFilter',
-    valueFormatter: p => p.value ? formatDate(p.value) : 'No session',
+    valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No session',
     cellClass: 'text-primary'
   },
   { 
@@ -42,7 +42,7 @@ const COLUMN_DEFINITIONS = [
     filter: 'agDateColumnFilter',
     valueFormatter: p => {
       if (!p.value) return p.data?.isActive ? '🟢 Active' : 'No session';
-      return formatDate(p.value);
+      return new Date(p.value).toLocaleTimeString();
     },
     cellClass: p => p.data?.isActive ? 'text-success font-bold' : 'text-base-content'
   },
