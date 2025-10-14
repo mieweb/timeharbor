@@ -85,7 +85,7 @@
       <div class="card bg-base-100 shadow p-4">
         <div class="text-center">
           <div class="text-2xl font-bold text-primary">{{activeSessionsCount}}</div>
-          <div class="text-sm text-base-content opacity-70">Active Sessions</div>
+          <div class="text-sm text-base-content opacity-70">Active Clock-ins</div>
         </div>
       </div>
       <div class="card bg-base-100 shadow p-4">
@@ -141,10 +141,10 @@
       {{/if}}
     </div>
 
-    <!-- Active Sessions (if any) -->
+    <!-- Active Clock-ins (if any) -->
     {{#if hasActiveSessions}}
       <div class="card bg-base-100 shadow p-6 mt-6">
-        <h4 class="text-lg font-semibold mb-4 text-success">🟢 Active Sessions</h4>
+        <h4 class="text-lg font-semibold mb-4 text-success">🟢 Active Clock-ins</h4>
         <div class="space-y-3">
           {{#each activeClockEvents}}
             <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">

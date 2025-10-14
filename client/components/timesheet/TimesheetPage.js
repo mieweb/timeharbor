@@ -31,7 +31,7 @@ const COLUMN_DEFINITIONS = [
     flex: 1, 
     sortable: true, 
     filter: 'agDateColumnFilter',
-    valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No session',
+    valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No clock-in',
     cellClass: 'text-primary'
   },
   { 
@@ -41,7 +41,7 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agDateColumnFilter',
     valueFormatter: p => {
-      if (!p.value) return p.data?.isActive ? '🟢 Active' : 'No session';
+      if (!p.value) return p.data?.isActive ? '🟢 Active' : 'No clock-in';
       return new Date(p.value).toLocaleTimeString();
     },
     cellClass: p => p.data?.isActive ? 'text-success font-bold' : 'text-base-content'
@@ -52,7 +52,7 @@ const COLUMN_DEFINITIONS = [
     flex: 0.8, 
     sortable: true, 
     filter: 'agNumberColumnFilter',
-    valueFormatter: p => p.value ? formatTime(p.value) : (p.data?.isActive ? 'Running...' : 'No session'),
+    valueFormatter: p => p.value ? formatTime(p.value) : (p.data?.isActive ? 'Running...' : 'No clock-in'),
     cellClass: p => p.value ? 'text-info font-medium' : 'text-base-content opacity-60',
     comparator: (valueA, valueB) => (valueA || 0) - (valueB || 0)
   },
@@ -269,9 +269,9 @@ Template.timesheet.onCreated(function () {
   
   // Session count updater
   instance.updateSessionCount = (count) => {
-    const sessionCountEl = instance.find('#sessionCount');
-    if (sessionCountEl) {
-      sessionCountEl.textContent = `${count} session${count !== 1 ? 's' : ''}`;
+    const clockInCountEl = instance.find('#clockInCount');
+    if (clockInCountEl) {
+      clockInCountEl.textContent = `${count} clock-in${count !== 1 ? 's' : ''}`;
     }
   };
   

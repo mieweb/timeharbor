@@ -40,12 +40,12 @@
     </div>
   </div>
 
-  <!-- Session Details Grid -->
+  <!-- Clock-in Details Grid -->
   <div class="card bg-base-100 shadow p-6">
     <div class="flex items-center justify-between mb-4">
-      <h5 class="text-lg font-semibold text-base-content">Session Details</h5>
+      <h5 class="text-lg font-semibold text-base-content">Clock-in Details</h5>
       <div class="flex items-center gap-2">
-        <span class="text-sm text-base-content opacity-70" id="sessionCount">Loading...</span>
+        <span class="text-sm text-base-content opacity-70" id="clockInCount">Loading...</span>
         <button id="refreshData" class="btn btn-sm btn-outline btn-primary" title="Refresh Data">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -61,13 +61,13 @@
     <div class="card bg-base-100 shadow p-4">
       <div class="text-center">
         <div class="text-2xl font-bold text-primary">{{totalSessions}}</div>
-        <div class="text-sm text-base-content opacity-70">Total Sessions</div>
+        <div class="text-sm text-base-content opacity-70">Total Clock-ins</div>
       </div>
     </div>
     <div class="card bg-base-100 shadow p-4">
       <div class="text-center">
         <div class="text-2xl font-bold text-primary">{{averageSessionHours}}</div>
-        <div class="text-sm text-base-content opacity-70">Avg Session Length</div>
+        <div class="text-sm text-base-content opacity-70">Avg Clock-in Length</div>
       </div>
     </div>
     <div class="card bg-base-100 shadow p-4">
