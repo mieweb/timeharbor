@@ -9,7 +9,7 @@ export const authMethods = {
     
     try {
       const userId = Accounts.createUser({ email, password });
-      console.log('User created:', { userId, email }); // Log user creation details
+      // User created successfully
       return userId;
     } catch (error) {
       console.error('Error in createUserAccount method:', error);

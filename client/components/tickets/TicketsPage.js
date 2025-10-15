@@ -25,7 +25,6 @@ const utils = {
 
   // Safe error handling
   handleError: (error, message = 'Operation failed') => {
-    console.error(message, error);
     alert(`${message}: ${error.reason || error.message}`);
   }
 };
@@ -106,32 +105,75 @@ const sessionManager = {
 };
 
 Template.tickets.onCreated(function () {
+  // Form state
   this.showCreateTicketForm = new ReactiveVar(false);
+  this.showEditTicketForm = new ReactiveVar(false);
+  this.editingTicket = new ReactiveVar(null);
+  
+  // Data state
   this.selectedTeamId = new ReactiveVar(null);
   this.activeTicketId = new ReactiveVar(null);
-  this.clockedIn = new ReactiveVar(false);
+  
+  // Cached data to avoid repeated queries
+  this.cachedTeamId = null;
+  this.cachedActiveTicketId = null;
+  this.cachedUserId = Meteor.userId();
 
+  // Optimized autorun with better performance
   this.autorun(() => {
     const teamIds = Teams.find({}).map(t => t._id);
     let teamId = this.selectedTeamId.get();
     
+    // Auto-select first team if none selected
     if (!teamId && teamIds.length > 0) {
-      this.selectedTeamId.set(teamIds[0]);
-      teamId = this.selectedTeamId.get();
+      teamId = teamIds[0];
+      this.selectedTeamId.set(teamId);
     }
     
-    this.subscribe('teamTickets', teamIds);
+    // Subscribe to data
+    if (teamIds.length > 0) {
+      this.subscribe('teamTickets', teamIds);
+    }
     
-    if (teamId) {
-      const activeSession = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
-      if (activeSession) {
-        const runningTicket = Tickets.findOne({ teamId, startTimestamp: { $exists: true } });
-        this.activeTicketId.set(runningTicket ? runningTicket._id : null);
-      } else {
-        this.activeTicketId.set(null);
-      }
+    // Update active ticket state efficiently
+    if (teamId && teamId !== this.cachedTeamId) {
+      this.cachedTeamId = teamId;
+      this.updateActiveTicketState(teamId);
     }
   });
+  
+  // Helper method to update active ticket state
+  this.updateActiveTicketState = (teamId) => {
+    const activeSession = ClockEvents.findOne({ 
+      userId: this.cachedUserId, 
+      teamId, 
+      endTime: null 
+    });
+    
+    if (activeSession) {
+      const runningTicket = Tickets.findOne({ 
+        teamId, 
+        startTimestamp: { $exists: true } 
+      });
+      const newActiveId = runningTicket ? runningTicket._id : null;
+      if (newActiveId !== this.cachedActiveTicketId) {
+        this.cachedActiveTicketId = newActiveId;
+        this.activeTicketId.set(newActiveId);
+      }
+    } else if (this.cachedActiveTicketId !== null) {
+      this.cachedActiveTicketId = null;
+      this.activeTicketId.set(null);
+    }
+  };
+});
+
+Template.tickets.onDestroyed(function () {
+  // Clean up ReactiveVars
+  this.showCreateTicketForm.set(false);
+  this.showEditTicketForm.set(false);
+  this.editingTicket.set(null);
+  this.selectedTeamId.set(null);
+  this.activeTicketId.set(null);
 });
 
 Template.tickets.helpers({
@@ -142,14 +184,22 @@ Template.tickets.helpers({
   showCreateTicketForm() {
     return Template.instance().showCreateTicketForm.get();
   },
+  showEditTicketForm() {
+    return Template.instance().showEditTicketForm.get();
+  },
+  editingTicket() {
+    return Template.instance().editingTicket.get();
+  },
   tickets() {
-    const teamId = Template.instance().selectedTeamId.get();
+    const instance = Template.instance();
+    const teamId = instance.selectedTeamId.get();
     if (!teamId) return [];
     
-    const activeTicketId = Template.instance().activeTicketId.get();
+    const activeTicketId = instance.activeTicketId.get();
     const now = currentTime.get();
     
-    return Tickets.find({ teamId }).fetch().map(ticket => {
+    // Optimized: Single query instead of fetch().map()
+    return Tickets.find({ teamId }).map(ticket => {
       const isActive = ticket._id === activeTicketId && ticket.startTimestamp;
       const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
       
@@ -168,46 +218,42 @@ Template.tickets.helpers({
     if (!github) return '';
     return github.startsWith('http') ? github : `https://github.com/${github}`;
   },
-  isClockedIn() {
-    return Template.instance().clockedIn.get();
-  },
-  selectedTeamId() {
-    return Template.instance().selectedTeamId.get();
-  },
   isClockedInForTeam(teamId) {
     return !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
   },
-  currentClockEventTime() {
-    const teamId = Template.instance().selectedTeamId.get();
-    const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
-    return clockEvent ? calculateTotalTime(clockEvent) : 0;
-  },
-  currentActiveTicketInfo() {
-    const activeTicketId = Template.instance().activeTicketId.get();
-    if (!activeTicketId) return null;
-    
-    const ticket = Tickets.findOne(activeTicketId);
-    return ticket ? {
-      id: ticket._id,
-      title: ticket.title,
-      isRunning: !!ticket.startTimestamp
-    } : null;
-  },
   getButtonClasses(ticketId) {
+    const instance = Template.instance();
     const ticket = Tickets.findOne(ticketId);
     const isActive = ticket && ticket.startTimestamp && !ticket.endTime;
-    const teamId = Template.instance().selectedTeamId.get();
-    const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
+    const teamId = instance.selectedTeamId.get();
+    
+    // Cache the session check to avoid repeated queries
+    if (!instance._cachedSessionState) {
+      instance._cachedSessionState = {};
+    }
+    
+    if (!instance._cachedSessionState[teamId]) {
+      instance._cachedSessionState[teamId] = !!ClockEvents.findOne({ 
+        userId: instance.cachedUserId, 
+        teamId, 
+        endTime: null 
+      });
+    }
+    
+    const hasActiveSession = instance._cachedSessionState[teamId];
     
     if (isActive) return 'btn btn-outline btn-primary';
     if (hasActiveSession) return 'btn btn-outline btn-primary';
     return 'btn btn-disabled';
   },
   getButtonTooltip(ticketId) {
+    const instance = Template.instance();
     const ticket = Tickets.findOne(ticketId);
     const isActive = ticket && ticket.startTimestamp && !ticket.endTime;
-    const teamId = Template.instance().selectedTeamId.get();
-    const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
+    const teamId = instance.selectedTeamId.get();
+    
+    // Reuse cached session state
+    const hasActiveSession = instance._cachedSessionState && instance._cachedSessionState[teamId];
     
     if (isActive) return 'Click to stop this activity';
     if (hasActiveSession) return 'Click to start this activity';
@@ -217,13 +263,24 @@ Template.tickets.helpers({
 
 Template.tickets.events({
   'change #teamSelect'(e, t) {
-    t.selectedTeamId.set(e.target.value);
+    const newTeamId = e.target.value;
+    t.selectedTeamId.set(newTeamId);
+    
+    // Invalidate cache when team changes
+    if (t._cachedSessionState) {
+      delete t._cachedSessionState[t.cachedTeamId];
+    }
+    t.cachedTeamId = newTeamId;
   },
   'click #showCreateTicketForm'(e, t) {
     t.showCreateTicketForm.set(true);
   },
   'click #cancelCreateTicket'(e, t) {
     t.showCreateTicketForm.set(false);
+  },
+  'click #cancelEditTicket'(e, t) {
+    t.showEditTicketForm.set(false);
+    t.editingTicket.set(null);
   },
   'blur [name="title"]'(e) {
     extractUrlTitle(e.target.value, e.target);
@@ -237,8 +294,8 @@ Template.tickets.events({
     
     const formData = {
       teamId: t.selectedTeamId.get(),
-      title: e.target.title.value.trim(),
-      github: e.target.github.value.trim()
+      title: e.target.title.value?.trim(),
+      github: e.target.github.value?.trim()
     };
     
     if (!formData.title) {
@@ -261,21 +318,81 @@ Template.tickets.events({
     }
   },
   
+  async 'submit #editTicketForm'(e, t) {
+    e.preventDefault();
+    
+    const formData = {
+      ticketId: e.target.ticketId.value,
+      title: e.target.title.value?.trim(),
+      github: e.target.github.value?.trim()
+    };
+    
+    if (!formData.title) {
+      alert('Ticket title is required.');
+      return;
+    }
+    
+    try {
+      await utils.meteorCall('updateTicket', formData.ticketId, {
+        title: formData.title,
+        github: formData.github
+      });
+      
+      t.showEditTicketForm.set(false);
+      t.editingTicket.set(null);
+    } catch (error) {
+      utils.handleError(error, 'Error updating ticket');
+    }
+  },
+  
+  'click .edit-ticket-btn'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const ticketId = e.currentTarget.dataset.id;
+    const ticket = Tickets.findOne(ticketId);
+    if (ticket) {
+      t.editingTicket.set(ticket);
+      t.showEditTicketForm.set(true);
+      t.showCreateTicketForm.set(false);
+    }
+  },
+  
+  async 'click .delete-ticket-btn'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const ticketId = e.currentTarget.dataset.id;
+    const ticket = Tickets.findOne(ticketId);
+    if (!ticket) return;
+    
+    const confirmed = confirm(`Are you sure you want to delete ticket "${ticket.title}"? This cannot be undone.`);
+    if (!confirmed) return;
+    
+    try {
+      await utils.meteorCall('deleteTicket', ticketId);
+    } catch (error) {
+      utils.handleError(error, 'Error deleting ticket');
+    }
+  },
+  
   async 'click .activate-ticket'(e, t) {
     const ticketId = e.currentTarget.dataset.id;
     const ticket = Tickets.findOne(ticketId);
     const isActive = ticket && ticket.startTimestamp && !ticket.endTime;
     const teamId = t.selectedTeamId.get();
-    const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+    
+    // Use cached session state instead of querying
+    const hasActiveSession = t._cachedSessionState && t._cachedSessionState[teamId];
     
     if (!isActive) {
-      if (!clockEvent) {
+      if (!hasActiveSession) {
         alert('Please start a session before starting an activity.');
         return;
       }
       
+      const clockEvent = ClockEvents.findOne({ userId: t.cachedUserId, teamId, endTime: null });
       await ticketManager.startTicket(ticketId, t, clockEvent);
     } else {
+      const clockEvent = ClockEvents.findOne({ userId: t.cachedUserId, teamId, endTime: null });
       await ticketManager.stopTicket(ticketId, clockEvent);
     }
   },

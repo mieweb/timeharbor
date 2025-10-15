@@ -163,4 +163,50 @@ export const ticketMethods = {
 
     return result;
   },
+
+  async updateTicket(ticketId, updates) {
+    check(ticketId, String);
+    check(updates, Object);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
+
+    // Verify user is a member of the team
+    const team = await Teams.findOneAsync({ _id: ticket.teamId, members: this.userId });
+    if (!team) throw new Meteor.Error('not-authorized', 'You are not a member of this team');
+
+    return Tickets.updateAsync(ticketId, { 
+      $set: { 
+        ...updates, 
+        updatedAt: new Date() 
+      } 
+    });
+  },
+
+  async deleteTicket(ticketId) {
+    check(ticketId, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
+
+    // Verify user is a member of the team
+    const team = await Teams.findOneAsync({ _id: ticket.teamId, members: this.userId });
+    if (!team) throw new Meteor.Error('not-authorized', 'You are not a member of this team');
+
+    // Remove ticket from any active clock events
+    await ClockEvents.updateAsync(
+      { 
+        userId: this.userId, 
+        teamId: ticket.teamId, 
+        'tickets.ticketId': ticketId 
+      },
+      { 
+        $pull: { tickets: { ticketId } } 
+      }
+    );
+
+    return Tickets.removeAsync(ticketId);
+  },
 }; 

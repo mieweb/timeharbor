@@ -122,7 +122,7 @@ Template.admin.onRendered(function () {
             instance.gridOptions.api.setRowData(mapTicketsWithUserData(tickets));
           }
         } catch (e) {
-          console.error('Grid creation failed:', e);
+          // Grid creation failed
         }
       }
     }, GRID_INIT_DELAY);

@@ -27,10 +27,32 @@
         </div>
       </form>
     {{/if}}
+    
+    {{#if showEditTicketForm}}
+      <form id="editTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
+        <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
+        <input type="text" name="title" value="{{editingTicket.title}}" placeholder="Ticket Title" class="input input-bordered" required />
+        <input type="text" name="github" value="{{editingTicket.github}}" placeholder="Reference Link or Notes" class="input input-bordered" />
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary">Update</button>
+          <button type="button" id="cancelEditTicket" class="btn btn-outline">Cancel</button>
+        </div>
+      </form>
+    {{/if}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {{#each tickets}}
-        <div class="card bg-base-100 shadow-md p-4 h-48 flex flex-col {{#if isActive _id}}border border-slate-600{{/if}}">
-          <div class="ticket-title text-lg font-bold mb-2 line-clamp-3 overflow-hidden" title="{{title}}">{{title}}</div>
+        <div class="card bg-base-100 shadow-md p-4 h-52 flex flex-col {{#if isActive _id}}border border-slate-600{{/if}}">
+          <div class="flex justify-between items-start mb-2">
+            <div class="ticket-title text-lg font-bold line-clamp-3 overflow-hidden flex-1" title="{{title}}">{{title}}</div>
+            <div class="flex gap-1 ml-2">
+              <button class="edit-ticket-btn btn btn-ghost btn-xs" data-id="{{_id}}" title="Edit Ticket">
+                <i class="fa-solid fa-pen text-primary"></i>
+              </button>
+              <button class="delete-ticket-btn btn btn-ghost btn-xs text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Ticket">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
           <div class="ticket-time mb-2"><span class="badge bg-gray-700 text-white">{{formatTime displayTime}}</span></div>
           <div class="flex-1 flex flex-col justify-end">
             {{#if github}}

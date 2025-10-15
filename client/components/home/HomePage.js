@@ -243,7 +243,7 @@ Template.home.onRendered(function () {
 
     // Global function for user timesheet navigation
     window.viewUserTimesheet = (userId, userName) => {
-      console.log(`Viewing timesheet for user: ${userName} (${userId})`);
+      // Navigate to user timesheet
       FlowRouter.go(`/timesheet/${userId}`);
     };
   });
