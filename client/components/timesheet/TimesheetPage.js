@@ -31,7 +31,7 @@ const COLUMN_DEFINITIONS = [
     flex: 1, 
     sortable: true, 
     filter: 'agDateColumnFilter',
-    valueFormatter: p => p.value ? formatDate(p.value) : 'No session',
+    valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No clock-in',
     cellClass: 'text-primary'
   },
   { 
@@ -41,10 +41,10 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agDateColumnFilter',
     valueFormatter: p => {
-      if (!p.value) return p.data?.isActive ? '🟢 Active' : 'No session';
-      return formatDate(p.value);
+      if (!p.value) return 'Not clocked-out';
+      return new Date(p.value).toLocaleTimeString();
     },
-    cellClass: p => p.data?.isActive ? 'text-success font-bold' : 'text-base-content'
+    cellClass: 'text-base-content'
   },
   { 
     headerName: 'Duration', 
@@ -52,12 +52,12 @@ const COLUMN_DEFINITIONS = [
     flex: 0.8, 
     sortable: true, 
     filter: 'agNumberColumnFilter',
-    valueFormatter: p => p.value ? formatTime(p.value) : (p.data?.isActive ? 'Running...' : 'No session'),
+    valueFormatter: p => p.value ? formatTime(p.value) : (p.data?.isActive ? 'Running...' : 'No clock-in'),
     cellClass: p => p.value ? 'text-info font-medium' : 'text-base-content opacity-60',
     comparator: (valueA, valueB) => (valueA || 0) - (valueB || 0)
   },
   { 
-    headerName: 'Activity', 
+    headerName: 'Ticket', 
     field: 'activityTitle', 
     flex: 1.5, 
     sortable: true, 
@@ -82,9 +82,10 @@ const COLUMN_DEFINITIONS = [
     flex: 0.6, 
     sortable: true, 
     filter: 'agSetColumnFilter',
-    valueFormatter: p => p.value ? '🟢 Active' : '✅ Completed',
+    valueFormatter: p => p.value ? 'Active' : 'Completed',
     cellClass: p => p.value ? 'text-success font-bold' : 'text-base-content opacity-70',
-    filterParams: { values: ['Active', 'Completed'] }
+    filterParams: { values: ['Active', 'Completed'] },
+    cellRenderer: p => p.value ? '<span class="text-success font-bold">Active</span>' : '<span class="text-base-content opacity-70">Completed</span>'
   }
 ];
 
@@ -269,9 +270,9 @@ Template.timesheet.onCreated(function () {
   
   // Session count updater
   instance.updateSessionCount = (count) => {
-    const sessionCountEl = instance.find('#sessionCount');
-    if (sessionCountEl) {
-      sessionCountEl.textContent = `${count} session${count !== 1 ? 's' : ''}`;
+    const clockInCountEl = instance.find('#clockInCount');
+    if (clockInCountEl) {
+      clockInCountEl.textContent = `${count} clock-in${count !== 1 ? 's' : ''}`;
     }
   };
   

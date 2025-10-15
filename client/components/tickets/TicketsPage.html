@@ -1,25 +1,25 @@
 <template name="tickets">
-  <h3 class="text-xl font-semibold mb-4">My Activities & Tasks</h3>
+  <h3 class="text-xl font-semibold mb-4">My Tickets & Activities</h3>
   {{#if userTeams.length}}
     <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-      <label for="teamSelect" class="label">Select Project:</label>
+      <label for="teamSelect" class="label">Select Team:</label>
       <select id="teamSelect" class="select select-bordered">
         {{#each userTeams}}
           <option value="{{_id}}" {{isSelectedTeam _id}}>{{name}}</option>
         {{/each}}
       </select>
-      <button id="showCreateTicketForm" class="btn btn-primary">Create Activity</button>
+      <button id="showCreateTicketForm" class="btn btn-primary">Create Ticket</button>
     </div>
     <div class="mb-4 flex items-center gap-4">
       {{#if isClockedInForTeam selectedTeamId}}
-        <button id="clockOutBtn" class="btn btn-outline btn-primary">Stop Session</button>
+        <button id="clockOutBtn" class="btn btn-outline btn-primary">Clock Out</button>
       {{else}}
-        <button id="clockInBtn" class="btn btn-outline btn-primary">Start Session</button>
+        <button id="clockInBtn" class="btn btn-outline btn-primary">Clock In</button>
       {{/if}}
     </div>
     {{#if showCreateTicketForm}}
       <form id="createTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="title" placeholder="Activity Title (e.g., 'Math Homework', 'Robot Assembly')" class="input input-bordered" required />
+        <input type="text" name="title" placeholder="Ticket Title (e.g., 'Create Dashboard', 'ImplementAuthentication')" class="input input-bordered" required />
         <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered" />
         <div class="flex gap-2">
           <input type="number" name="hours" min="0" placeholder="Hours" class="input input-bordered w-24" />
@@ -34,21 +34,23 @@
     {{/if}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {{#each tickets}}
-        <div class="card bg-base-100 shadow-md p-4 {{#if isActive _id}}border border-slate-600{{/if}}">
-          <div class="ticket-title text-lg font-bold mb-2">{{title}}</div>
+        <div class="card bg-base-100 shadow-md p-4 h-48 flex flex-col {{#if isActive _id}}border border-slate-600{{/if}}">
+          <div class="ticket-title text-lg font-bold mb-2 line-clamp-3 overflow-hidden" title="{{title}}">{{title}}</div>
           <div class="ticket-time mb-2"><span class="badge bg-gray-700 text-white">{{formatTime displayTime}}</span></div>
-          {{#if github}}
-            <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">Reference</a>
-          {{/if}}
-          <button class="activate-ticket {{getButtonClasses _id}} mt-2 w-full" 
-          data-id="{{_id}}"
-          title="{{getButtonTooltip _id}}">
-            {{#if isActive _id}}
-              Stop
-            {{else}}
-              Start
+          <div class="flex-1 flex flex-col justify-end">
+            {{#if github}}
+              <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus text-sm mb-2">Reference</a>
             {{/if}}
-          </button>
+            <button class="activate-ticket {{getButtonClasses _id}} w-full" 
+            data-id="{{_id}}"
+            title="{{getButtonTooltip _id}}">
+              {{#if isActive _id}}
+                Stop
+              {{else}}
+                Start
+              {{/if}}
+            </button>
+          </div>
         </div>
       {{/each}}
     </div>
