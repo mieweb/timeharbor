@@ -6,9 +6,6 @@ import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
 import { extractUrlTitle } from '../../utils/UrlUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
-// Constants
-const SECONDS_PER_HOUR = 3600;
-const SECONDS_PER_MINUTE = 60;
 
 // Utility functions
 const utils = {
@@ -22,10 +19,6 @@ const utils = {
     });
   },
 
-  // Calculate accumulated time from form inputs
-  calculateAccumulatedTime: (hours, minutes, seconds) => {
-    return (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE) + seconds;
-  },
 
   // Get current timestamp
   now: () => Date.now(),
@@ -245,10 +238,7 @@ Template.tickets.events({
     const formData = {
       teamId: t.selectedTeamId.get(),
       title: e.target.title.value.trim(),
-      github: e.target.github.value.trim(),
-      hours: parseInt(e.target.hours.value) || 0,
-      minutes: parseInt(e.target.minutes.value) || 0,
-      seconds: parseInt(e.target.seconds.value) || 0
+      github: e.target.github.value.trim()
     };
     
     if (!formData.title) {
@@ -257,20 +247,15 @@ Template.tickets.events({
     }
     
     try {
-      const accumulatedTime = utils.calculateAccumulatedTime(formData.hours, formData.minutes, formData.seconds);
       const ticketId = await utils.meteorCall('createTicket', { 
         teamId: formData.teamId, 
         title: formData.title, 
         github: formData.github, 
-        accumulatedTime 
+        accumulatedTime: 0
       });
       
       t.showCreateTicketForm.set(false);
-      
-      if (accumulatedTime > 0) {
-        const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId: formData.teamId, endTime: null });
-        await ticketManager.startTicket(ticketId, t, clockEvent);
-      }
+      e.target.reset();
     } catch (error) {
       utils.handleError(error, 'Error creating ticket');
     }
