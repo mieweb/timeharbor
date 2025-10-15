@@ -66,6 +66,9 @@ Template.teams.helpers({
     const admins = team.admins || [];
     return admins.includes(userId) || team.leader === userId;
   },
+  substring(text, start, end) {
+    return text ? text.substring(start, end).toUpperCase() : '';
+  },
 });
 
 Template.teams.events({

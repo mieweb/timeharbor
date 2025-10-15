@@ -1,28 +1,70 @@
 <template name="teams">
   <h3 class="text-xl font-semibold mb-4">Teams</h3>
   {{#if selectedTeam}}
-    <div class="card bg-base-100 shadow p-6 mb-6">
-      <button id="backToTeams" class="btn btn-outline mb-4">&larr; Back to Teams</button>
-      <div class="flex items-center gap-3 mb-2">
-        <h4 class="text-lg font-bold">{{selectedTeam.name}}</h4>
-        {{#if canManageTeam selectedTeam._id}}
-          <button class="rename-team-btn btn btn-ghost btn-xs" data-id="{{selectedTeam._id}}" title="Edit Team Name">
-            <i class="fa-solid fa-pen text-primary"></i>
-          </button>
-          <button class="delete-team-btn btn btn-ghost btn-xs text-red-600 hover:text-red-800" data-id="{{selectedTeam._id}}" title="Delete Team">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        {{/if}}
+    <div class="card bg-base-100 shadow-xl p-6 mb-6">
+      <button id="backToTeams" class="btn btn-outline mb-6">&larr; Back to Teams</button>
+      
+      <!-- Team Header -->
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-primary mb-1">{{selectedTeam.name}}</h2>
+        <p class="text-base-content opacity-70">Team Details & Management</p>
       </div>
-      <div class="flex items-center gap-2 mb-4">
-        <span class="badge bg-neutral text-neutral-content">Join Code: {{selectedTeam.code}}</span>
-        <button id="copyTeamCode" class="btn btn-sm btn-outline">Copy Code</button>
+
+      <!-- Team Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat-title">Team Members</div>
+          <div class="stat-value text-primary">{{selectedTeam.members.length}}</div>
+          <div class="stat-desc">Active collaborators</div>
+        </div>
+        <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat-title">Join Code</div>
+          <div class="stat-value text-lg font-mono">{{selectedTeam.code}}</div>
+          <div class="stat-desc">Share to invite members</div>
+        </div>
+        <div class="stat bg-base-200 rounded-lg p-4">
+          <div class="stat-title">Status</div>
+          <div class="stat-value text-success">Active</div>
+          <div class="stat-desc">Team is operational</div>
+        </div>
       </div>
-      <h5 class="font-semibold mb-2">Collaborators:</h5>
-      <div class="flex flex-wrap gap-2">
-        {{#each selectedTeam.members}}
-          <div class="badge badge-neutral">{{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}</div>
-        {{/each}}
+
+      <!-- Quick Actions -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-3">Quick Actions</h3>
+        <div class="flex flex-wrap gap-3">
+          <button id="copyTeamCode" class="btn btn-primary">
+            <i class="fa-solid fa-copy mr-2"></i>Copy Join Code
+          </button>
+          <button class="btn btn-outline">
+            <i class="fa-solid fa-share mr-2"></i>Share Team
+          </button>
+          <button class="btn btn-outline">
+            <i class="fa-solid fa-chart-bar mr-2"></i>View Analytics
+          </button>
+        </div>
+      </div>
+
+      <!-- Team Members -->
+      <div>
+        <h3 class="text-lg font-semibold mb-3">Team Members</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {{#each selectedTeam.members}}
+            <div class="card bg-base-200 p-3">
+              <div class="flex items-center gap-3">
+                <div class="avatar placeholder">
+                  <div class="bg-primary text-primary-content rounded-full w-10">
+                    <span class="text-sm">{{#if this.name}}{{substring this.name 0 2}}{{else}}UN{{/if}}</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="font-semibold">{{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}</div>
+                  <div class="text-xs opacity-70">{{#if this.email}}{{this.email}}{{else}}No email{{/if}}</div>
+                </div>
+              </div>
+            </div>
+          {{/each}}
+        </div>
       </div>
     </div>
   {{else}}
