@@ -324,11 +324,24 @@ Template.timesheet.helpers({
   
   averageSessionHours() {
     const rows = Template.instance().computeSessionData();
-    const completedSessions = rows.filter(row => row.duration);
-    if (completedSessions.length === 0) return '0h 0m';
+    const completedSessions = rows.filter(row => row.duration && typeof row.duration === 'number' && row.duration > 0);
     
-    const totalSeconds = completedSessions.reduce((sum, row) => sum + row.duration, 0);
+    if (completedSessions.length === 0) return '0:00:00';
+    
+    const totalSeconds = completedSessions.reduce((sum, row) => {
+      const duration = row.duration || 0;
+      return sum + (typeof duration === 'number' ? duration : 0);
+    }, 0);
+    
+    if (totalSeconds <= 0) return '0:00:00';
+    
     const averageSeconds = totalSeconds / completedSessions.length;
+    
+    // Additional safety check for reasonable average values
+    if (averageSeconds > 24 * 3600) { // More than 24 hours average seems unreasonable
+      console.warn('Unusually large average session time detected:', averageSeconds);
+    }
+    
     return formatTime(averageSeconds);
   },
   
