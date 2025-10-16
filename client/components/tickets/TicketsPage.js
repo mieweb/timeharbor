@@ -6,10 +6,6 @@ import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
 import { extractUrlTitle } from '../../utils/UrlUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
-// Constants
-const SECONDS_PER_HOUR = 3600;
-const SECONDS_PER_MINUTE = 60;
-
 // Utility functions
 const utils = {
   // Safe Meteor call wrapper
@@ -20,11 +16,6 @@ const utils = {
         else resolve(result);
       });
     });
-  },
-
-  // Calculate accumulated time from form inputs
-  calculateAccumulatedTime: (hours, minutes, seconds) => {
-    return (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE) + seconds;
   },
 
   // Get current timestamp
@@ -114,6 +105,8 @@ const sessionManager = {
 
 Template.tickets.onCreated(function () {
   this.showCreateTicketForm = new ReactiveVar(false);
+  this.showEditTicketForm = new ReactiveVar(false);
+  this.editingTicket = new ReactiveVar(null);
   this.selectedTeamId = new ReactiveVar(null);
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
@@ -148,6 +141,12 @@ Template.tickets.helpers({
   },
   showCreateTicketForm() {
     return Template.instance().showCreateTicketForm.get();
+  },
+  showEditTicketForm() {
+    return Template.instance().showEditTicketForm.get();
+  },
+  editingTicket() {
+    return Template.instance().editingTicket.get();
   },
   tickets() {
     const teamId = Template.instance().selectedTeamId.get();
@@ -232,6 +231,10 @@ Template.tickets.events({
   'click #cancelCreateTicket'(e, t) {
     t.showCreateTicketForm.set(false);
   },
+  'click #cancelEditTicket'(e, t) {
+    t.showEditTicketForm.set(false);
+    t.editingTicket.set(null);
+  },
   'blur [name="title"]'(e) {
     extractUrlTitle(e.target.value, e.target);
   },
@@ -239,16 +242,69 @@ Template.tickets.events({
     setTimeout(() => extractUrlTitle(e.target.value, e.target), 0);
   },
   
+  'click .edit-ticket-btn'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const ticketId = e.currentTarget.dataset.id;
+    const ticket = Tickets.findOne(ticketId);
+    if (ticket) {
+      t.editingTicket.set(ticket);
+      t.showEditTicketForm.set(true);
+      t.showCreateTicketForm.set(false);
+    }
+  },
+
+  async 'click .delete-ticket-btn'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const ticketId = e.currentTarget.dataset.id;
+    const ticket = Tickets.findOne(ticketId);
+    if (!ticket) return;
+
+    const confirmed = confirm(`Are you sure you want to delete ticket "${ticket.title}"? This cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await utils.meteorCall('deleteTicket', ticketId);
+    } catch (error) {
+      utils.handleError(error, 'Error deleting ticket');
+    }
+  },
+
+  async 'submit #editTicketForm'(e, t) {
+    e.preventDefault();
+
+    const formData = {
+      ticketId: e.target.ticketId.value,
+      title: e.target.title.value?.trim(),
+      github: e.target.github.value?.trim()
+    };
+
+    if (!formData.title) {
+      alert('Ticket title is required.');
+      return;
+    }
+
+    try {
+      await utils.meteorCall('updateTicket', formData.ticketId, {
+        title: formData.title,
+        github: formData.github
+      });
+
+      t.showEditTicketForm.set(false);
+      t.editingTicket.set(null);
+    } catch (error) {
+      utils.handleError(error, 'Error updating ticket');
+    }
+  },
+
   async 'submit #createTicketForm'(e, t) {
     e.preventDefault();
     
     const formData = {
       teamId: t.selectedTeamId.get(),
       title: e.target.title.value.trim(),
-      github: e.target.github.value.trim(),
-      hours: parseInt(e.target.hours.value) || 0,
-      minutes: parseInt(e.target.minutes.value) || 0,
-      seconds: parseInt(e.target.seconds.value) || 0
+      github: e.target.github.value.trim()
     };
     
     if (!formData.title) {
@@ -257,20 +313,15 @@ Template.tickets.events({
     }
     
     try {
-      const accumulatedTime = utils.calculateAccumulatedTime(formData.hours, formData.minutes, formData.seconds);
       const ticketId = await utils.meteorCall('createTicket', { 
         teamId: formData.teamId, 
         title: formData.title, 
         github: formData.github, 
-        accumulatedTime 
+        accumulatedTime: 0
       });
       
       t.showCreateTicketForm.set(false);
-      
-      if (accumulatedTime > 0) {
-        const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId: formData.teamId, endTime: null });
-        await ticketManager.startTicket(ticketId, t, clockEvent);
-      }
+      e.target.reset();
     } catch (error) {
       utils.handleError(error, 'Error creating ticket');
     }
