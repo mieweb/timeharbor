@@ -52,6 +52,11 @@ Template.teams.helpers({
       createdAt: queriedTeam.createdAt,
     };
   },
+  isAdmin(teamId) {
+    const team = Teams.findOne(teamId);
+    const userId = Meteor.userId();
+    return !!(team && Array.isArray(team.admins) && userId && team.admins.includes(userId));
+  },
 });
 
 Template.teams.events({
@@ -120,6 +125,33 @@ Template.teams.events({
           console.error('Failed to copy text: ', err);
           alert('Failed to copy code to clipboard');
         });
+    }
+  },
+  'click .edit-team-btn'(e, t) {
+    e.preventDefault();
+    const teamId = e.currentTarget.dataset.id;
+    const team = Teams.findOne(teamId);
+    const currentName = team?.name || '';
+    const newName = prompt('Edit Team Name', currentName);
+    if (newName && newName.trim() && newName !== currentName) {
+      Meteor.call('updateTeamName', teamId, newName.trim(), (err) => {
+        if (err) {
+          alert('Error updating team: ' + (err.reason || err.message));
+        }
+      });
+    }
+  },
+  'click .delete-team-btn'(e, t) {
+    e.preventDefault();
+    const teamId = e.currentTarget.dataset.id;
+    const team = Teams.findOne(teamId);
+    const name = team?.name || 'this team';
+    if (confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) {
+      Meteor.call('deleteTeam', teamId, (err) => {
+        if (err) {
+          alert('Error deleting team: ' + (err.reason || err.message));
+        }
+      });
     }
   },
 });
