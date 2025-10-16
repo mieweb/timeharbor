@@ -54,7 +54,7 @@ Template.authPage.events({
     }, (err) => {
       template.isLoginLoading.set(false);
       if (err) {
-        console.error('Google login error:', err);
+        // Google login failed
         template.loginError.set(err.reason || 'Google login failed. Please try again.');
       }
     });
@@ -70,7 +70,7 @@ Template.authPage.events({
     }, (err) => {
       template.isLoginLoading.set(false);
       if (err) {
-        console.error('GitHub login error:', err);
+        // GitHub login failed
         template.loginError.set(err.reason || 'GitHub login failed. Please try again.');
       }
     });

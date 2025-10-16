@@ -40,6 +40,41 @@ export const teamMethods = {
     return teamId;
   },
 
+  async renameTeam(teamId, newName) {
+    check(teamId, String);
+    check(newName, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+    const isAdminOrLeader = (team.admins || []).includes(this.userId) || team.leader === this.userId;
+    if (!isAdminOrLeader) {
+      throw new Meteor.Error('forbidden', 'Only team admins or leader can rename the team');
+    }
+    await Teams.updateAsync(teamId, { $set: { name: newName } });
+    return true;
+  },
+
+  async deleteTeam(teamId) {
+    check(teamId, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+    const isAdminOrLeader = (team.admins || []).includes(this.userId) || team.leader === this.userId;
+    if (!isAdminOrLeader) {
+      throw new Meteor.Error('forbidden', 'Only team admins or leader can delete the team');
+    }
+    await Teams.removeAsync(teamId);
+    return true;
+  },
+
   async getUsers(userIds) {
     check(userIds, [String]);
     const users = await Meteor.users.find({ _id: { $in: userIds } }).fetchAsync();
