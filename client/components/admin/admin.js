@@ -223,10 +223,21 @@ function callBatch(t, status) {
 }
 
 function formatTime(seconds) {
-  if (!seconds) return '0:00:00';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
+  if (!seconds || typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return '0:00:00';
+  
+  // Handle extremely large numbers to prevent overflow
+  const maxHours = 9999; // Reasonable maximum for display
+  const clampedTime = Math.min(seconds, maxHours * 3600);
+  
+  const h = Math.floor(clampedTime / 3600);
+  const m = Math.floor((clampedTime % 3600) / 60);
+  const s = Math.floor(clampedTime % 60);
+  
+  // If the original time was clamped, indicate it
+  if (seconds > maxHours * 3600) {
+    return `${h}+:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  
   return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
