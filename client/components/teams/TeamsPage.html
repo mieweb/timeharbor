@@ -1,6 +1,15 @@
+<template name="myTemplate">
+   <div class="container">
+     
+     <div id="react-container"></div>
+   </div>
+</template>
+
+
 <template name="teams">
   
   {{#if selectedTeam}}
+
     <div class="card bg-base-100 shadow p-6 mb-6">
     <!-- Back button and title on same line -->
     <div class="flex items-center gap-3 mb-4">
@@ -34,6 +43,9 @@
             <!-- Code editor button -->
             <button id="toggleYCardEditor" class="btn btn-circle btn-sm bg-primary-content text-primary hover:bg-base-200">
               <span class="text-sm font-mono">&lt;/&gt;</span>
+              {{#if showEditor}}
+              {{> myTemplate}}
+              {{/if}}
             </button>
           </div>
         </div>
@@ -160,8 +172,7 @@
     </div>
   {{/if}}
 
-  <!-- Include the yCard Editor as a separate component -->
-  {{> codemirrorEditor}}
+ 
 
   <!-- Add Collaborator Modal -->
   <input type="checkbox" id="addCollaboratorModal" class="modal-toggle" />

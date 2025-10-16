@@ -88,11 +88,9 @@ export const teamMethods = {
     return teamId;
   },
 
-  async getUsers(userIds, teamId = null) {
-    if (!this.userId) {
-      throw new Meteor.Error('not-authorized', 'Must be logged in');
-    }
-
+  async getUsers( teamId = null) {
+   
+    this.userId= this.userId || Meteor.userId();
     if (teamId) {
       check(teamId, String);
       
@@ -157,41 +155,7 @@ export const teamMethods = {
     }));
   },
 
-  searchUsersByName(searchTerm) {
-    check(searchTerm, String);
-    
-    if (!this.userId) {
-      throw new Meteor.Error('not-authorized', 'Must be logged in');
-    }
-    
-    const regex = new RegExp(searchTerm, 'i');
-    
-    const users = Meteor.users.find({
-      $or: [
-        { username: regex },
-        { 'profile.firstName': regex },
-        { 'profile.lastName': regex },
-        { 'profile.email': regex }
-      ]
-    }, {
-      limit: 10,
-      fields: {
-        username: 1,
-        emails: 1,
-        'profile.email': 1,
-        'profile.firstName': 1,
-        'profile.lastName': 1,
-        'profile.title': 1,
-        'profile.department': 1,
-        'profile.manager': 1,
-        'profile.phone': 1,           // ADD THIS
-        'profile.address': 1,         // ADD THIS
-        'profile.organization': 1
-      }
-    }).fetch();
-    
-    return users;
-  },
+  
   
   async saveYCardData(teamId, ycardContent, vCards) {
     check(teamId, String);

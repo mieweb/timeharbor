@@ -5,14 +5,49 @@ import { getUserTeams } from '../../utils/UserTeamUtils.js';
 import { parseYCard, yCardToVCard, stringifyVCard } from 'ycard';
 import YAML from 'yaml';
 
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import './TeamsPage.html';
-import './editor.js'; // Import the editor module
+import {Tracker} from 'meteor/tracker';
+import {YCardEditor} from './YCardEditor.jsx';
+
+Template.myTemplate.onRendered(function() {
+  const template = this;
+  
+  // Use Tracker.afterFlush to ensure DOM is fully ready
+  Tracker.afterFlush(() => {
+    // Get the container element
+    const container = template.find('#react-container');
+    
+    if (container) {
+      // Create a root and render the React component
+      const root = ReactDOM.createRoot(container);
+      root.render(
+        <YCardEditor 
+         
+        />
+      );
+      
+      // Store the root for cleanup
+      template.reactRoot = root;
+    }
+  });
+});
+Template.myTemplate.onDestroyed(function() {
+  // Clean up the React component when template is destroyed
+  if (this.reactRoot) {
+    this.reactRoot.unmount();
+  }
+})
 
 Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);
   this.showJoinTeam = new ReactiveVar(false);
   this.selectedTeamId = new ReactiveVar(null);
   this.selectedTeamUsers = new ReactiveVar([]);
+  this.showEditor = new ReactiveVar(false);
+  
 
   this.autorun(() => {
     const status = Meteor.status();
@@ -27,7 +62,7 @@ Template.teams.onCreated(function () {
       this.subscribe('teamDetails', selectedId);
       const team = Teams.findOne(selectedId);
       if (team && team.members && team.members.length > 0) {
-        Meteor.call('getUsers', team.members, (err, users) => {
+        Meteor.call('getUsers', selectedId, (err, users) => {
           if (!err) {
             this.selectedTeamUsers.set(users);
           } else {
@@ -66,7 +101,10 @@ Template.teams.helpers({
   },
   isTeamLeader(userId, leaderId) {
     return userId === leaderId;
-  }
+  },
+  showEditor() {  // Add this helper
+    return Template.instance().showEditor.get();
+  },
 });
 
 Template.teams.events({
@@ -133,25 +171,8 @@ Template.teams.events({
   
   'click #toggleYCardEditor'(e, t) {
     e.preventDefault();
-    const teamId = t.selectedTeamId.get();
-    
-    if (!teamId) {
-      alert('No team selected');
-      return;
-    }
-    
-    // Set the team ID in Session so the editor can access it
-    Session.set('editorTeamId', teamId);
-    
-    // Open the editor modal
-    setTimeout(() => {
-      const modal = document.getElementById('codemirrorEditorModal');
-      if (modal) {
-        modal.checked = true;
-      }
-      
-      
-    }, 100);
+    const currentState = t.showEditor.get();
+    t.showEditor.set(!currentState);
   },
 
   'click .download-vcard-btn'(e, t) {
@@ -228,6 +249,12 @@ Template.teams.events({
     }
   },
 
+  'click #closeYCardEditor'(e, t) {
+  e.preventDefault();
+  t.showEditor.set(false);
+  alert('Editor closed');
+  },
+
   'submit #addCollaboratorForm'(e, t) {
     e.preventDefault();
     
@@ -268,13 +295,16 @@ Template.teams.events({
         
         // Reset form
         e.target.reset();
+        //Refresh users
+        const team = Teams.findOne(teamId);
+         if (team && team.members) {
+          Meteor.call('getUsers', team.members, (err, users) => {
+          if (!err) {
+            t.selectedTeamUsers.set(users);
+          }
+        })
+      }
         
-        // Refresh team data
-        const currentTeamId = t.selectedTeamId.get();
-        t.selectedTeamId.set(null);
-        Tracker.afterFlush(() => {
-          t.selectedTeamId.set(currentTeamId);
-        });
       }
     });
   }
