@@ -58,4 +58,39 @@ export const teamMethods = {
     );
     return users.map(user => ({ id: user._id, name: toName(user), email: toEmail(user) }));
   },
+  async updateTeamName(teamId, newName) {
+    check(teamId, String);
+    check(newName, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isAdmin) {
+      throw new Meteor.Error('forbidden', 'Only admins can rename team');
+    }
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      throw new Meteor.Error('bad-request', 'Team name cannot be empty');
+    }
+    await Teams.updateAsync(teamId, { $set: { name: trimmed } });
+  },
+  async deleteTeam(teamId) {
+    check(teamId, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isAdmin) {
+      throw new Meteor.Error('forbidden', 'Only admins can delete team');
+    }
+    await Teams.removeAsync(teamId);
+  },
 }; 

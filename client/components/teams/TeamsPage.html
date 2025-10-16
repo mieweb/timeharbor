@@ -41,7 +41,19 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {{#each userTeams}}
         <div class="card bg-base-100 shadow p-4">
-          <a href="#" class="link team-link text-lg font-semibold" data-id="{{_id}}">{{name}}</a>
+          <div class="flex items-start justify-between gap-2">
+            <a href="#" class="link team-link text-lg font-semibold" data-id="{{_id}}">{{name}}</a>
+            {{#if isAdmin _id}}
+              <div class="flex items-center gap-2">
+                <button class="edit-team-btn text-blue-600 hover:text-blue-800" data-id="{{_id}}" title="Edit Team">
+                  <i class="fa-solid fa-pen text-primary"></i>
+                </button>
+                <button class="delete-team-btn text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Team">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            {{/if}}
+          </div>
         </div>
       {{/each}}
     </div>
