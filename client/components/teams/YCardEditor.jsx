@@ -9,11 +9,11 @@ export const YCardEditor = ({
   initialData = null,           // Allow passing initial YAML data
   onSave = null,                // Custom save callback
   onClose = null,               // Custom close callback
-  isOpen : initialIsOpen = true,                // Control visibility from parent
+  isOpen =true,                // Control visibility from parent
   theme = 'dark'                // Default theme
 }) => {
  
-  const [isModalOpen, setIsModalOpen] = useState(true)
+  
   const [isDarkTheme, setIsDarkTheme] = useState(theme === 'dark')
   const [showLogsPanel, setShowLogsPanel] = useState(false)  
   const [logs, setLogs] = useState([])
@@ -21,7 +21,7 @@ export const YCardEditor = ({
   const [showDiffModal, setShowDiffModal] = useState(false)   
   const [modifiedContent, setModifiedContent] = useState('')
   const editorRef = useRef(null)  
-  const [isOpen, setIsOpen] = useState(initialIsOpen)
+  
 
   const defaultYCard = `# Example yCard
 people:
@@ -277,7 +277,7 @@ people:
     }
   }
   const handleClose = () => {
-    setIsOpen(false)
+    
     addLog('info', 'Editor closed')
     if (onClose) {
       onClose()
@@ -294,7 +294,7 @@ people:
             <div className="modal-header">
               <h2>yCard YAML Editor</h2>
               <button 
-                onClick={() => setIsModalOpen(handleClose())}
+                onClick={() => handleClose()}
                 className="close-button"
               >
                 ✕

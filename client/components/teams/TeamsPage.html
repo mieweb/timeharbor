@@ -7,7 +7,11 @@
 
 
 <template name="teams">
-  
+
+  {{#if showEditor}}
+    {{> myTemplate}}
+  {{/if}}
+       
   {{#if selectedTeam}}
 
     <div class="card bg-base-100 shadow p-6 mb-6">
@@ -43,9 +47,9 @@
             <!-- Code editor button -->
             <button id="toggleYCardEditor" class="btn btn-circle btn-sm bg-primary-content text-primary hover:bg-base-200">
               <span class="text-sm font-mono">&lt;/&gt;</span>
-              {{#if showEditor}}
-              {{> myTemplate}}
-              {{/if}}
+                 
+                 
+        
             </button>
           </div>
         </div>

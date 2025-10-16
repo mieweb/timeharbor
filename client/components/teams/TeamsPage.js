@@ -12,34 +12,64 @@ import './TeamsPage.html';
 import {Tracker} from 'meteor/tracker';
 import {YCardEditor} from './YCardEditor.jsx';
 
+let teamsTemplateInstance = null;
+
+
+
 Template.myTemplate.onRendered(function() {
   const template = this;
   
-  // Use Tracker.afterFlush to ensure DOM is fully ready
-  Tracker.afterFlush(() => {
-    // Get the container element
-    const container = template.find('#react-container');
+  template.autorun(() => {
+    if (!teamsTemplateInstance) return;
     
-    if (container) {
-      // Create a root and render the React component
-      const root = ReactDOM.createRoot(container);
-      root.render(
-        <YCardEditor 
-         
-        />
-      );
-      
-      // Store the root for cleanup
-      template.reactRoot = root;
+    const shouldShow = teamsTemplateInstance.showEditor.get();
+    
+    if (shouldShow) {
+      Tracker.afterFlush(() => {
+        const container = template.find('#react-container');
+        
+        if (container && !template.reactRoot) {
+          const root = ReactDOM.createRoot(container);
+          
+          root.render(
+            <YCardEditor 
+              isOpen={true}
+              onClose={() => {
+                if (teamsTemplateInstance) {
+                  teamsTemplateInstance.showEditor.set(false);
+                }
+              }}
+            />
+          );
+          
+          template.reactRoot = root;
+        }
+      });
+    } else {
+      if (template.reactRoot) {
+        template.reactRoot.unmount();
+        template.reactRoot = null;
+      }
     }
   });
 });
+
+Template.myTemplate.helpers({
+  showEditor() {
+    return teamsTemplateInstance ? teamsTemplateInstance.showEditor.get() : false;
+  }
+});
+
 Template.myTemplate.onDestroyed(function() {
-  // Clean up the React component when template is destroyed
   if (this.reactRoot) {
     this.reactRoot.unmount();
+    this.reactRoot = null;
   }
-})
+});
+
+Template.teams.onDestroyed(function() {
+  teamsTemplateInstance = null; // Clean up
+});
 
 Template.teams.onCreated(function () {
   this.showCreateTeam = new ReactiveVar(false);
@@ -47,7 +77,7 @@ Template.teams.onCreated(function () {
   this.selectedTeamId = new ReactiveVar(null);
   this.selectedTeamUsers = new ReactiveVar([]);
   this.showEditor = new ReactiveVar(false);
-  
+  teamsTemplateInstance = this;
 
   this.autorun(() => {
     const status = Meteor.status();
