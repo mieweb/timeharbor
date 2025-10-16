@@ -8,15 +8,16 @@ export const currentRouteTemplate = new ReactiveVar(null);
 const requireAuth = (context, redirect) => {
   if (!Meteor.userId()) {
     currentScreen.set('authPage');
-    redirect('/');
+    return false;
   }
+  return true;
 };
 
 // Home route
 FlowRouter.route('/', {
   name: 'home',
   action() {
-    requireAuth(this, FlowRouter.go);
+    if (!requireAuth(this, FlowRouter.go)) return;
     currentScreen.set('mainLayout');
     currentRouteTemplate.set('home');
   }
@@ -26,7 +27,7 @@ FlowRouter.route('/', {
 FlowRouter.route('/teams', {
   name: 'teams',
   action() {
-    requireAuth(this, FlowRouter.go);
+    if (!requireAuth(this, FlowRouter.go)) return;
     currentScreen.set('mainLayout');
     currentRouteTemplate.set('teams');
   }
@@ -36,7 +37,7 @@ FlowRouter.route('/teams', {
 FlowRouter.route('/tickets', {
   name: 'tickets',
   action() {
-    requireAuth(this, FlowRouter.go);
+    if (!requireAuth(this, FlowRouter.go)) return;
     currentScreen.set('mainLayout');
     currentRouteTemplate.set('tickets');
   }
@@ -46,7 +47,7 @@ FlowRouter.route('/tickets', {
 FlowRouter.route('/calendar', {
   name: 'calendar',
   action() {
-    requireAuth(this, FlowRouter.go);
+    if (!requireAuth(this, FlowRouter.go)) return;
     currentScreen.set('mainLayout');
     currentRouteTemplate.set('calendar');
   }
@@ -56,7 +57,7 @@ FlowRouter.route('/calendar', {
 FlowRouter.route('/admin', {
   name: 'admin',
   action() {
-    requireAuth(this, FlowRouter.go);
+    if (!requireAuth(this, FlowRouter.go)) return;
     currentScreen.set('mainLayout');
     currentRouteTemplate.set('admin');
   }
@@ -66,7 +67,7 @@ FlowRouter.route('/admin', {
 FlowRouter.route('/timesheet/:userId', {
   name: 'timesheet',
   action() {
-    requireAuth(this, FlowRouter.go);
+    if (!requireAuth(this, FlowRouter.go)) return;
     currentScreen.set('mainLayout');
     currentRouteTemplate.set('timesheet');
   }
@@ -76,7 +77,7 @@ FlowRouter.route('/timesheet/:userId', {
 FlowRouter.route('/guide', {
   name: 'guide',
   action() {
-    requireAuth(this, FlowRouter.go);
+    if (!requireAuth(this, FlowRouter.go)) return;
     currentScreen.set('mainLayout');
     currentRouteTemplate.set('userGuide');
   }
@@ -86,7 +87,7 @@ FlowRouter.route('/guide', {
 FlowRouter.route('*', {
   name: 'notFound',
   action() {
-    requireAuth(this, FlowRouter.go);
+    if (!requireAuth(this, FlowRouter.go)) return;
     currentScreen.set('mainLayout');
     currentRouteTemplate.set('home');
   }

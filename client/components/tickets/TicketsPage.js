@@ -119,30 +119,7 @@ Template.tickets.onCreated(function () {
   this.cachedActiveTicketId = null;
   this.cachedUserId = Meteor.userId();
 
-  // Optimized autorun with better performance
-  this.autorun(() => {
-    const teamIds = Teams.find({}).map(t => t._id);
-    let teamId = this.selectedTeamId.get();
-    
-    // Auto-select first team if none selected
-    if (!teamId && teamIds.length > 0) {
-      teamId = teamIds[0];
-      this.selectedTeamId.set(teamId);
-    }
-    
-    // Subscribe to data
-    if (teamIds.length > 0) {
-      this.subscribe('teamTickets', teamIds);
-    }
-    
-    // Update active ticket state efficiently
-    if (teamId && teamId !== this.cachedTeamId) {
-      this.cachedTeamId = teamId;
-      this.updateActiveTicketState(teamId);
-    }
-  });
-  
-  // Helper method to update active ticket state
+  // Helper method to update active ticket state - DEFINE FIRST
   this.updateActiveTicketState = (teamId) => {
     const activeSession = ClockEvents.findOne({ 
       userId: this.cachedUserId, 
@@ -165,6 +142,29 @@ Template.tickets.onCreated(function () {
       this.activeTicketId.set(null);
     }
   };
+
+  // Optimized autorun with better performance
+  this.autorun(() => {
+    const teamIds = Teams.find({}).map(t => t._id);
+    let teamId = this.selectedTeamId.get();
+    
+    // Auto-select first team if none selected
+    if (!teamId && teamIds.length > 0) {
+      teamId = teamIds[0];
+      this.selectedTeamId.set(teamId);
+    }
+    
+    // Subscribe to data
+    if (teamIds.length > 0) {
+      this.subscribe('teamTickets', teamIds);
+    }
+    
+    // Update active ticket state efficiently
+    if (teamId && teamId !== this.cachedTeamId) {
+      this.cachedTeamId = teamId;
+      this.updateActiveTicketState(teamId);
+    }
+  });
 });
 
 Template.tickets.onDestroyed(function () {

@@ -155,7 +155,7 @@
                 </div>
                 {{#if tickets}}
                   <div class="text-xs text-base-content opacity-60 mt-1">
-                    Working on: {{#each tickets}}{{ticketTitle ticketId}}{{#unless @last}}, {{/unless}}{{/each}}
+                    Working on: {{#each tickets}}{{#if @index}}, {{/if}}{{ticketTitle ticketId}}{{/each}}
                   </div>
                 {{/if}}
               </div>
