@@ -24,44 +24,68 @@ const calculateTimeForEvents = (events) => {
   }, 0);
 };
 
-const getColumnDefinitions = () => [
-  { headerName: 'Date', field: 'date', flex: 1, sortable: true, filter: 'agDateColumnFilter',
-    valueFormatter: p => formatDateForDisplay(p.value) },
-  { 
-    headerName: 'Team Member', field: 'displayName', flex: 1.5, sortable: true, filter: 'agTextColumnFilter',
-    cellRenderer: (params) => {
-      return `<span class="cursor-pointer text-primary hover:text-primary-focus hover:underline" 
-                     data-user-id="${params.data.userId}" 
-                     data-user-name="${params.value}"
-                     onclick="window.viewUserTimesheet('${params.data.userId}', '${params.value}')">
-                ${params.value}
-              </span>`;
+const getColumnDefinitions = (showClockTimes = true) => {
+  const columns = [
+    { headerName: 'Date', field: 'date', flex: 1, sortable: true, filter: 'agDateColumnFilter',
+      valueFormatter: p => formatDateForDisplay(p.value) },
+    { 
+      headerName: 'Team Member', field: 'displayName', flex: 1.5, sortable: true, filter: 'agTextColumnFilter',
+      cellRenderer: (params) => {
+        return `<span class="cursor-pointer text-primary hover:text-primary-focus hover:underline" 
+                       data-user-id="${params.data.userId}" 
+                       data-user-name="${params.value}"
+                       onclick="window.viewUserTimesheet('${params.data.userId}', '${params.value}')">
+                  ${params.value}
+                </span>`;
+      }
+    },
+    { headerName: 'Email', field: 'userEmail', flex: 1.5, sortable: true, filter: 'agTextColumnFilter' },
+    { 
+      headerName: 'Hours', field: 'totalSeconds', flex: 1, sortable: true, filter: 'agNumberColumnFilter',
+      valueFormatter: p => formatTime(p.value)
     }
-  },
-  { headerName: 'Email', field: 'userEmail', flex: 1.5, sortable: true, filter: 'agTextColumnFilter' },
-  { 
-    headerName: 'Hours', field: 'totalSeconds', flex: 1, sortable: true, filter: 'agNumberColumnFilter',
-    valueFormatter: p => formatTime(p.value)
-  },
-  { 
-    headerName: 'Clock-in', field: 'firstClockIn', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
-    valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No activity'
-  },
-  { 
-    headerName: 'Clock-out', field: 'lastClockOut', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
-    valueFormatter: p => {
-      if (!p.value) return p.data?.hasActiveSession ? 'Active' : '-';
-      return new Date(p.value).toLocaleTimeString();
-    }
-  },
-  { 
-    headerName: 'Tickets', field: 'tickets', flex: 1.5, sortable: false, filter: false,
-    valueFormatter: p => (Array.isArray(p.value) && p.value.length) ? p.value.join(', ') : 'No tickets'
-  }
-];
+  ];
 
-const createGridOptions = () => ({
-  columnDefs: getColumnDefinitions(),
+  // Only add Clock-in and Clock-out columns if showClockTimes is true
+  if (showClockTimes) {
+    columns.push(
+      { 
+        headerName: 'Clock-in', field: 'firstClockIn', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
+        valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No activity'
+      },
+      { 
+        headerName: 'Clock-out', field: 'lastClockOut', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
+        valueFormatter: p => {
+          if (!p.value) return p.data?.hasActiveSession ? 'Running...' : '-';
+          return new Date(p.value).toLocaleTimeString();
+        }
+      },
+      { 
+        headerName: 'Status', field: 'hasActiveSession', flex: 0.8, sortable: true, filter: 'agSetColumnFilter',
+        valueFormatter: p => p.value ? 'Active' : 'Completed',
+        cellRenderer: p => {
+          if (p.value) {
+            return '<span class="text-success font-semibold flex items-center gap-1"><span class="inline-block w-2 h-2 bg-success rounded-full animate-pulse"></span>Active</span>';
+          }
+          return '<span class="text-base-content opacity-60">Completed</span>';
+        },
+        filterParams: { values: ['Active', 'Completed'] }
+      }
+    );
+  }
+
+  columns.push(
+    { 
+      headerName: 'Tickets', field: 'tickets', flex: 1.5, sortable: false, filter: false,
+      valueFormatter: p => (Array.isArray(p.value) && p.value.length) ? p.value.join(', ') : 'No tickets'
+    }
+  );
+
+  return columns;
+};
+
+const createGridOptions = (showClockTimes = true) => ({
+  columnDefs: getColumnDefinitions(showClockTimes),
   defaultColDef: {
     resizable: true,
     sortable: true,
@@ -78,7 +102,15 @@ Template.home.onCreated(function () {
   template.startDate = new ReactiveVar(todayStr);
   template.endDate = new ReactiveVar(todayStr);
   template.selectedPreset = new ReactiveVar('today');
-  template.gridOptions = createGridOptions();
+  
+  // Helper to determine if clock times should be shown
+  template.shouldShowClockTimes = () => {
+    const preset = template.selectedPreset.get();
+    // Hide clock times for 'last14', 'thisweek', and 'last7'
+    return !['last14', 'thisweek', 'last7'].includes(preset);
+  };
+  
+  template.gridOptions = createGridOptions(template.shouldShowClockTimes());
   
   // Subscribe to data
   this.autorun(() => {
@@ -248,16 +280,19 @@ Template.home.onRendered(function () {
     };
   });
 
-  // Reactive updates for grid data
+  // Reactive updates for grid data and columns
   instance.autorun(() => {
     instance.startDate.get();
     instance.endDate.get();
+    instance.selectedPreset.get();
     Teams.find({ leader: Meteor.userId() }).fetch();
     ClockEvents.find().fetch();
     Tickets.find().fetch();
 
-    const rows = instance.computeTeamMemberSummary();
+    // Update column definitions based on preset
     if (instance.gridOptions?.api) {
+      instance.gridOptions.api.setColumnDefs(getColumnDefinitions(instance.shouldShowClockTimes()));
+      const rows = instance.computeTeamMemberSummary();
       instance.gridOptions.api.setRowData(rows);
     }
   });
@@ -328,20 +363,6 @@ Template.home.helpers({
     }, { 
       sort: { startTimestamp: -1 }, 
       limit: 5 
-    }).fetch();
-  },
-  
-  hasActiveSessions() {
-    return ClockEvents.find({ 
-      userId: Meteor.userId(), 
-      endTime: null 
-    }).count() > 0;
-  },
-  
-  activeClockEvents() {
-    return ClockEvents.find({ 
-      userId: Meteor.userId(), 
-      endTime: null 
     }).fetch();
   },
   
