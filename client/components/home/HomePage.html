@@ -28,6 +28,11 @@
     </div>
   {{/if}}
 
+  <!-- Push Notifications Section (for Admins/Leaders) -->
+  {{#if isTeamLeader}}
+    {{> notificationSettings}}
+  {{/if}}
+
   <!-- Team Dashboard Section (for Admins/Leaders) -->
   {{#if isTeamLeader}}
     <div class="mb-12">
