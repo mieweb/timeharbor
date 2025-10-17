@@ -10,7 +10,7 @@ export const YCardEditor = ({
   onSave = null,                // Custom save callback
   onClose = null,               // Custom close callback
   isOpen =true,                // Control visibility from parent
-  theme = 'dark'                // Default theme
+  theme = 'dark'               // Default theme
 }) => {
  
   
@@ -20,8 +20,13 @@ export const YCardEditor = ({
   const [originalContent, setOriginalContent] = useState('')  
   const [showDiffModal, setShowDiffModal] = useState(false)   
   const [modifiedContent, setModifiedContent] = useState('')
-  const editorRef = useRef(null)  
   
+  // NEW: State for cursor tracking
+  const [currentPersonIndex, setCurrentPersonIndex] = useState(-1)
+  const [cursorLine, setCursorLine] = useState(1)
+  const [currentPersonData, setCurrentPersonData] = useState(null)
+  
+  const editorRef = useRef(null)
 
   const defaultYCard = `# Example yCard
 people:
@@ -57,7 +62,90 @@ people:
       state: "CA"
       postal_code: "90210"
       country: "USA"`
+      
   const exampleYCard = initialData || defaultYCard
+
+  // NEW: Function to extract current person's data from YAML
+  const extractPersonData = (personIndex, content) => {
+    if (personIndex < 0) {
+      return null
+    }
+    
+    try {
+      const parsed = yaml.load(content)
+      
+      if (!parsed || !parsed.people || !Array.isArray(parsed.people)) {
+        return null
+      }
+      
+      if (personIndex >= parsed.people.length) {
+        return null
+      }
+      
+      const person = parsed.people[personIndex]
+      console.log('Extracted person data:', person)
+      
+      // Return person data with safe fallbacks for missing fields
+      return {
+        uid: person.uid || person.id || '',
+        name: person.name || '',
+        surname: person.surname || '',
+        username: person.username || '',
+        title: person.title || '',
+        org: person.org || '',
+        email: person.email || '',
+        phone: person.phone && Array.isArray(person.phone) && person.phone.length > 0 
+          ? person.phone[0].number 
+          : '',
+        address: person.address ? {
+          street: person.address.street || '',
+          city: person.address.city || '',
+          state: person.address.state || '',
+          postal_code: person.address.postal_code || '',
+          country: person.address.country || ''
+        } : null
+      }
+     
+      
+    } catch (error) {
+      console.error('Error parsing person data:', error)
+      return null
+    }
+  }
+
+  // NEW: Function to detect which person block the cursor is in
+  const detectCurrentPerson = (lineNumber, content) => {
+    try {
+      const lines = content.split('\n')
+      
+      // Find all lines that start a person entry (lines with "- uid:")
+      const personStarts = []
+      lines.forEach((line, index) => {
+        if (line.trim().startsWith('- uid:')) {
+          personStarts.push(index + 1) // Monaco uses 1-based line numbers
+        }
+      })
+      
+      if (personStarts.length === 0) {
+        return -1
+      }
+      
+      // Determine which person block the cursor is in
+      for (let i = 0; i < personStarts.length; i++) {
+        const startLine = personStarts[i]
+        const endLine = personStarts[i + 1] ? personStarts[i + 1] - 1 : lines.length
+        
+        if (lineNumber >= startLine && lineNumber <= endLine) {
+          return i // Return person index (0-based)
+        }
+      }
+      
+      return -1
+    } catch (error) {
+      console.error('Error detecting person:', error)
+      return -1
+    }
+  }
 
   const addLog = (type, message) => {
     const timestamp = new Date().toLocaleTimeString()
@@ -84,7 +172,6 @@ people:
       alert(' Editor Reset\n\nEditor content has been reset to example data')
     }
   }
-
 
   const handleDiff = () => {
     if (!editorRef.current) {
@@ -179,33 +266,29 @@ people:
   }
 
   const handleRefresh = () => {
-  const saved = localStorage.getItem('ycard-data')
-  
-  if (!saved) {
-    addLog('warning', 'No saved data found in localStorage')
-    alert(' No Saved Data\n\nNo data found in localStorage')
-    return
-  }
-  
-  try {
-    // Parse JSON back to object
-    const parsed = JSON.parse(saved)
+    const saved = localStorage.getItem('ycard-data')
     
-    // Convert back to YAML
-    const yamlContent = yaml.dump(parsed)
-    
-    // Set in editor
-    if (editorRef.current) {
-      editorRef.current.setValue(yamlContent)
-      setOriginalContent(yamlContent)  // Update original too
-      addLog('success', 'Data loaded from localStorage')
-      alert(' Data Loaded\n\nData loaded from localStorage')
+    if (!saved) {
+      addLog('warning', 'No saved data found in localStorage')
+      alert(' No Saved Data\n\nNo data found in localStorage')
+      return
     }
-  } catch (error) {
-    addLog('error', `Error loading data: ${error.message}`)
-    alert(` Error Loading Data\n\n${error.message}`)
+    
+    try {
+      const parsed = JSON.parse(saved)
+      const yamlContent = yaml.dump(parsed)
+      
+      if (editorRef.current) {
+        editorRef.current.setValue(yamlContent)
+        setOriginalContent(yamlContent)
+        addLog('success', 'Data loaded from localStorage')
+        alert(' Data Loaded\n\nData loaded from localStorage')
+      }
+    } catch (error) {
+      addLog('error', `Error loading data: ${error.message}`)
+      alert(` Error Loading Data\n\n${error.message}`)
+    }
   }
- }
 
   const handleSave = () => {
     if (!editorRef.current) {
@@ -276,148 +359,293 @@ people:
       alert(` Cannot Save - Invalid YAML\n\n${error.message}`)
     }
   }
+
   const handleClose = () => {
-    
-    addLog('info', 'Editor closed')
     if (onClose) {
-      onClose()
+      onClose();  
     }
   }
-
 
   if (!isOpen) return null
 
   return (
-    
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>yCard YAML Editor</h2>
-              <button 
-                onClick={() => handleClose()}
-                className="close-button"
-              >
-                ✕
-              </button>
-            </div>
+    <div className="modal-backdrop">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h2>yCard YAML Editor</h2>
+          <button 
+            onClick={() => (handleClose())}
+            className="close-button"
+          >
+            ✕
+          </button>
+        </div>
+      
+        <div className="toolbar">
+          <button 
+            className="toolbar-btn toolbar-btn-theme"
+            onClick={() => setIsDarkTheme(!isDarkTheme)}
+          >
+            {isDarkTheme ? "☀️ Light" : "🌙 Dark"} 
+          </button>
           
-            <div className="toolbar">
-              <button 
-                className="toolbar-btn toolbar-btn-theme"
-                onClick={() => setIsDarkTheme(!isDarkTheme)}
-              >
-                {isDarkTheme ? "☀️ Light" : "🌙 Dark"} 
-              </button>
-              
+          <div className="toolbar-divider"></div>
+          
+          {/* NEW: Show current editing position */}
+          {currentPersonIndex >= 0 && (
+            <>
+              <span style={{ 
+                padding: '8px 12px', 
+                background: '#0e639c', 
+                borderRadius: '4px',
+                fontSize: '12px',
+                color: '#fff'
+              }}>
+                Editing: Person {currentPersonIndex + 1} (Line {cursorLine})
+              </span>
               <div className="toolbar-divider"></div>
-              
-              
-              <div className="toolbar-divider"></div>
-              
-              <button className="toolbar-btn toolbar-btn-validate" onClick={handleValidate}>
-                 Validate
-              </button>
-              <button className="toolbar-btn toolbar-btn-save" onClick={handleSave}>
-                 Save
-              </button>
-              <button className="toolbar-btn toolbar-btn-diff" onClick={handleDiff}>
-                ⇄ Diff
-              </button>
-              <button 
-                className="toolbar-btn toolbar-btn-logs" 
-                onClick={() => {
-                  setShowLogsPanel(!showLogsPanel)
-                  addLog('info', showLogsPanel ? 'Logs panel closed' : 'Logs panel opened')
-                }}
-              >
-                 Logs
-              </button>
-              
-              <div className="toolbar-divider"></div>
-              
-              <button className="toolbar-btn toolbar-btn-reset" onClick={resetEditor}>
-                ↻ Reset
-              </button>
-              <button className="toolbar-btn toolbar-btn-refresh" onClick={handleRefresh}>
-                 Refresh
-              </button>
-            </div>
+            </>
+          )}
+          
+          <button className="toolbar-btn toolbar-btn-validate" onClick={handleValidate}>
+             Validate
+          </button>
+          <button className="toolbar-btn toolbar-btn-save" onClick={handleSave}>
+             Save
+          </button>
+          <button className="toolbar-btn toolbar-btn-diff" onClick={handleDiff}>
+            ⇄ Diff
+          </button>
+          <button 
+            className="toolbar-btn toolbar-btn-logs" 
+            onClick={() => {
+              setShowLogsPanel(!showLogsPanel)
+              addLog('info', showLogsPanel ? 'Logs panel closed' : 'Logs panel opened')
+            }}
+          >
+             Logs
+          </button>
+          
+          <div className="toolbar-divider"></div>
+          
+          <button className="toolbar-btn toolbar-btn-reset" onClick={resetEditor}>
+            ↻ Reset
+          </button>
+          <button className="toolbar-btn toolbar-btn-refresh" onClick={handleRefresh}>
+             Refresh
+          </button>
+        </div>
 
-            <div className="modal-body">
-              <div className="editor-container">
-                <Editor
-                  height="500px"
-                  defaultLanguage="yaml"
-                  defaultValue={exampleYCard}
-                  theme={isDarkTheme ? "vs-dark" : "light"}
-                  onMount={(editor) => {
-                  editorRef.current = editor
+        <div className="modal-body modal-body-flex">
+          {/* Editor Side */}
+          <div className={`editor-container ${currentPersonData ? 'editor-container-flex with-card' : 'editor-container-flex'}`}>
+            <Editor
+              height="100%"
+              defaultLanguage="yaml"
+              defaultValue={exampleYCard}
+              theme={isDarkTheme ? "vs-dark" : "light"}
+              onMount={(editor) => {
+                editorRef.current = editor
+                
+                // NEW: Add cursor position tracking
+                editor.onDidChangeCursorPosition((e) => {
+                  const line = e.position.lineNumber
+                  setCursorLine(line)
                   
-                  // Check if there's saved data
-                  const saved = localStorage.getItem('ycard-data')
+                  const content = editor.getValue()
+                  const personIndex = detectCurrentPerson(line, content)
+                  setCurrentPersonIndex(personIndex)
                   
-                  if (saved) {
-                    try {
-                      const parsed = JSON.parse(saved)
-                      const yamlContent = yaml.dump(parsed)
-                      editor.setValue(yamlContent)
-                      setOriginalContent(yamlContent)
-                      addLog('success', 'Loaded saved data from localStorage')
-                    } catch (error) {
-                      // If error, use default
-                      setOriginalContent(exampleYCard)
-                      addLog('warning', 'Could not load saved data, using example')
-                    }
+                  // NEW: Extract person data
+                  if (personIndex >= 0) {
+                    const personData = extractPersonData(personIndex, content)
+                    setCurrentPersonData(personData)
+                    addLog('info', `Editing Person ${personIndex + 1}`)
                   } else {
-                    setOriginalContent(exampleYCard)
-                    addLog('success', 'Editor initialized with example data')
+                    setCurrentPersonData(null)
                   }
-                }}
-                />
-              </div>
+                })
+                
+                // NEW: Add content change tracking for live updates
+                editor.onDidChangeModelContent(() => {
+                  if (currentPersonIndex >= 0) {
+                    const content = editor.getValue()
+                    const personData = extractPersonData(currentPersonIndex, content)
+                    setCurrentPersonData(personData)
+                  }
+                })
+                
+                const saved = localStorage.getItem('ycard-data')
+                
+                if (saved) {
+                  try {
+                    const parsed = JSON.parse(saved)
+                    const yamlContent = yaml.dump(parsed)
+                    editor.setValue(yamlContent)
+                    setOriginalContent(yamlContent)
+                    addLog('success', 'Loaded saved data from localStorage')
+                  } catch (error) {
+                    setOriginalContent(exampleYCard)
+                    addLog('warning', 'Could not load saved data, using example')
+                  }
+                } else {
+                  setOriginalContent(exampleYCard)
+                  addLog('success', 'Editor initialized with example data')
+                }
+              }}
+            />
+          </div>
 
-              {showLogsPanel && (
-                <div className="logs-panel">
-                  <div className="logs-header">
-                    <h3>Activity Logs</h3>
-                    <button 
-                      onClick={() => {
-                        setShowLogsPanel(false)
-                        addLog('info', 'Logs panel closed')
-                      }}
-                      className="close-panel-btn"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  
-                  <div className="logs-content">
-                    {logs.length === 0 ? (
-                      <div className="no-logs">No activity yet</div>
-                    ) : (
-                      logs.map((log, index) => (
-                        <div key={index} className="log-entry">
-                          <span className={`log-icon log-${log.type}`}>
-                            {log.type === 'success' && '✓'}
-                            {log.type === 'error' && '✗'}
-                            {log.type === 'warning' && '⚠'}
-                            {log.type === 'info' && 'ℹ'}
-                          </span>
-                          <span className="log-time">{log.timestamp}</span>
-                          <span className="log-message">{log.message}</span>
+          {/* NEW: Card Preview Panel */}
+          {currentPersonData && (
+            <div className={`card-preview-panel ${isDarkTheme ? 'dark' : 'light'}`}>
+              <h3 className={`card-preview-title ${isDarkTheme ? 'dark' : 'light'}`}>
+                👤 Card Preview
+              </h3>
+              
+              <div className={`person-card ${isDarkTheme ? 'dark' : 'light'}`}>
+                {/* Header Section */}
+                <div className={`card-header ${isDarkTheme ? 'dark' : 'light'}`}>
+                  <div className="card-header-content">
+                    {currentPersonData.uid && (
+                        <div className={`card-uid ${isDarkTheme ? 'dark' : 'light'}`} style={{ marginBottom: '8px' }}>
+                          ID: {currentPersonData.uid}
                         </div>
-                      ))
+                    )}
+                    <h2 className={`card-name ${isDarkTheme ? 'dark' : 'light'}`}>
+                      {currentPersonData.name || <span className="card-name-placeholder">No name</span>}{' '}
+                      {currentPersonData.surname || <span className="card-name-placeholder">No surname</span>}
+                    </h2>
+                    {currentPersonData.username && (
+                      <div className={`card-username ${isDarkTheme ? 'dark' : 'light'}`}>
+                        @{currentPersonData.username}
+                      </div>
                     )}
                   </div>
+                  {currentPersonData.uid && (
+                    <span className="card-uid-badge">
+                      {currentPersonData.uid}
+                    </span>
+                  )}
                 </div>
-              )}
+                
+                {/* Job Info Section */}
+                {(currentPersonData.title || currentPersonData.org) && (
+                  <div className={`card-job-section ${isDarkTheme ? 'dark' : 'light'}`}>
+                    {currentPersonData.title && (
+                      <div className={`card-job-title ${isDarkTheme ? 'dark' : 'light'}`}>
+                        💼 {currentPersonData.title}
+                      </div>
+                    )}
+                    {currentPersonData.org && (
+                      <div className={`card-job-org ${isDarkTheme ? 'dark' : 'light'}`}>
+                        🏢 {currentPersonData.org}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Contact Section */}
+                <div className="card-contact-section">
+                  <div className={`card-section-title ${isDarkTheme ? 'dark' : 'light'}`}>
+                    Contact
+                  </div>
+                  
+                  {currentPersonData.email ? (
+                    <div className="card-contact-item filled email">
+                      📧 {currentPersonData.email}
+                    </div>
+                  ) : (
+                    <div className="card-contact-item empty">
+                      📧 No email
+                    </div>
+                  )}
+                  
+                  {currentPersonData.phone ? (
+                    <div className="card-contact-item filled">
+                      📱 {currentPersonData.phone}
+                    </div>
+                  ) : (
+                    <div className="card-contact-item empty">
+                      📱 No phone
+                    </div>
+                  )}
+                </div>
+                
+                {/* Address Section */}
+                {currentPersonData.address && (
+                  <div className="card-address-section">
+                    <div className={`card-section-title ${isDarkTheme ? 'dark' : 'light'}`}>
+                      Address
+                    </div>
+                    <div className={`card-address-content ${isDarkTheme ? 'dark' : 'light'}`}>
+                      {currentPersonData.address.street && (
+                        <div>📍 {currentPersonData.address.street}</div>
+                      )}
+                      {(currentPersonData.address.city || currentPersonData.address.state || currentPersonData.address.postal_code) && (
+                        <div>
+                          {[
+                            currentPersonData.address.city,
+                            currentPersonData.address.state,
+                            currentPersonData.address.postal_code
+                          ].filter(Boolean).join(', ')}
+                        </div>
+                      )}
+                      {currentPersonData.address.country && (
+                        <div>{currentPersonData.address.country}</div>
+                      )}
+                      {!currentPersonData.address.street && 
+                       !currentPersonData.address.city && 
+                       !currentPersonData.address.country && (
+                        <div className="card-address-empty">
+                          No address details
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+          )}
 
-          </div>
-        
-      
+          {showLogsPanel && (
+            <div className="logs-panel">
+              <div className="logs-header">
+                <h3>Activity Logs</h3>
+                <button 
+                  onClick={() => {
+                    setShowLogsPanel(false)
+                    addLog('info', 'Logs panel closed')
+                  }}
+                  className="close-panel-btn"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="logs-content">
+                {logs.length === 0 ? (
+                  <div className="no-logs">No activity yet</div>
+                ) : (
+                  logs.map((log, index) => (
+                    <div key={index} className="log-entry">
+                      <span className={`log-icon log-${log.type}`}>
+                        {log.type === 'success' && '✓'}
+                        {log.type === 'error' && '✗'}
+                        {log.type === 'warning' && '⚠'}
+                        {log.type === 'info' && 'ℹ'}
+                      </span>
+                      <span className="log-time">{log.timestamp}</span>
+                      <span className="log-message">{log.message}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* Diff Modal - OUTSIDE main modal */}
       {showDiffModal && (
         <div className="diff-modal-backdrop">
           <div className="diff-modal-content">
@@ -456,7 +684,6 @@ people:
           </div>
         </div>
       )}
-
     </div>
   )
 }

@@ -45,10 +45,11 @@
 
 /* The actual modal content box */
 .modal-content {
+  height: 700px;
   background-color: white;
   border-radius: 8px;
   padding: 30px;
-  max-width: 900px;
+  max-width: 1000px;
   width: 90%;
   max-height: 90vh;  /* NEW: Limit height to 90% of viewport */
   display: flex;     /* NEW: Use flexbox for proper stacking */
@@ -360,4 +361,275 @@
   flex: 1;
   overflow: hidden;
   border-radius: 0 0 8px 8px;
+}
+
+/* Card Preview Panel */
+.card-preview-panel {
+  flex: 0 0 35%;
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  background: #000;
+  border-left: 1px solid #333;
+}
+
+.card-preview-panel.light {
+  background: #fff;
+  border-left: 1px solid #e0e0e0;
+}
+
+.card-preview-panel.dark {
+  background: #000;
+  border-left: 1px solid #333;
+}
+
+.card-preview-title {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: normal;
+  color: #888;
+}
+
+.card-preview-title.light {
+  color: #666;
+}
+
+.card-preview-title.dark {
+  color: #888;
+}
+
+/* Person Card */
+.person-card {
+  padding: 24px;
+  border-radius: 4px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  box-shadow: none;
+  width: 105%; 
+  box-sizing: border-box;
+}
+
+.person-card.light {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+}
+
+.person-card.dark {
+  background: #1a1a1a;
+  border: 1px solid #333;
+}
+
+/* Card Header */
+.card-header {
+  display: block;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #333;
+}
+
+.card-header.light {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.card-header.dark {
+  border-bottom: 1px solid #333;
+}
+
+.card-header-content {
+  flex: 1;
+}
+
+.card-name {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.card-name.light {
+  color: #000;
+}
+
+.card-name.dark {
+  color: #fff;
+}
+
+.card-name-placeholder {
+  color: #666;
+  font-style: italic;
+  font-weight: normal;
+}
+
+.card-username {
+  font-size: 13px;
+  margin-top: 6px;
+  color: #888;
+  font-style: italic;
+}
+
+.card-uid {
+  font-size: 15px;
+  margin-top: 6px;
+  color: white;
+  
+}
+
+.card-uid.light{
+  color: black;
+}
+
+.card-username.light {
+  color: #666;
+}
+
+.card-username.dark {
+  color: #888;
+}
+
+.card-uid-badge {
+  display: none;
+}
+
+/* Job Info Section - Remove background */
+.card-job-section {
+  margin-bottom: 16px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.card-job-section.light {
+  background: transparent;
+}
+
+.card-job-section.dark {
+  background: transparent;
+}
+
+.card-job-title {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #fff;
+  font-weight: normal;
+}
+
+.card-job-title.light {
+  color: #000;
+}
+
+.card-job-title.dark {
+  color: #fff;
+}
+
+.card-job-org {
+  font-size: 14px;
+  color: #fff;
+  font-weight: normal;
+}
+
+.card-job-org.light {
+  color: #000;
+}
+
+.card-job-org.dark {
+  color: #fff;
+}
+
+/* Contact Section */
+.card-contact-section {
+  margin-bottom: 16px;
+}
+
+.card-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #888;
+}
+
+.card-section-title.light {
+  color: #666;
+}
+
+.card-section-title.dark {
+  color: #888;
+}
+
+.card-contact-item {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: white;
+  font-weight: normal;
+}
+
+.card-contact-item.filled {
+  color: white;
+}
+
+
+
+.card-contact-item.light.filled {
+  color: #000;
+}
+
+.card-contact-item.dark.filled {
+  color: #fff;
+}
+
+.card-contact-item.empty {
+  color: #666;
+  font-style: italic;
+}
+
+.card-contact-item.email {
+  word-break: break-all;
+}
+
+/* Address Section */
+.card-address-section {
+  margin-top: 16px;
+}
+
+.card-address-content {
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+}
+
+.card-address-content.light {
+  background: transparent;
+  color: #000;
+}
+
+.card-address-content.dark {
+  background: transparent;
+  color: #fff;
+}
+
+.card-address-empty {
+  color: #666;
+  font-style: italic;
+}
+
+/* Modal body adjustments */
+.modal-body-flex {
+  display: flex;
+  gap: 0;
+  overflow: hidden; 
+  width: 100%;
+}
+
+.editor-container-flex {
+  flex: 1;
+}
+
+.editor-container-flex.with-card {
+  flex: 0 0 65%;
 }
