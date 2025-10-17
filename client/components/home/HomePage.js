@@ -366,20 +366,6 @@ Template.home.helpers({
     }).fetch();
   },
   
-  hasActiveSessions() {
-    return ClockEvents.find({ 
-      userId: Meteor.userId(), 
-      endTime: null 
-    }).count() > 0;
-  },
-  
-  activeClockEvents() {
-    return ClockEvents.find({ 
-      userId: Meteor.userId(), 
-      endTime: null 
-    }).fetch();
-  },
-  
   // Legacy helpers for team dashboard
   allClockEvents() {
     const leaderTeams = Teams.find({ leader: Meteor.userId() }).fetch();
