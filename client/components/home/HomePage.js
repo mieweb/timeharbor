@@ -7,6 +7,7 @@ import { getTeamName, getUserEmail, getUserName } from '../../utils/UserTeamUtil
 import { dateToLocalString, formatDateForDisplay, getTodayBoundaries, getWeekBoundaries, getDayBoundaries } from '../../utils/DateUtils.js';
 import { Grid } from 'ag-grid-community';
 import { isTeamsLoading } from '../layout/MainLayout.js';
+import '../notifications/NotificationSettings.js';
 
 // Constants
 const GRID_CONFIG = {

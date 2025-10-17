@@ -2,13 +2,29 @@ import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 import { ClockEvents, Tickets, Teams } from '../../collections.js';
 import { stopTicketInClockEvent } from '../utils/ClockEventHelpers.js';
+import { notifyTeamAdmins } from '../utils/pushNotifications.js';
 
 export const clockEventMethods = {
   async clockEventStart(teamId) {
     check(teamId, String);
     if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    // Get user info for notification
+    const user = await Meteor.users.findOneAsync(this.userId);
+    const userName = user?.services?.google?.name || 
+                     user?.services?.github?.username || 
+                     user?.profile?.name || 
+                     user?.username || 
+                     user?.emails?.[0]?.address?.split('@')[0] || 
+                     'A user';
+    
+    // Get team info
+    const team = await Teams.findOneAsync(teamId);
+    const teamName = team?.name || 'a team';
+    
     // End any previous open clock event for this user/team
     await ClockEvents.updateAsync({ userId: this.userId, teamId, endTime: null }, { $set: { endTime: new Date() } }, { multi: true });
+    
     // Start a new clock event
     const clockEventId = await ClockEvents.insertAsync({
       userId: this.userId,
@@ -18,22 +34,77 @@ export const clockEventMethods = {
       tickets: [], // Initialize empty tickets array
       endTime: null
     });
+    
+    // Send push notification to team admins/leaders
+    try {
+      await notifyTeamAdmins(teamId, {
+        title: 'Time Harbor',
+        body: `${userName} clocked in to ${teamName}`,
+        icon: '/timeharbor-icon.svg',
+        badge: '/timeharbor-icon.svg',
+        tag: `clockin-${this.userId}-${Date.now()}`,
+        data: {
+          type: 'clock-in',
+          userId: this.userId,
+          userName: userName,
+          teamName: teamName,
+          teamId,
+          clockEventId,
+          url: '/admin'
+        }
+      });
+    } catch (error) {
+      // Don't fail the clock-in if notification fails
+      console.error('Failed to send clock-in notification:', error);
+    }
+    
     return clockEventId;
   },
 
   async clockEventStop(teamId) {
     check(teamId, String);
     if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    // Get user info for notification
+    const user = await Meteor.users.findOneAsync(this.userId);
+    const userName = user?.services?.google?.name || 
+                     user?.services?.github?.username || 
+                     user?.profile?.name || 
+                     user?.username || 
+                     user?.emails?.[0]?.address?.split('@')[0] || 
+                     'A user';
+    
+    // Get team info
+    const team = await Teams.findOneAsync(teamId);
+    const teamName = team?.name || 'a team';
+    
     const clockEvent = await ClockEvents.findOneAsync({ userId: this.userId, teamId, endTime: null });
     if (clockEvent) {
       const now = Date.now();
 
       // Calculate and update accumulated time for the clock event
+      let totalSeconds = 0;
+      let durationText = '';
+      
       if (clockEvent.startTimestamp) {
         const elapsed = Math.floor((now - clockEvent.startTimestamp) / 1000);
         const prev = clockEvent.accumulatedTime || 0;
+        totalSeconds = prev + elapsed;
+        
+        // Format duration as hours, minutes, seconds
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        
+        // Build duration text
+        const parts = [];
+        if (hours > 0) parts.push(`${hours}h`);
+        if (minutes > 0) parts.push(`${minutes}m`);
+        if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+        durationText = parts.join(' ');
+        
         await ClockEvents.updateAsync(clockEvent._id, {
-          $set: { accumulatedTime: prev + elapsed }
+          $set: { accumulatedTime: totalSeconds }
         });
       }
 
@@ -51,6 +122,30 @@ export const clockEventMethods = {
       await ClockEvents.updateAsync(clockEvent._id, {
         $set: { endTime: new Date() },
       });
+      
+      // Send push notification to team admins/leaders
+      try {
+        await notifyTeamAdmins(teamId, {
+          title: 'Time Harbor',
+          body: `${userName} clocked out of ${teamName} (${durationText})`,
+          icon: '/timeharbor-icon.svg',
+          badge: '/timeharbor-icon.svg',
+          tag: `clockout-${this.userId}-${Date.now()}`,
+          data: {
+            type: 'clock-out',
+            userId: this.userId,
+            userName: userName,
+            teamName: teamName,
+            teamId,
+            clockEventId: clockEvent._id,
+            duration: durationText,
+            url: '/admin'
+          }
+        });
+      } catch (error) {
+        // Don't fail the clock-out if notification fails
+        console.error('Failed to send clock-out notification:', error);
+      }
     }
   },
 

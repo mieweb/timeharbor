@@ -1,0 +1,25 @@
+<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with Time Harbor blue gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3730A3;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Blue background -->
+  <rect width="192" height="192" fill="url(#bgGradient)" rx="30"/>
+  
+  <!-- White clock circle -->
+  <circle cx="96" cy="96" r="60" stroke="white" stroke-width="8" fill="none"/>
+  
+  <!-- Clock hour hand (pointing right to 3 o'clock) -->
+  <line x1="96" y1="96" x2="131" y2="96" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Clock minute hand (pointing up to 12 o'clock) -->
+  <line x1="96" y1="96" x2="96" y2="51" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- Center dot -->
+  <circle cx="96" cy="96" r="5" fill="white"/>
+</svg>
+
