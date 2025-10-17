@@ -32,7 +32,7 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agDateColumnFilter',
     valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No clock-in',
-    cellClass: 'text-primary'
+    cellClass: 'text-base-content'
   },
   { 
     headerName: 'Clock-out', 
