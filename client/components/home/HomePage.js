@@ -56,9 +56,20 @@ const getColumnDefinitions = (showClockTimes = true) => {
       { 
         headerName: 'Clock-out', field: 'lastClockOut', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
         valueFormatter: p => {
-          if (!p.value) return p.data?.hasActiveSession ? 'Active' : '-';
+          if (!p.value) return p.data?.hasActiveSession ? 'Running...' : '-';
           return new Date(p.value).toLocaleTimeString();
         }
+      },
+      { 
+        headerName: 'Status', field: 'hasActiveSession', flex: 0.8, sortable: true, filter: 'agSetColumnFilter',
+        valueFormatter: p => p.value ? 'Active' : 'Completed',
+        cellRenderer: p => {
+          if (p.value) {
+            return '<span class="text-success font-semibold flex items-center gap-1"><span class="inline-block w-2 h-2 bg-success rounded-full animate-pulse"></span>Active</span>';
+          }
+          return '<span class="text-base-content opacity-60">Completed</span>';
+        },
+        filterParams: { values: ['Active', 'Completed'] }
       }
     );
   }
