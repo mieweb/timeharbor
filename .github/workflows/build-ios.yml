@@ -45,7 +45,7 @@ jobs:
     - name: Build iOS app
       run: |
         echo "Building iOS app..."
-        meteor build ./build
+        meteor build ./build --server=https://timeharbor.com
         
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
