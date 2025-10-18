@@ -34,15 +34,11 @@ jobs:
         
     - name: Add iOS platform
       run: |
-        if meteor platforms | grep -q "ios"; then
-          echo "iOS platform already exists"
-        else
-          meteor add-platform ios
-        fi
+        meteor add-platform ios || echo "iOS platform already exists or failed to add"
         
     - name: Build iOS app
       run: |
-        meteor build ../build --platform ios
+        meteor build ./build --platform ios
         
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
