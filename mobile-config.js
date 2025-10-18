@@ -1,4 +1,5 @@
 // Mobile configuration for Time Harbor iOS app
+// Updated: iOS app development phase - ready for testing
 App.configurePlugin('phonegap-plugin-push', {
   SENDER_ID: 'YOUR_FIREBASE_SENDER_ID' // Will be replaced with actual Firebase Sender ID
 });
