@@ -34,7 +34,11 @@ jobs:
         
     - name: Add iOS platform
       run: |
-        meteor add-platform ios
+        if meteor platforms | grep -q "ios"; then
+          echo "iOS platform already exists"
+        else
+          meteor add-platform ios
+        fi
         
     - name: Build iOS app
       run: |
@@ -45,18 +49,9 @@ jobs:
       with:
         xcode-version: latest-stable
         
-    - name: Build iOS project
-      run: |
-        cd build/ios/project
-        xcodebuild -workspace timeharbor.xcworkspace -scheme timeharbor -configuration Release -destination generic/platform=iOS -archivePath timeharbor.xcarchive archive
-        
-    - name: Export IPA
-      run: |
-        cd build/ios/project
-        xcodebuild -exportArchive -archivePath timeharbor.xcarchive -exportPath . -exportOptionsPlist ExportOptions.plist
-        
     - name: Create ExportOptions.plist
       run: |
+        mkdir -p build/ios/project
         cat > build/ios/project/ExportOptions.plist << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -75,6 +70,16 @@ jobs:
         </dict>
         </plist>
         EOF
+        
+    - name: Build iOS project
+      run: |
+        cd build/ios/project
+        xcodebuild -workspace timeharbor.xcworkspace -scheme timeharbor -configuration Release -destination generic/platform=iOS -archivePath timeharbor.xcarchive archive
+        
+    - name: Export IPA
+      run: |
+        cd build/ios/project
+        xcodebuild -exportArchive -archivePath timeharbor.xcarchive -exportPath . -exportOptionsPlist ExportOptions.plist
         
     - name: Upload iOS build artifacts
       uses: actions/upload-artifact@v4
