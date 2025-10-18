@@ -32,6 +32,15 @@ jobs:
         npm install
         meteor npm install
         
+    - name: Set up Google OAuth variables
+      run: |
+        echo "Setting up Google OAuth variables for iOS build..."
+        # Using the actual Google Client ID from your server configuration
+        export REVERSED_CLIENT_ID="com.googleusercontent.apps.1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2"
+        export GOOGLE_CLIENT_ID="1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2.apps.googleusercontent.com"
+        echo "REVERSED_CLIENT_ID=$REVERSED_CLIENT_ID" >> $GITHUB_ENV
+        echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> $GITHUB_ENV
+        
     - name: Add iOS platform
       run: |
         meteor add-platform ios || echo "iOS platform already exists or failed to add"
