@@ -1,5 +1,12 @@
 // Mobile configuration for Time Harbor iOS app
 // Updated: iOS app development phase - ready for testing
+
+// Configure Google OAuth plugin
+App.configurePlugin('cordova-plugin-googleplus', {
+  REVERSED_CLIENT_ID: 'com.googleusercontent.apps.1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2',
+  GOOGLE_CLIENT_ID: '1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2.apps.googleusercontent.com'
+});
+
 App.configurePlugin('phonegap-plugin-push', {
   SENDER_ID: 'YOUR_FIREBASE_SENDER_ID' // Will be replaced with actual Firebase Sender ID
 });
