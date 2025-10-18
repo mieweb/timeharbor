@@ -36,9 +36,16 @@ jobs:
       run: |
         meteor add-platform ios || echo "iOS platform already exists or failed to add"
         
+    - name: Verify iOS platform
+      run: |
+        echo "Checking iOS platform..."
+        ls -la .meteor/
+        cat .meteor/platforms || echo "No platforms file found"
+        
     - name: Build iOS app
       run: |
-        meteor build ./build --platform ios
+        echo "Building iOS app..."
+        meteor build ./build
         
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
