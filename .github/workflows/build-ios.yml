@@ -1,0 +1,95 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [ ios-app-development ]
+  pull_request:
+    branches: [ ios-app-development ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install Meteor
+      run: |
+        curl https://install.meteor.com/ | sh
+        export PATH="$HOME/.meteor:$PATH"
+        echo "$HOME/.meteor" >> $GITHUB_PATH
+        
+    - name: Install dependencies
+      run: |
+        npm install
+        meteor npm install
+        
+    - name: Add iOS platform
+      run: |
+        meteor add-platform ios
+        
+    - name: Build iOS app
+      run: |
+        meteor build ../build --platform ios
+        
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+        
+    - name: Build iOS project
+      run: |
+        cd build/ios/project
+        xcodebuild -workspace timeharbor.xcworkspace -scheme timeharbor -configuration Release -destination generic/platform=iOS -archivePath timeharbor.xcarchive archive
+        
+    - name: Export IPA
+      run: |
+        cd build/ios/project
+        xcodebuild -exportArchive -archivePath timeharbor.xcarchive -exportPath . -exportOptionsPlist ExportOptions.plist
+        
+    - name: Create ExportOptions.plist
+      run: |
+        cat > build/ios/project/ExportOptions.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>teamID</key>
+            <string>YOUR_TEAM_ID</string>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>compileBitcode</key>
+            <false/>
+        </dict>
+        </plist>
+        EOF
+        
+    - name: Upload iOS build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-app-build
+        path: |
+          build/ios/project/timeharbor.ipa
+          build/ios/project/timeharbor.xcarchive
+        retention-days: 30
+        
+    - name: Upload build logs
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: build-logs
+        path: |
+          build/
+        retention-days: 7

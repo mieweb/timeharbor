@@ -1,0 +1,93 @@
+<!-- Mobile Main Layout Template -->
+<template name="mobileMainLayout">
+  <div class="mobile-layout {{#if isMobile}}mobile-view{{/if}}">
+    {{#if isMobile}}
+      <!-- Mobile Header -->
+      <div class="mobile-header bg-primary text-primary-content">
+        <div class="flex items-center justify-between p-4">
+          <button class="mobile-menu-toggle btn btn-ghost btn-sm">
+            <i class="fas fa-bars"></i>
+          </button>
+          
+          <h1 class="text-lg font-bold">Time Harbor</h1>
+          
+          <div class="flex items-center gap-2">
+            {{#if isIOS}}
+              <div class="badge badge-success badge-sm">
+                <i class="fas fa-mobile-alt"></i>
+                iOS
+              </div>
+            {{/if}}
+            <div class="dropdown dropdown-end">
+              <div tabindex="0" role="button" class="btn btn-ghost btn-sm">
+                <i class="fas fa-user"></i>
+              </div>
+              <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Sidebar -->
+      <div class="mobile-sidebar fixed inset-y-0 left-0 z-50 w-64 bg-base-100 shadow-lg transform -translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="p-4">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold">Menu</h2>
+            <button class="mobile-menu-toggle btn btn-ghost btn-sm">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <nav class="space-y-2">
+            <a href="/" class="mobile-nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-base-200">
+              <i class="fas fa-home"></i>
+              <span>Home</span>
+            </a>
+            
+            <a href="/timesheet" class="mobile-nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-base-200">
+              <i class="fas fa-clock"></i>
+              <span>Timesheet</span>
+            </a>
+            
+            <a href="/teams" class="mobile-nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-base-200">
+              <i class="fas fa-users"></i>
+              <span>Teams</span>
+            </a>
+            
+            <a href="/tickets" class="mobile-nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-base-200">
+              <i class="fas fa-ticket-alt"></i>
+              <span>Tickets</span>
+            </a>
+            
+            <a href="/calendar" class="mobile-nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-base-200">
+              <i class="fas fa-calendar"></i>
+              <span>Calendar</span>
+            </a>
+            
+            {{#if isIOS}}
+              <a href="/notifications" class="mobile-nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-base-200">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+              </a>
+            {{/if}}
+          </nav>
+        </div>
+      </div>
+
+      <!-- Mobile Overlay -->
+      <div class="mobile-overlay fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+
+      <!-- Mobile Content -->
+      <div class="mobile-content p-4">
+        {{> Template.dynamic template=content}}
+      </div>
+    {{else}}
+      <!-- Desktop Layout (existing) -->
+      {{> Template.dynamic template=content}}
+    {{/if}}
+  </div>
+</template>

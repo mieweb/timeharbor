@@ -1,0 +1,222 @@
+/* Mobile-specific styles for Time Harbor iOS app */
+
+/* Mobile Layout */
+.mobile-layout {
+  min-height: 100vh;
+}
+
+.mobile-view {
+  padding-top: 0;
+}
+
+/* Mobile Header */
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Mobile Sidebar */
+.mobile-sidebar {
+  transition: transform 0.3s ease-in-out;
+}
+
+.mobile-sidebar:not(.hidden) {
+  transform: translateX(0);
+}
+
+.mobile-sidebar.hidden {
+  transform: translateX(-100%);
+}
+
+/* Mobile Content */
+.mobile-content {
+  margin-top: 80px; /* Account for fixed header */
+  min-height: calc(100vh - 80px);
+}
+
+/* Mobile Navigation */
+.mobile-nav-item {
+  transition: background-color 0.2s ease;
+}
+
+.mobile-nav-item:hover {
+  background-color: var(--fallback-b2, var(--b2));
+}
+
+/* iOS-specific styles */
+@supports (-webkit-touch-callout: none) {
+  .mobile-layout {
+    /* iOS Safari specific styles */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .mobile-content {
+    /* Prevent zoom on input focus */
+    font-size: 16px;
+  }
+  
+  /* iOS safe area support */
+  .mobile-header {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .mobile-content {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Mobile Cards */
+.mobile-card {
+  @apply bg-base-100 rounded-lg shadow-sm border border-base-200;
+  margin-bottom: 1rem;
+}
+
+.mobile-card-header {
+  @apply p-4 border-b border-base-200;
+}
+
+.mobile-card-body {
+  @apply p-4;
+}
+
+.mobile-card-footer {
+  @apply p-4 border-t border-base-200;
+}
+
+/* Mobile Buttons */
+.mobile-btn {
+  @apply btn w-full;
+  min-height: 44px; /* iOS touch target minimum */
+}
+
+.mobile-btn-sm {
+  @apply btn btn-sm;
+  min-height: 36px;
+}
+
+/* Mobile Forms */
+.mobile-input {
+  @apply input input-bordered w-full;
+  min-height: 44px;
+  font-size: 16px; /* Prevent zoom on iOS */
+}
+
+.mobile-textarea {
+  @apply textarea textarea-bordered w-full;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+/* Mobile Tables */
+.mobile-table {
+  @apply table table-sm;
+  font-size: 14px;
+}
+
+.mobile-table th,
+.mobile-table td {
+  padding: 0.5rem;
+}
+
+/* Mobile Notifications */
+.mobile-notification {
+  @apply alert;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-notification-success {
+  @apply alert-success;
+}
+
+.mobile-notification-error {
+  @apply alert-error;
+}
+
+.mobile-notification-warning {
+  @apply alert-warning;
+}
+
+.mobile-notification-info {
+  @apply alert-info;
+}
+
+/* Mobile Loading States */
+.mobile-loading {
+  @apply flex items-center justify-center p-8;
+}
+
+.mobile-spinner {
+  @apply loading loading-spinner loading-lg;
+}
+
+/* Mobile Responsive Utilities */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+  
+  .mobile-block {
+    display: block !important;
+  }
+  
+  .mobile-flex {
+    display: flex !important;
+  }
+}
+
+/* iOS-specific animations */
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.mobile-sidebar.slide-in {
+  animation: slideInFromLeft 0.3s ease-out;
+}
+
+.mobile-sidebar.slide-out {
+  animation: slideOutToLeft 0.3s ease-in;
+}
+
+/* Touch feedback */
+.mobile-touchable {
+  transition: transform 0.1s ease;
+}
+
+.mobile-touchable:active {
+  transform: scale(0.98);
+}
+
+/* Mobile-specific spacing */
+.mobile-p-2 { padding: 0.5rem; }
+.mobile-p-4 { padding: 1rem; }
+.mobile-p-6 { padding: 1.5rem; }
+
+.mobile-m-2 { margin: 0.5rem; }
+.mobile-m-4 { margin: 1rem; }
+.mobile-m-6 { margin: 1.5rem; }
+
+.mobile-mb-2 { margin-bottom: 0.5rem; }
+.mobile-mb-4 { margin-bottom: 1rem; }
+.mobile-mb-6 { margin-bottom: 1.5rem; }
+
+.mobile-mt-2 { margin-top: 0.5rem; }
+.mobile-mt-4 { margin-top: 1rem; }
+.mobile-mt-6 { margin-top: 1.5rem; }

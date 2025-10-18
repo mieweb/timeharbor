@@ -30,3 +30,4 @@ service-configuration@1.3.5
 accounts-github@1.5.1
 http
 ostrio:flow-router-extra
+activitree:push

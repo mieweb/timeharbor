@@ -13,6 +13,8 @@ import { clockEventMethods } from './methods/clockEvents.js';
 import './methods/calendar.js';
 // Import notification methods
 import { notificationMethods } from './methods/notifications.js';
+// Import iOS push notification configuration
+import { configureIOSPushNotifications } from './utils/iosPushNotifications.js';
 
 // Load environment variables from .env file
 import dotenv from 'dotenv';
@@ -20,8 +22,8 @@ dotenv.config({ path: '.env' });
 
 Meteor.startup(async () => {
   // Configure Google OAuth from environment variables
-  const googleClientId = process.env.GOOGLE_CLIENT_ID;
-  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const googleClientId = '1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2.apps.googleusercontent.com'
+  const googleClientSecret = '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';
   
   if (googleClientId && googleClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
@@ -41,8 +43,9 @@ Meteor.startup(async () => {
   }
 
   // Configure GitHub OAuth from environment variables
-  const githubClientId = process.env.HUB_CLIENT_ID;
-  const githubClientSecret = process.env.HUB_CLIENT_SECRET;
+  const githubClientId = 'Ov23liEIIlKFKAfoBN0Z';
+  const githubClientSecret = '4fc1d608ccef2aab1a25a0714eaaf4ed3cfb703b';
+  
   
   if (githubClientId && githubClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
@@ -105,6 +108,14 @@ Meteor.startup(async () => {
   for (const team of teamsWithoutCode) {
     const code = Math.random().toString(36).substr(2, 8).toUpperCase();
     await Teams.updateAsync(team._id, { $set: { code } });
+  }
+
+  // Configure iOS push notifications
+  try {
+    configureIOSPushNotifications();
+    console.log('iOS push notifications configured successfully');
+  } catch (error) {
+    console.error('Error configuring iOS push notifications:', error);
   }
 });
 

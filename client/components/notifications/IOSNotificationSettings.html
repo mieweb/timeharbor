@@ -1,0 +1,102 @@
+<!-- iOS Notification Settings Template -->
+<template name="iosNotificationSettings">
+  <div class="ios-notification-settings">
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title">
+          <i class="fas fa-mobile-alt"></i>
+          iOS Push Notifications
+        </h2>
+        
+        {{#if isIOSDevice}}
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <span>You're using an iOS device. Push notifications are supported!</span>
+          </div>
+        {{else}}
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>You're not on an iOS device. These settings are for iOS app users.</span>
+          </div>
+        {{/if}}
+
+        {{#if error}}
+          <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{error}}</span>
+          </div>
+        {{/if}}
+
+        <div class="notification-status">
+          <div class="flex items-center gap-3">
+            {{#if notificationEnabled}}
+              <div class="badge badge-success">
+                <i class="fas fa-check-circle"></i>
+                Enabled
+              </div>
+            {{else}}
+              <div class="badge badge-error">
+                <i class="fas fa-times-circle"></i>
+                Disabled
+              </div>
+            {{/if}}
+            
+            <span class="text-sm text-gray-600">
+              {{#if notificationEnabled}}
+                You'll receive notifications for team activities
+              {{else}}
+                Enable to receive team activity notifications
+              {{/if}}
+            </span>
+          </div>
+        </div>
+
+        <div class="card-actions justify-end">
+          {{#if loading}}
+            <button class="btn btn-primary loading" disabled>
+              <span class="loading-spinner"></span>
+              Processing...
+            </button>
+          {{else}}
+            {{#if notificationEnabled}}
+              <button id="testIOSNotification" class="btn btn-outline btn-info">
+                <i class="fas fa-paper-plane"></i>
+                Send Test
+              </button>
+              <button id="disableIOSNotifications" class="btn btn-error">
+                <i class="fas fa-bell-slash"></i>
+                Disable
+              </button>
+            {{else}}
+              <button id="enableIOSNotifications" class="btn btn-primary">
+                <i class="fas fa-bell"></i>
+                Enable Notifications
+              </button>
+            {{/if}}
+          {{/if}}
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="notification-info">
+          <h3 class="font-semibold mb-2">What notifications will you receive?</h3>
+          <ul class="list-disc list-inside space-y-1 text-sm">
+            <li>🟢 When team members clock in</li>
+            <li>🔴 When team members clock out</li>
+            <li>📊 Team activity updates</li>
+            <li>🔔 Important team announcements</li>
+          </ul>
+        </div>
+
+        <div class="notification-tips">
+          <h3 class="font-semibold mb-2">Tips:</h3>
+          <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
+            <li>Make sure notifications are enabled in your iOS Settings</li>
+            <li>Keep the Time Harbor app running in the background</li>
+            <li>Test notifications to ensure they're working properly</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
