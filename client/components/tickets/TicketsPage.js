@@ -89,11 +89,20 @@ const sessionManager = {
   },
 
   // Stop a session
-  stopSession: async (teamId, activeTicketId) => {
+  stopSession: async (teamId) => {
     try {
-      if (activeTicketId) {
-        await ticketManager.stopTicket(activeTicketId);
-      }
+      // Find ALL running tickets for this team and stop them
+      const runningTickets = Tickets.find({ teamId, startTimestamp: { $exists: true } }).fetch();
+      
+      // Stop all running tickets
+      const stopPromises = runningTickets.map(ticket => 
+        ticketManager.stopTicket(ticket._id)
+      );
+      
+      // Wait for all tickets to stop
+      await Promise.all(stopPromises);
+      
+      // Then stop the clock event (which will also stop any remaining tickets)
       await utils.meteorCall('clockEventStop', teamId);
       return true;
     } catch (error) {
@@ -353,9 +362,8 @@ Template.tickets.events({
   
   async 'click #clockOutBtn'(e, t) {
     const teamId = t.selectedTeamId.get();
-    const activeTicketId = t.activeTicketId.get();
     
-    const success = await sessionManager.stopSession(teamId, activeTicketId);
+    const success = await sessionManager.stopSession(teamId);
     if (success) {
       t.activeTicketId.set(null);
     }
