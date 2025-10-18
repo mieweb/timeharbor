@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import Editor from '@monaco-editor/react'
 import { DiffEditor } from '@monaco-editor/react'  
 import './YCardEditor.css'
 import yaml from 'js-yaml'
 import React from 'react';
+import YCardManager from './YCardManager.js'
 
 export const YCardEditor = ({
   initialData = null,           // Allow passing initial YAML data
@@ -14,165 +15,60 @@ export const YCardEditor = ({
 }) => {
  
   
+  // Initialize the manager
+  const manager = useMemo(() => new YCardManager(initialData), [initialData])
+  
+  // UI State
   const [isDarkTheme, setIsDarkTheme] = useState(theme === 'dark')
   const [showLogsPanel, setShowLogsPanel] = useState(false)  
   const [logs, setLogs] = useState([])
-  const [originalContent, setOriginalContent] = useState('')  
   const [showDiffModal, setShowDiffModal] = useState(false)   
   const [modifiedContent, setModifiedContent] = useState('')
   
-  // NEW: State for cursor tracking
+  // Cursor tracking state
   const [currentPersonIndex, setCurrentPersonIndex] = useState(-1)
   const [cursorLine, setCursorLine] = useState(1)
   const [currentPersonData, setCurrentPersonData] = useState(null)
   
   const editorRef = useRef(null)
 
-  const defaultYCard = `# Example yCard
-people:
-  - uid: user-001
-    name: Alice
-    surname: Smith
-    username: Asmith
-    title: Engineer
-    org: ExampleCorp
-    email: alice.smith@example.com
-    phone:
-      - number: "+1-555-1234"
-        type: work
-    address:
-      street: "123 Main St"
-      city: "Metropolis"
-      state: "CA"
-      postal_code: "90210"
-      country: "USA"
-  - uid: user-002
-    name: Bob
-    surname: Johnson
-    username: Bjohnson
-    title: Manager
-    org: ExampleCorp
-    email: bob.johnson@example.com
-    phone:
-      - number: "+1-555-1234"
-        type: work
-    address:
-      street: "123 Main St"
-      city: "Metropolis"
-      state: "CA"
-      postal_code: "90210"
-      country: "USA"`
-      
-  const exampleYCard = initialData || defaultYCard
-
-  // NEW: Function to extract current person's data from YAML
-  const extractPersonData = (personIndex, content) => {
-    if (personIndex < 0) {
-      return null
-    }
-    
-    try {
-      const parsed = yaml.load(content)
-      
-      if (!parsed || !parsed.people || !Array.isArray(parsed.people)) {
-        return null
-      }
-      
-      if (personIndex >= parsed.people.length) {
-        return null
-      }
-      
-      const person = parsed.people[personIndex]
-      console.log('Extracted person data:', person)
-      
-      // Return person data with safe fallbacks for missing fields
-      return {
-        uid: person.uid || person.id || '',
-        name: person.name || '',
-        surname: person.surname || '',
-        username: person.username || '',
-        title: person.title || '',
-        org: person.org || '',
-        email: person.email || '',
-        phone: person.phone && Array.isArray(person.phone) && person.phone.length > 0 
-          ? person.phone[0].number 
-          : '',
-        address: person.address ? {
-          street: person.address.street || '',
-          city: person.address.city || '',
-          state: person.address.state || '',
-          postal_code: person.address.postal_code || '',
-          country: person.address.country || ''
-        } : null
-      }
-     
-      
-    } catch (error) {
-      console.error('Error parsing person data:', error)
-      return null
-    }
-  }
-
-  // NEW: Function to detect which person block the cursor is in
-  const detectCurrentPerson = (lineNumber, content) => {
-    try {
-      const lines = content.split('\n')
-      
-      // Find all lines that start a person entry (lines with "- uid:")
-      const personStarts = []
-      lines.forEach((line, index) => {
-        if (line.trim().startsWith('- uid:')) {
-          personStarts.push(index + 1) // Monaco uses 1-based line numbers
-        }
-      })
-      
-      if (personStarts.length === 0) {
-        return -1
-      }
-      
-      // Determine which person block the cursor is in
-      for (let i = 0; i < personStarts.length; i++) {
-        const startLine = personStarts[i]
-        const endLine = personStarts[i + 1] ? personStarts[i + 1] - 1 : lines.length
-        
-        if (lineNumber >= startLine && lineNumber <= endLine) {
-          return i // Return person index (0-based)
-        }
-      }
-      
-      return -1
-    } catch (error) {
-      console.error('Error detecting person:', error)
-      return -1
-    }
-  }
-
+  // Logging helper
   const addLog = (type, message) => {
     const timestamp = new Date().toLocaleTimeString()
-    const newLog = {
-      type: type,
-      message: message,
-      timestamp: timestamp
-    }
+    const newLog = { type, message, timestamp }
     
     setLogs(prevLogs => {
       const updated = [...prevLogs, newLog]
-      if (updated.length > 50) {
-        updated.shift()
-      }
+      if (updated.length > 50) updated.shift()
       return updated
     })
   }
 
-  const resetEditor = () => {
-    if (editorRef.current) {
-      editorRef.current.setValue(exampleYCard)
-      setOriginalContent(exampleYCard)
-      addLog('info', 'Editor reset to example data')
-      alert(' Editor Reset\n\nEditor content has been reset to example data')
+  // Update person data when cursor moves
+  const updatePersonData = (lineNumber, content) => {
+    const personIndex = manager.detectPersonAtLine(lineNumber, content)
+    setCurrentPersonIndex(personIndex)
+    
+    if (personIndex >= 0) {
+      const personData = manager.extractPerson(personIndex, content)
+      setCurrentPersonData(personData)
+      addLog('info', `Editing Person ${personIndex + 1}`)
+    } else {
+      setCurrentPersonData(null)
     }
   }
 
+  // Reset editor
+  const resetEditor = () => {
+    if (!editorRef.current) return
+    
+    const defaultContent = manager.reset()
+    editorRef.current.setValue(defaultContent)
+    addLog('info', 'Editor reset to example data')
+    alert(' Editor Reset\n\nEditor content has been reset to example data')
+  }
+
+  // Show diff
   const handleDiff = () => {
     if (!editorRef.current) {
       alert('Editor not ready')
@@ -181,115 +77,55 @@ people:
 
     const currentContent = editorRef.current.getValue()
     
-    if (currentContent === originalContent) {
+    if (!manager.hasChanges(currentContent)) {
       addLog('info', 'No changes detected')
-      alert(' No Changes\n\nThe document has not been modified')
+      alert('ℹ No Changes\n\nThe document has not been modified')
       return
     }
+    
     setModifiedContent(currentContent)
     addLog('info', 'Opening diff view...')
     setShowDiffModal(true)
   }
 
+  // Validate content
   const handleValidate = () => {
     if (!editorRef.current) {
       alert('Editor not ready')
       return
     }
+    
     addLog('info', 'Validation started...') 
-
     const content = editorRef.current.getValue()
+    const result = manager.validate(content)
     
-    try {
-      const parsed = yaml.load(content)
-      
-      if (!parsed || !parsed.people) {
-        addLog('error', 'Validation failed: Missing "people" array') 
-        alert(' Invalid YAML\n\nMissing "people" array')
-        return
-      }
-      
-      if (!Array.isArray(parsed.people)) {
-        addLog('error', 'Validation failed: "people" must be an array')
-        alert(' Invalid YAML\n\n"people" must be an array')
-        return
-      }
-
-      for (let i = 0; i < parsed.people.length; i++) {
-        const person = parsed.people[i]
-        
-        if (!person.name || person.name.trim() === '') {
-          addLog('error', `Validation failed: Person ${i + 1} missing "name"`)
-          alert(` Validation Failed\n\nPerson ${i + 1}: "name" is required`)
-          return
-        }
-        
-        if (!person.surname || person.surname.trim() === '') {
-          addLog('error', `Validation failed: Person ${i + 1} missing "surname"`)
-          alert(` Validation Failed\n\nPerson ${i + 1}: "surname" is required`)
-          return
-        }
-        
-        if (!person.uid || person.uid.trim() === '') {
-          addLog('error', `Validation failed: Person ${i + 1} missing "uid"`)
-          alert(` Validation Failed\n\nPerson ${i + 1}: "uid" is required`)
-          return
-        }
-        
-        if (!person.email || person.email.trim() === '') {
-          addLog('error', `Validation failed: Person ${i + 1} missing "email"`)
-          alert(` Validation Failed\n\nPerson ${i + 1}: "email" is required`)
-          return
-        }
-
-        if (person.phone && !Array.isArray(person.phone)) {
-          addLog('error', `Validation failed: Person ${i + 1} "phone" must be an array`)
-          alert(` Validation Failed\n\nPerson ${i + 1}: "phone" must be an array`)
-          return
-        }
-
-        if (person.address && Array.isArray(person.address)) {
-          addLog('error', `Validation failed: Person ${i + 1} "address" should be an object`)
-          alert(` Validation Failed\n\nPerson ${i + 1}: "address" should be an object, not an array`)
-          return
-        }
-      }
-
-      const count = parsed.people.length
-      addLog('success', `Validation passed! Found ${count} people`)  
-      alert(` Valid YAML\n\n${count} people found`)
-      
-    } catch (error) {
-      addLog('error', `YAML parse error: ${error.message}`)
-      alert(` Invalid YAML\n\n${error.message}`)
+    if (result.valid) {
+      addLog('success', `Validation passed! Found ${result.count} people`)  
+      alert(`✓ Valid YAML\n\n${result.count} people found`)
+    } else {
+      addLog('error', `Validation failed: ${result.errors[0]}`)
+      alert(`✗ Validation Failed\n\n${result.errors[0]}`)
     }
   }
 
+  // Load from localStorage
   const handleRefresh = () => {
-    const saved = localStorage.getItem('ycard-data')
+    const result = manager.loadFromLocalStorage()
     
-    if (!saved) {
-      addLog('warning', 'No saved data found in localStorage')
-      alert(' No Saved Data\n\nNo data found in localStorage')
-      return
-    }
-    
-    try {
-      const parsed = JSON.parse(saved)
-      const yamlContent = yaml.dump(parsed)
-      
+    if (result.success) {
       if (editorRef.current) {
-        editorRef.current.setValue(yamlContent)
-        setOriginalContent(yamlContent)
+        editorRef.current.setValue(result.content)
+        manager.updateOriginal(result.content)
         addLog('success', 'Data loaded from localStorage')
-        alert(' Data Loaded\n\nData loaded from localStorage')
+        alert('✓ Data Loaded\n\nData loaded from localStorage')
       }
-    } catch (error) {
-      addLog('error', `Error loading data: ${error.message}`)
-      alert(` Error Loading Data\n\n${error.message}`)
+    } else {
+      addLog('warning', result.error)
+      alert(`ℹ ${result.error}`)
     }
   }
 
+  // Save data
   const handleSave = () => {
     if (!editorRef.current) {
       alert('Editor not ready')
@@ -299,71 +135,43 @@ people:
     addLog('info', 'Save initiated...')
     const content = editorRef.current.getValue()
     
-    try {
-      const parsed = yaml.load(content)
-      
-      if (!parsed || !parsed.people) {
-        addLog('error', 'Save failed: Missing "people" array')
-        alert(' Cannot Save\n\nMissing "people" array in YAML')
-        return
-      }
-      
-      if (!Array.isArray(parsed.people)) {
-        addLog('error', 'Save failed: "people" must be an array')
-        alert(' Cannot Save\n\n"people" must be an array')
-        return
-      }
-      
-      for (let i = 0; i < parsed.people.length; i++) {
-        const person = parsed.people[i]
-        
-        if (!person.name || person.name.trim() === '') {
-          addLog('error', `Save failed: Person ${i + 1} missing "name"`)
-          alert(` Cannot Save\n\nPerson ${i + 1}: "name" is required`)
-          return
-        }
-        
-        if (!person.surname || person.surname.trim() === '') {
-          addLog('error', `Save failed: Person ${i + 1} missing "surname"`)
-          alert(` Cannot Save\n\nPerson ${i + 1}: "surname" is required`)
-          return
-        }
-        
-        if (!person.uid || person.uid.trim() === '') {
-          addLog('error', `Save failed: Person ${i + 1} missing "uid"`)
-          alert(` Cannot Save\n\nPerson ${i + 1}: "uid" is required`)
-          return
-        }
-        
-        if (!person.email || person.email.trim() === '') {
-          addLog('error', `Save failed: Person ${i + 1} missing "email"`)
-          alert(` Cannot Save\n\nPerson ${i + 1}: "email" is required`)
-          return
-        }
-      }
-      
-      const jsonData = JSON.stringify(parsed, null, 2)
-
-      if (onSave) {
+    // Validate first
+    const validation = manager.validate(content)
+    if (!validation.valid) {
+      addLog('error', `Save failed: ${validation.errors[0]}`)
+      alert(`✗ Cannot Save\n\n${validation.errors[0]}`)
+      return
+    }
+    
+    if (onSave) {
+      // Use custom save function
+      try {
+        const parsed = manager.parse(content)
+        const jsonData = JSON.stringify(parsed, null, 2)
         addLog('info', 'Calling custom save function...')
         onSave(jsonData, parsed)
-        addLog('success', `Data passed to parent via onSave`)
-      } else {
-        localStorage.setItem('ycard-data', jsonData)
-        addLog('success', `Saved ${parsed.people.length} people to localStorage`)
-        alert(` Saved Successfully!\n\n${parsed.people.length} people saved to localStorage`)
+        addLog('success', 'Data passed to parent via onSave')
+        manager.updateOriginal(content)
+      } catch (error) {
+        addLog('error', `Save failed: ${error.message}`)
+        alert(`✗ Save Failed\n\n${error.message}`)
       }
-      
-    } catch (error) {
-      addLog('error', `Save failed: ${error.message}`)
-      alert(` Cannot Save - Invalid YAML\n\n${error.message}`)
+    } else {
+      // Save to localStorage
+      const result = manager.saveToLocalStorage(content)
+      if (result.success) {
+        addLog('success', `Saved ${result.count} people to localStorage`)
+        alert(`✓ Saved Successfully!\n\n${result.count} people saved to localStorage`)
+        manager.updateOriginal(content)
+      } else {
+        addLog('error', `Save failed: ${result.error}`)
+        alert(`✗ Cannot Save\n\n${result.error}`)
+      }
     }
   }
 
   const handleClose = () => {
-    if (onClose) {
-      onClose();  
-    }
+    if (onClose) onClose()
   }
 
   if (!isOpen) return null
@@ -373,12 +181,7 @@ people:
       <div className="modal-content">
         <div className="modal-header">
           <h2>yCard YAML Editor</h2>
-          <button 
-            onClick={() => (handleClose())}
-            className="close-button"
-          >
-            ✕
-          </button>
+          <button onClick={handleClose} className="close-button">✕</button>
         </div>
       
         <div className="toolbar">
@@ -391,7 +194,6 @@ people:
           
           <div className="toolbar-divider"></div>
           
-          {/* NEW: Show current editing position */}
           {currentPersonIndex >= 0 && (
             <>
               <span style={{ 
@@ -442,61 +244,43 @@ people:
             <Editor
               height="100%"
               defaultLanguage="yaml"
-              defaultValue={exampleYCard}
+              defaultValue={manager.getDefaultContent()}
               theme={isDarkTheme ? "vs-dark" : "light"}
               onMount={(editor) => {
                 editorRef.current = editor
                 
-                // NEW: Add cursor position tracking
+                // Cursor position tracking
                 editor.onDidChangeCursorPosition((e) => {
                   const line = e.position.lineNumber
                   setCursorLine(line)
-                  
                   const content = editor.getValue()
-                  const personIndex = detectCurrentPerson(line, content)
-                  setCurrentPersonIndex(personIndex)
-                  
-                  // NEW: Extract person data
-                  if (personIndex >= 0) {
-                    const personData = extractPersonData(personIndex, content)
-                    setCurrentPersonData(personData)
-                    addLog('info', `Editing Person ${personIndex + 1}`)
-                  } else {
-                    setCurrentPersonData(null)
-                  }
+                  updatePersonData(line, content)
                 })
                 
-                // NEW: Add content change tracking for live updates
+                // Content change tracking
                 editor.onDidChangeModelContent(() => {
                   if (currentPersonIndex >= 0) {
                     const content = editor.getValue()
-                    const personData = extractPersonData(currentPersonIndex, content)
+                    const personData = manager.extractPerson(currentPersonIndex, content)
                     setCurrentPersonData(personData)
                   }
                 })
                 
-                const saved = localStorage.getItem('ycard-data')
-                
-                if (saved) {
-                  try {
-                    const parsed = JSON.parse(saved)
-                    const yamlContent = yaml.dump(parsed)
-                    editor.setValue(yamlContent)
-                    setOriginalContent(yamlContent)
-                    addLog('success', 'Loaded saved data from localStorage')
-                  } catch (error) {
-                    setOriginalContent(exampleYCard)
-                    addLog('warning', 'Could not load saved data, using example')
-                  }
+                // Load saved data if available
+                const loadResult = manager.loadFromLocalStorage()
+                if (loadResult.success) {
+                  editor.setValue(loadResult.content)
+                  manager.updateOriginal(loadResult.content)
+                  addLog('success', 'Loaded saved data from localStorage')
                 } else {
-                  setOriginalContent(exampleYCard)
+                  manager.updateOriginal(manager.getDefaultContent())
                   addLog('success', 'Editor initialized with example data')
                 }
               }}
             />
           </div>
 
-          {/* NEW: Card Preview Panel */}
+          {/* Card Preview Panel */}
           {currentPersonData && (
             <div className={`card-preview-panel ${isDarkTheme ? 'dark' : 'light'}`}>
               <h3 className={`card-preview-title ${isDarkTheme ? 'dark' : 'light'}`}>
@@ -508,9 +292,9 @@ people:
                 <div className={`card-header ${isDarkTheme ? 'dark' : 'light'}`}>
                   <div className="card-header-content">
                     {currentPersonData.uid && (
-                        <div className={`card-uid ${isDarkTheme ? 'dark' : 'light'}`} style={{ marginBottom: '8px' }}>
-                          ID: {currentPersonData.uid}
-                        </div>
+                      <div className={`card-uid ${isDarkTheme ? 'dark' : 'light'}`} style={{ marginBottom: '8px' }}>
+                        ID: {currentPersonData.uid}
+                      </div>
                     )}
                     <h2 className={`card-name ${isDarkTheme ? 'dark' : 'light'}`}>
                       {currentPersonData.name || <span className="card-name-placeholder">No name</span>}{' '}
@@ -552,21 +336,21 @@ people:
                   </div>
                   
                   {currentPersonData.email ? (
-                    <div className="card-contact-item filled email">
+                    <div className={`card-contact-item filled email ${isDarkTheme ? 'dark' : 'light'}`}>
                       📧 {currentPersonData.email}
                     </div>
                   ) : (
-                    <div className="card-contact-item empty">
+                    <div className={`card-contact-item empty ${isDarkTheme ? 'dark' : 'light'}`}>
                       📧 No email
                     </div>
                   )}
                   
                   {currentPersonData.phone ? (
-                    <div className="card-contact-item filled">
+                    <div className={`card-contact-item filled phone ${isDarkTheme ? 'dark' : 'light'}`}>
                       📱 {currentPersonData.phone}
                     </div>
                   ) : (
-                    <div className="card-contact-item empty">
+                    <div className={`card-contact-item empty phone ${isDarkTheme ? 'dark' : 'light'}`}>
                       📱 No phone
                     </div>
                   )}
@@ -671,7 +455,7 @@ people:
               <DiffEditor
                 height="100%"
                 language="yaml"
-                original={originalContent}
+                original={manager.originalContent}
                 modified={modifiedContent}
                 theme={isDarkTheme ? "vs-dark" : "light"}
                 options={{
