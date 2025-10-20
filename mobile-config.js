@@ -1,11 +1,11 @@
 // Mobile configuration for Time Harbor iOS app
 // Updated: iOS app development phase - ready for testing
 
-// Configure Google OAuth plugin
-App.configurePlugin('cordova-plugin-googleplus', {
-  REVERSED_CLIENT_ID: 'com.googleusercontent.apps.1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2',
-  GOOGLE_CLIENT_ID: '1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2.apps.googleusercontent.com'
-});
+// Configure Google OAuth plugin - TEMPORARILY DISABLED for basic build
+// App.configurePlugin('cordova-plugin-googleplus', {
+//   REVERSED_CLIENT_ID: 'com.googleusercontent.apps.1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2',
+//   GOOGLE_CLIENT_ID: '1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2.apps.googleusercontent.com'
+// });
 
 // Configure iOS-specific settings
 App.info({

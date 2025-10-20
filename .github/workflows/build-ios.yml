@@ -62,7 +62,13 @@ jobs:
     - name: Install CocoaPods dependencies
       run: |
         cd build/ios/project
-        pod install --repo-update
+        echo "Installing CocoaPods dependencies..."
+        pod install --repo-update --verbose
+        echo "CocoaPods installation completed"
+        echo "Checking if Pods directory exists:"
+        ls -la Pods/ || echo "Pods directory not found"
+        echo "Checking workspace file:"
+        ls -la *.xcworkspace || echo "No workspace file found"
         
     - name: List iOS project contents
       run: |
@@ -71,6 +77,16 @@ jobs:
         ls -la
         echo "Looking for workspace files:"
         find . -name "*.xcworkspace" -o -name "*.xcodeproj"
+        
+    - name: Clean Xcode build
+      run: |
+        cd build/ios/project
+        echo "Cleaning Xcode build..."
+        if [ -f "Time Harbor.xcworkspace" ]; then
+          xcodebuild -workspace "Time Harbor.xcworkspace" -scheme "Time Harbor" clean
+        elif [ -d "Time Harbor.xcodeproj" ]; then
+          xcodebuild -project "Time Harbor.xcodeproj" -scheme "Time Harbor" clean
+        fi
         
     - name: Build iOS project with Xcode
       run: |
