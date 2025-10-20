@@ -65,9 +65,18 @@ jobs:
       with:
         xcode-version: latest-stable
         
+    - name: Install CocoaPods
+      run: |
+        echo "Installing CocoaPods..."
+        sudo gem install cocoapods
+        pod --version
+        
     - name: Install CocoaPods dependencies
       run: |
         cd build/ios/project
+        echo "Current directory: $(pwd)"
+        echo "Contents before CocoaPods:"
+        ls -la
         echo "Installing CocoaPods dependencies..."
         # Clean any existing Pods installation
         rm -rf Pods/ || echo "No existing Pods directory"
@@ -75,6 +84,10 @@ jobs:
         # Install CocoaPods with clean cache
         pod install --repo-update --verbose --clean-install
         echo "CocoaPods installation completed"
+        echo "Contents after CocoaPods:"
+        ls -la
+        echo "Checking if Podfile.lock exists:"
+        ls -la Podfile.lock || echo "Podfile.lock not found"
         echo "Checking if Pods directory exists:"
         ls -la Pods/ || echo "Pods directory not found"
         echo "Checking workspace file:"
