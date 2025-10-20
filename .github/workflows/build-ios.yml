@@ -54,11 +54,53 @@ jobs:
         ls -la build/ios/ || echo "No iOS build found"
         ls -la build/ios/project/ || echo "No iOS project found"
         
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+        
+    - name: Install CocoaPods dependencies
+      run: |
+        cd build/ios/project
+        pod install --repo-update
+        
+    - name: Build iOS project with Xcode
+      run: |
+        cd build/ios/project
+        xcodebuild -workspace timeharbor.xcworkspace -scheme timeharbor -configuration Release -destination generic/platform=iOS -archivePath timeharbor.xcarchive archive
+        
+    - name: Create ExportOptions.plist
+      run: |
+        mkdir -p build/ios/project
+        cat > build/ios/project/ExportOptions.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>compileBitcode</key>
+            <false/>
+        </dict>
+        </plist>
+        EOF
+        
+    - name: Export IPA file
+      run: |
+        cd build/ios/project
+        xcodebuild -exportArchive -archivePath timeharbor.xcarchive -exportPath . -exportOptionsPlist ExportOptions.plist
+        
     - name: Upload iOS build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: ios-app-build
         path: |
+          build/ios/project/timeharbor.ipa
+          build/ios/project/timeharbor.xcarchive
           build/ios/
         retention-days: 30
         
