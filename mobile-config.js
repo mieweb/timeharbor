@@ -7,10 +7,6 @@ App.configurePlugin('cordova-plugin-googleplus', {
   GOOGLE_CLIENT_ID: '1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2.apps.googleusercontent.com'
 });
 
-App.configurePlugin('phonegap-plugin-push', {
-  SENDER_ID: 'YOUR_FIREBASE_SENDER_ID' // Will be replaced with actual Firebase Sender ID
-});
-
 // Configure iOS-specific settings
 App.info({
   name: 'Time Harbor',
@@ -21,10 +17,7 @@ App.info({
   website: 'https://timeharbor.com'
 });
 
-// iOS-specific configuration
-App.configurePlugin('phonegap-plugin-push', {
-  SENDER_ID: 'YOUR_FIREBASE_SENDER_ID'
-});
+// Note: Push notifications will be configured later with proper Firebase setup
 
 // Configure app icons and splash screens
 App.icons({
