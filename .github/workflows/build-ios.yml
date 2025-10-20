@@ -64,10 +64,29 @@ jobs:
         cd build/ios/project
         pod install --repo-update
         
+    - name: List iOS project contents
+      run: |
+        cd build/ios/project
+        echo "Contents of iOS project directory:"
+        ls -la
+        echo "Looking for workspace files:"
+        find . -name "*.xcworkspace" -o -name "*.xcodeproj"
+        
     - name: Build iOS project with Xcode
       run: |
         cd build/ios/project
-        xcodebuild -workspace timeharbor.xcworkspace -scheme timeharbor -configuration Release -destination generic/platform=iOS -archivePath timeharbor.xcarchive archive
+        # Try to find the correct workspace/project file
+        if [ -f "Time Harbor.xcworkspace" ]; then
+          echo "Found Time Harbor.xcworkspace, building with workspace"
+          xcodebuild -workspace "Time Harbor.xcworkspace" -scheme "Time Harbor" -configuration Release -destination generic/platform=iOS -archivePath timeharbor.xcarchive archive
+        elif [ -d "Time Harbor.xcodeproj" ]; then
+          echo "Found Time Harbor.xcodeproj, building with project"
+          xcodebuild -project "Time Harbor.xcodeproj" -scheme "Time Harbor" -configuration Release -destination generic/platform=iOS -archivePath timeharbor.xcarchive archive
+        else
+          echo "No workspace or project found, listing all files:"
+          ls -la
+          exit 1
+        fi
         
     - name: Create ExportOptions.plist
       run: |
