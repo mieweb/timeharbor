@@ -102,6 +102,24 @@ const mcpTools = [
   {
     type: 'function',
     function: {
+      name: 'get_project_time_stats',
+      description: 'Gets time statistics for the current project (total time spent, number of tickets). Use this when the user asks about time spent, hours logged, or time tracking.',
+      parameters: {
+        type: 'object',
+        properties: {
+          days: {
+            type: 'number',
+            description: 'Number of days to look back (default: 30)',
+            default: 30
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'get_conversation_history',
       description: 'Retrieves past chat conversations for the current project to provide context from previous interactions',
       parameters: {
@@ -135,7 +153,7 @@ const toolHandlers = {
     const hoursInput = document.querySelector('[name="hours"]');
     const minutesInput = document.querySelector('[name="minutes"]');
     const secondsInput = document.querySelector('[name="seconds"]');
-    const teamSelect = document.querySelector('[name="team"]');
+    const teamSelect = document.querySelector('#teamSelect');
 
     const result = {
       success: true,
@@ -246,7 +264,7 @@ const toolHandlers = {
 
   get_project_history: async (params) => {
     // Get current team ID from the page
-    const teamSelect = document.querySelector('[name="team"]');
+    const teamSelect = document.querySelector('#teamSelect');
     if (!teamSelect || !teamSelect.value) {
       return {
         success: false,
@@ -255,13 +273,13 @@ const toolHandlers = {
     }
 
     const teamId = teamSelect.value;
-    const days = params.days || 7;
+    const days = params.days || 30;
     const limit = params.limit || 20;
 
     try {
       // Call Meteor method to get project history
       const history = await new Promise((resolve, reject) => {
-        Meteor.call('getRecentProjectTickets', teamId, days, limit, (error, result) => {
+        Meteor.call('getRecentProjectTickets', { teamId, days, limit }, (error, result) => {
           if (error) reject(error);
           else resolve(result);
         });
@@ -269,7 +287,7 @@ const toolHandlers = {
 
       return {
         success: true,
-        data: history,
+        tickets: history,
         message: `Retrieved ${history.length} recent tickets from the last ${days} days`
       };
     } catch (error) {
@@ -280,9 +298,44 @@ const toolHandlers = {
     }
   },
 
+  get_project_time_stats: async (params) => {
+    // Get current team ID from the page
+    const teamSelect = document.querySelector('#teamSelect');
+    if (!teamSelect || !teamSelect.value) {
+      return {
+        success: false,
+        error: 'No team selected. Please select a team first.'
+      };
+    }
+
+    const teamId = teamSelect.value;
+    const days = params.days || 30;
+
+    try {
+      // Call Meteor method to get time statistics
+      const stats = await new Promise((resolve, reject) => {
+        Meteor.call('getProjectTimeStats', { teamId, days }, (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        });
+      });
+
+      return {
+        success: true,
+        ...stats,
+        message: `Retrieved time stats: ${stats.totalFormatted} across ${stats.ticketCount} tickets in the last ${stats.days} days`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to retrieve time statistics: ${error.message}`
+      };
+    }
+  },
+
   get_conversation_history: async (params) => {
     // Get current team ID from the page
-    const teamSelect = document.querySelector('[name="team"]');
+    const teamSelect = document.querySelector('#teamSelect');
     if (!teamSelect || !teamSelect.value) {
       return {
         success: false,

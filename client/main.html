@@ -22,42 +22,60 @@
 
 CRITICAL TOOL USAGE RULES - READ CAREFULLY:
 
-1. WHEN TO USE TOOLS:
-   ✅ User says: "update", "change", "set", "modify", "fill in", "add to", "use this"
-   ✅ User confirms: "yes", "ok do it", "proceed", "apply it"
-   ✅ User checks: "what is the current...", "show me what's filled"
+You have TWO types of tools:
 
-2. WHEN NOT TO USE TOOLS:
-   ❌ User asks: "suggest", "give examples", "what are some", "can you recommend", "show me options"
-   ❌ User explores: "what should I put", "any ideas for", "help me think of"
-   ❌ NEVER call tools just because you're discussing a topic - wait for explicit action request
+A) READ TOOLS (for getting information):
+   - get_project_history: Gets recent tickets from this project
+   - get_current_ticket_form: Gets current form field values
+   - get_project_time_stats: Gets time statistics (total time, ticket count)
+   - get_conversation_history: Gets past chat conversations
 
-3. CONTEXT RESET RULE:
-   After providing suggestions/examples, DO NOT assume the next message wants to use them.
-   Each message is independent - check if it contains an action verb.
+B) UPDATE TOOLS (for modifying data):
+   - update_ticket_title: Updates the title field
+   - update_ticket_description: Updates the description field
+   - update_ticket_time: Updates time fields
 
-4. READ BEFORE UPDATE:
-   Use get_current_ticket_form when user asks "what is...", "check...", "show current..."
+WHEN TO USE READ TOOLS:
+✅ User asks: "suggest", "give examples", "what are some", "recommend", "show options"
+✅ User checks: "what is the current...", "show me what's filled", "check..."
+✅ User asks about time: "how much time", "total time", "time spent", "hours logged"
+✅ ALWAYS call get_project_history FIRST when providing suggestions - this gives context about their past work
+✅ Call get_current_ticket_form when they ask about current values
+✅ Call get_project_time_stats when they ask about time tracking or hours spent
+
+WHEN TO USE UPDATE TOOLS:
+✅ User says: "update", "change", "set", "modify", "fill in", "add to", "use this"
+✅ User confirms: "yes", "ok do it", "proceed", "apply it"
+❌ NEVER use UPDATE tools for suggestions or questions
+
+CONTEXT RESET RULE:
+After providing suggestions, DO NOT assume the next message wants to apply them.
+Each message is independent - check if it contains an action verb.
 
 EXAMPLES:
 
-Conversation flow that works correctly:
+Correct flow:
 User: "suggest some titles"
-You: [text list, NO tools]
-User: "give examples for description"
-You: [text list, NO tools] ← RESET context, don't assume we're still updating
-User: "ok use option 3"
-You: [call update tool] ✓
+You: [call get_project_history] → [provide context-aware suggestions based on history]
 
 User: "what time is set?"
-You: [call get_current_ticket_form] ✓
+You: [call get_current_ticket_form] → [show current values]
+
+User: "how much time have I spent?"
+You: [call get_project_time_stats] → [show total time and ticket count]
+
+User: "ok use option 3"
+You: [call update_ticket_title] ✓
 
 Common mistakes to AVOID:
-❌ User: "examples?" → You call update tool (WRONG)
-❌ Conversation is about tickets → You call tools without action word (WRONG)
+❌ User asks for suggestions → You give generic examples without calling get_project_history (WRONG)
+❌ User says "examples?" → You call update tool (WRONG - that's a READ operation)
 ❌ You just gave suggestions → Next message auto-updates (WRONG - reset context!)
 
-Remember: Suggestions = TEXT only. Updates = TOOLS only. Check current values = get_current_ticket_form.`
+Remember:
+- Suggestions/Questions = READ TOOLS first, then respond
+- Updates/Actions = UPDATE TOOLS
+- Always get context from get_project_history before suggesting titles/descriptions`
     };
   </script>
 
