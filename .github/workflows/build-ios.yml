@@ -69,7 +69,11 @@ jobs:
       run: |
         cd build/ios/project
         echo "Installing CocoaPods dependencies..."
-        pod install --repo-update --verbose
+        # Clean any existing Pods installation
+        rm -rf Pods/ || echo "No existing Pods directory"
+        rm -f Podfile.lock || echo "No existing Podfile.lock"
+        # Install CocoaPods with clean cache
+        pod install --repo-update --verbose --clean-install
         echo "CocoaPods installation completed"
         echo "Checking if Pods directory exists:"
         ls -la Pods/ || echo "Pods directory not found"
