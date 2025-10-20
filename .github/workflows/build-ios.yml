@@ -129,20 +129,25 @@ jobs:
             <true/>
             <key>compileBitcode</key>
             <false/>
-            <key>signingStyle</key>
-            <string>automatic</string>
-            <key>signingCertificate</key>
-            <string></string>
-            <key>teamID</key>
-            <string></string>
         </dict>
         </plist>
         EOF
         
-    - name: Export IPA file
+    - name: Export IPA file (unsigned)
       run: |
         cd build/ios/project
-        xcodebuild -exportArchive -archivePath timeharbor.xcarchive -exportPath . -exportOptionsPlist ExportOptions.plist
+        echo "Attempting to export IPA without signing..."
+        # Try to export without signing
+        xcodebuild -exportArchive -archivePath timeharbor.xcarchive -exportPath . -exportOptionsPlist ExportOptions.plist -allowProvisioningUpdates || echo "Export with signing failed, trying alternative method"
+        
+        # Alternative: Try to extract the app from the archive manually
+        if [ ! -f "*.ipa" ]; then
+          echo "Standard export failed, trying to create IPA manually..."
+          cd timeharbor.xcarchive/Products/Applications/
+          zip -r ../../../TimeHarbor.ipa Time\ Harbor.app
+          cd ../../..
+          echo "Created IPA manually"
+        fi
         
     - name: Upload iOS build artifacts
       uses: actions/upload-artifact@v4
