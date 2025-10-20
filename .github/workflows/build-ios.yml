@@ -32,6 +32,12 @@ jobs:
         npm install
         meteor npm install
         
+    - name: Clean Meteor build cache
+      run: |
+        echo "Cleaning Meteor build cache..."
+        rm -rf .meteor/local/cordova-build || echo "No cordova-build cache to clean"
+        rm -rf .meteor/local/build || echo "No build cache to clean"
+        
     - name: Add iOS platform
       run: |
         meteor add-platform ios || echo "iOS platform already exists or failed to add"
