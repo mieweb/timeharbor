@@ -65,33 +65,22 @@ jobs:
       with:
         xcode-version: latest-stable
         
-    - name: Install CocoaPods
-      run: |
-        echo "Installing CocoaPods..."
-        sudo gem install cocoapods
-        pod --version
-        
-    - name: Install CocoaPods dependencies
+    - name: Check iOS project structure
       run: |
         cd build/ios/project
         echo "Current directory: $(pwd)"
-        echo "Contents before CocoaPods:"
+        echo "Contents of iOS project directory:"
         ls -la
-        echo "Installing CocoaPods dependencies..."
-        # Clean any existing Pods installation
-        rm -rf Pods/ || echo "No existing Pods directory"
-        rm -f Podfile.lock || echo "No existing Podfile.lock"
-        # Install CocoaPods with clean cache
-        pod install --repo-update --verbose --clean-install
-        echo "CocoaPods installation completed"
-        echo "Contents after CocoaPods:"
-        ls -la
-        echo "Checking if Podfile.lock exists:"
-        ls -la Podfile.lock || echo "Podfile.lock not found"
-        echo "Checking if Pods directory exists:"
-        ls -la Pods/ || echo "Pods directory not found"
-        echo "Checking workspace file:"
-        ls -la *.xcworkspace || echo "No workspace file found"
+        echo "Looking for Podfile:"
+        ls -la Podfile* || echo "No Podfile found"
+        echo "Looking for workspace/project files:"
+        find . -name "*.xcworkspace" -o -name "*.xcodeproj"
+        
+    - name: Skip CocoaPods (no dependencies needed)
+      run: |
+        cd build/ios/project
+        echo "Skipping CocoaPods installation since we removed Google OAuth plugin"
+        echo "This should build without external dependencies"
         
     - name: List iOS project contents
       run: |
@@ -111,18 +100,15 @@ jobs:
           xcodebuild -project "Time Harbor.xcodeproj" -scheme "Time Harbor" clean
         fi
         
-    - name: Build iOS project with Xcode
+    - name: Build iOS project [without CocoaPods]
       run: |
         cd build/ios/project
-        # Try to find the correct workspace/project file
-        if [ -f "Time Harbor.xcworkspace" ]; then
-          echo "Found Time Harbor.xcworkspace, building with workspace"
-          xcodebuild -workspace "Time Harbor.xcworkspace" -scheme "Time Harbor" -configuration Release -destination generic/platform=iOS -archivePath timeharbor.xcarchive archive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
-        elif [ -d "Time Harbor.xcodeproj" ]; then
-          echo "Found Time Harbor.xcodeproj, building with project"
-          xcodebuild -project "Time Harbor.xcodeproj" -scheme "Time Harbor" -configuration Release -destination generic/platform=iOS -archivePath timeharbor.xcarchive archive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+        # Use project file directly (no CocoaPods workspace needed)
+        if [ -d "Time Harbor.xcodeproj" ]; then
+          echo "Found Time Harbor.xcodeproj, building with project file"
+          xcodebuild -project "Time Harbor.xcodeproj" -scheme "Time Harbor" -configuration Release -destination generic/platform=iOS LANGUAGE=en US_region=en -archivePath timeharbor.xcarchive archive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
         else
-          echo "No workspace or project found, listing all files:"
+          echo "No project file found, listing all files:"
           ls -la
           exit 1
         fi
