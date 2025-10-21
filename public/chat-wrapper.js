@@ -173,9 +173,15 @@ class ChatWrapper {
     this.dragOffset.x = e.clientX - rect.left;
     this.dragOffset.y = e.clientY - rect.top;
 
-    // Store initial position
+    // Store current absolute position (where it actually is on screen)
     this.currentPosition.x = rect.left;
     this.currentPosition.y = rect.top;
+
+    // Remove bottom/right positioning to prevent conflicts with transform
+    this.container.style.bottom = 'auto';
+    this.container.style.right = 'auto';
+    this.container.style.left = '0';
+    this.container.style.top = '0';
   }
 
   drag(e) {

@@ -43,7 +43,8 @@
   flex-direction: column;
   z-index: 9999;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease, box-shadow 0.3s ease;
+  transform: translate(0, 0);
 }
 
 #ozwell-chat-container.open {
@@ -59,8 +60,9 @@
   opacity: 0.9;
   cursor: move;
   user-select: none;
-  will-change: left, top;
+  will-change: transform;
   pointer-events: auto;
+  transition: none;
 }
 
 #ozwell-chat-container.dragging * {
