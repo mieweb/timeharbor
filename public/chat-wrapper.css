@@ -56,8 +56,15 @@
 }
 
 #ozwell-chat-container.dragging {
-  opacity: 0.8;
+  opacity: 0.9;
   cursor: move;
+  user-select: none;
+  will-change: left, top;
+  pointer-events: auto;
+}
+
+#ozwell-chat-container.dragging * {
+  pointer-events: none;
 }
 
 /* Chat Header */

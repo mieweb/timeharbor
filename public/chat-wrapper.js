@@ -9,6 +9,8 @@ class ChatWrapper {
     this.isMinimized = false;
     this.isDragging = false;
     this.dragOffset = { x: 0, y: 0 };
+    this.currentPosition = { x: 0, y: 0 };
+    this.rafId = null;
 
     this.init();
   }
@@ -163,9 +165,17 @@ class ChatWrapper {
     this.isDragging = true;
     this.container.classList.add('dragging');
 
+    // Cache container dimensions (they don't change during drag)
+    this.containerWidth = this.container.offsetWidth;
+    this.containerHeight = this.container.offsetHeight;
+
     const rect = this.container.getBoundingClientRect();
     this.dragOffset.x = e.clientX - rect.left;
     this.dragOffset.y = e.clientY - rect.top;
+
+    // Store initial position
+    this.currentPosition.x = rect.left;
+    this.currentPosition.y = rect.top;
   }
 
   drag(e) {
@@ -173,26 +183,39 @@ class ChatWrapper {
 
     e.preventDefault();
 
-    let newX = e.clientX - this.dragOffset.x;
-    let newY = e.clientY - this.dragOffset.y;
+    // Just store the mouse position, don't update DOM yet
+    const newX = e.clientX - this.dragOffset.x;
+    const newY = e.clientY - this.dragOffset.y;
 
-    // Keep within viewport bounds
-    const maxX = window.innerWidth - this.container.offsetWidth;
-    const maxY = window.innerHeight - this.container.offsetHeight;
+    // Keep within viewport bounds (use cached dimensions)
+    const maxX = window.innerWidth - this.containerWidth;
+    const maxY = window.innerHeight - this.containerHeight;
 
-    newX = Math.max(0, Math.min(newX, maxX));
-    newY = Math.max(0, Math.min(newY, maxY));
+    this.currentPosition.x = Math.max(0, Math.min(newX, maxX));
+    this.currentPosition.y = Math.max(0, Math.min(newY, maxY));
 
-    this.container.style.left = newX + 'px';
-    this.container.style.top = newY + 'px';
-    this.container.style.right = 'auto';
-    this.container.style.bottom = 'auto';
+    // Request animation frame for smooth updates
+    if (!this.rafId) {
+      this.rafId = requestAnimationFrame(() => this.updatePosition());
+    }
+  }
+
+  updatePosition() {
+    // Update DOM only once per frame using transform (GPU accelerated)
+    this.container.style.transform = `translate(${this.currentPosition.x}px, ${this.currentPosition.y}px)`;
+    this.rafId = null;
   }
 
   stopDrag() {
     if (this.isDragging) {
       this.isDragging = false;
       this.container.classList.remove('dragging');
+
+      // Cancel any pending animation frame
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
     }
   }
 
