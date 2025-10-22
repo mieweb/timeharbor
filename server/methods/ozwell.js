@@ -1,6 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 import { check, Match } from 'meteor/check';
-import { OzwellWorkspaces, OzwellUsers, OzwellConversations, OzwellPrompts, Teams, Tickets, ClockEvents } from '../../collections.js';
+import { OzwellWorkspaces, OzwellUsers, OzwellConversations, Teams, Tickets, ClockEvents } from '../../collections.js';
 import axios from 'axios';
 
 const DEFAULT_REFERENCE_BASE_URL = 'http://localhost:3000/v1';

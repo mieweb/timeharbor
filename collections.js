@@ -10,4 +10,3 @@ export const ClockEvents = new Mongo.Collection('clockevents');
 export const OzwellWorkspaces = new Mongo.Collection('ozwellworkspaces');
 export const OzwellUsers = new Mongo.Collection('ozwellusers');
 export const OzwellConversations = new Mongo.Collection('ozwellconversations');
-export const OzwellPrompts = new Mongo.Collection('ozwellprompts');
