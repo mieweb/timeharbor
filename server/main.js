@@ -11,6 +11,8 @@ import { ticketMethods } from './methods/tickets.js';
 import { clockEventMethods } from './methods/clockEvents.js';
 // Import calendar methods
 import './methods/calendar.js';
+// Import notification methods
+import { notificationMethods } from './methods/notifications.js';
 
 // Load environment variables from .env file
 import dotenv from 'dotenv';
@@ -252,6 +254,7 @@ Meteor.methods({
   ...ticketMethods,
   ...clockEventMethods,
   ...ozwellMethods,
+  ...notificationMethods,
 
   'participants.create'(name) {
     check(name, String);

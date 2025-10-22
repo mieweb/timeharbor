@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Time Harbor Icon Generator</title>
+</head>
+<body>
+    <canvas id="canvas" width="192" height="192"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Blue gradient background (Time Harbor brand color)
+        const gradient = ctx.createLinearGradient(0, 0, 192, 192);
+        gradient.addColorStop(0, '#4F46E5'); // Indigo
+        gradient.addColorStop(1, '#3730A3'); // Darker indigo
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 192, 192);
+        
+        // Draw white clock icon
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.lineWidth = 8;
+        
+        // Clock circle
+        ctx.beginPath();
+        ctx.arc(96, 96, 60, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Clock hands
+        // Hour hand (pointing to 3)
+        ctx.beginPath();
+        ctx.moveTo(96, 96);
+        ctx.lineTo(96 + 35, 96);
+        ctx.lineWidth = 6;
+        ctx.stroke();
+        
+        // Minute hand (pointing to 12)
+        ctx.beginPath();
+        ctx.moveTo(96, 96);
+        ctx.lineTo(96, 96 - 45);
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        
+        // Download link
+        const link = document.createElement('a');
+        link.download = 'timeharbor-icon.png';
+        link.href = canvas.toDataURL();
+        link.textContent = 'Download Icon';
+        link.style.cssText = 'display: block; margin: 20px; font-size: 18px;';
+        document.body.appendChild(link);
+        
+        // Auto-download
+        link.click();
+    </script>
+</body>
+</html>
+

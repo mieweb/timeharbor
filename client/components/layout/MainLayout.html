@@ -1,12 +1,12 @@
 <template name="mainLayout">
-  <header class="navbar bg-primary text-primary-content shadow mb-6">
+  <header class="navbar bg-primary text-primary-content shadow mb-6 sticky top-0 z-50">
     <div class="flex-1">
       <h2 class="text-2xl font-bold">TimeHarbor</h2>
     </div>
     <nav class="flex gap-4">
       <a href="/" class="btn btn-ghost hover:bg-primary-focus">Home</a>
       <a href="/teams" class="btn btn-ghost hover:bg-primary-focus">Teams</a>
-      <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Projects</a>
+      <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Tickets</a>
       <a href="/calendar" class="btn btn-ghost hover:bg-primary-focus">Calendar</a>
       <a href="/admin" class="btn btn-ghost hover:bg-primary-focus">Admin Review</a>
       <a href="/settings" class="btn btn-ghost hover:bg-primary-focus">Settings</a>
@@ -28,11 +28,10 @@
     <span>{{logoutMessage}}</span>
   </div>
   {{/if}}
-
-  <main class="container mx-auto px-4">
+  <main class="container mx-auto px-4 pb-20">
     {{> Template.dynamic template=main}}
   </main>
-  <footer class="footer p-4 bg-base-200 text-base-content mt-8">
+  <footer class="footer fixed bottom-0 left-0 right-0 p-4 bg-base-200 text-base-content border-t border-base-300">
     <p>&copy; 2025 TimeHarbor - Your Personal Time Tracking Assistant</p>
   </footer>
 </template>

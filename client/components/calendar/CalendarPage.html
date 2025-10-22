@@ -2,8 +2,8 @@
   <div class="max-w-6xl mx-auto p-6">
     <!-- Header -->
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Calendar Integration</h1>
-      <p class="text-gray-600 text-lg">
+      <h1 class="text-3xl font-bold text-base-content mb-2">Calendar Integration</h1>
+      <p class="text-base-content opacity-70 text-lg">
         Connect your Google Calendar to automatically sync and log time from your meetings.
       </p>
     </div>
@@ -11,9 +11,9 @@
     <!-- Calendar Events Section -->
     <div class="mb-8">
       <div class="mb-4">
-        <h3 class="text-xl font-semibold">Your Calendar Events</h3>
+        <h3 class="text-xl font-semibold text-base-content">Your Calendar Events</h3>
         {{#if isSyncingCalendar}}
-          <p class="text-sm text-gray-500 mt-1">Loading events...</p>
+          <p class="text-sm text-base-content opacity-60 mt-1">Loading events...</p>
         {{/if}}
       </div>
       
@@ -38,9 +38,9 @@
                 <div class="flex-1">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-lg">📅</span>
-                    <h4 class="font-semibold text-gray-800">{{title}}</h4>
+                    <h4 class="font-semibold text-base-content">{{title}}</h4>
                   </div>
-                  <p class="text-sm text-gray-600 mb-2">
+                  <p class="text-sm text-base-content opacity-70 mb-2">
                     <span class="font-medium">{{date}}</span> • 
                     <span>{{time}} - {{endTime}}</span> • 
                     <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{{duration}} min</span>
@@ -58,21 +58,21 @@
         </div>
       {{else}}
         {{#unless isSyncingCalendar}}
-          <div class="text-center py-8 text-gray-500">
+          <div class="text-center py-8 text-base-content opacity-60">
             {{#if hasGoogleAccount}}
               <div class="mb-4">
-                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-16 h-16 mx-auto mb-4 text-base-content opacity-40" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
                 </svg>
-                <p class="text-lg font-medium text-gray-900 mb-2">No calendar events found</p>
+                <p class="text-lg font-medium text-base-content mb-2">No calendar events found</p>
                 <p class="mb-4">Click "Sync Calendar" to fetch your meetings from Google Calendar.</p>
               </div>
             {{else}}
               <div>
-                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-16 h-16 mx-auto mb-4 text-base-content opacity-40" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
                 </svg>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Connect Google Calendar</h3>
+                <h3 class="text-lg font-medium text-base-content mb-2">Connect Google Calendar</h3>
                 <p class="mb-4">Connect your Google account to see calendar events and log meeting time.</p>
                 <button id="connect-google-account" class="btn btn-primary">
                   Connect Google Account

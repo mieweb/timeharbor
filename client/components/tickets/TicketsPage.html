@@ -1,64 +1,125 @@
 <template name="tickets">
-  <h3 class="text-xl font-semibold mb-4">My Activities & Tasks</h3>
+  <h3 class="text-xl font-semibold mb-4">My Tickets & Activities</h3>
   {{#if userTeams.length}}
-  <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-    <label for="teamSelect" class="label">Select Project:</label>
-    <select id="teamSelect" class="select select-bordered">
-      {{#each userTeams}}
-      <option value="{{_id}}" {{isSelectedTeam _id}}>{{name}}</option>
-      {{/each}}
-    </select>
-    <button id="showCreateTicketForm" class="btn btn-primary">Create Activity</button>
-  </div>
-  <div class="mb-4 flex items-center gap-4">
-    {{#if isClockedInForTeam selectedTeamId}}
-    <button id="clockOutBtn" class="btn bg-neutral hover:bg-neutral-focus text-neutral-content">Stop Session</button>
-    {{else}}
-    <button id="clockInBtn" class="btn bg-gray-700 text-white hover:bg-opacity-90">Start Session</button>
-    {{/if}}
-  </div>
-  {{#if showCreateTicketForm}}
-  <form id="createTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-    <div class="flex items-center gap-3">
-      <input type="text" name="title" placeholder="Activity Title (e.g., 'Math Homework', 'Robot Assembly')"
-        class="input input-bordered" required />
+    <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+      <label for="teamSelect" class="label">Select Project:</label>
+      <select id="teamSelect" class="select select-bordered">
+        {{#each userTeams}}
+          <option value="{{_id}}" {{isSelectedTeam _id}}>{{name}}</option>
+        {{/each}}
+      </select>
+      <button id="showCreateTicketForm" class="btn btn-primary">Create Activity</button>
     </div>
-    <div class="flex items-center gap-3">
-      <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered" />
-    </div>
-    <div class="flex gap-2">
-      <input type="number" name="hours" min="0" placeholder="Hours" class="input input-bordered w-24" />
-      <input type="number" name="minutes" min="0" max="59" placeholder="Minutes" class="input input-bordered w-24" />
-      <input type="number" name="seconds" min="0" max="59" placeholder="Seconds" class="input input-bordered w-24" />
-    </div>
-    <div class="flex gap-2">
-      <button type="submit" class="btn btn-primary">Create</button>
-      <button type="button" id="cancelCreateTicket" class="btn btn-outline">Cancel</button>
-    </div>
-  </form>
-  {{/if}}
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {{#each tickets}}
-    <div class="card bg-base-100 shadow-md p-4 {{#if isActive _id}}border border-slate-600{{/if}}">
-      <div class="ticket-title text-lg font-bold mb-2">{{title}}</div>
-      <div class="ticket-time mb-2"><span class="badge bg-gray-700 text-white">{{formatTime displayTime}}</span></div>
-      {{#if github}}
-      <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus">Reference</a>
+    <div class="mb-4 flex items-center gap-4">
+      {{#if isClockedInForTeam selectedTeamId}}
+        <button id="clockOutBtn" class="btn btn-outline btn-primary">Clock Out</button>
+        <div class="flex items-center gap-2">
+          <img src="/timeharbor-icon.svg" alt="Timer" class="w-8 h-8" />
+          <span class="font-mono text-2xl font-bold">{{currentSessionTime}}</span>
+        </div>
+      {{else}}
+        <button id="clockInBtn" class="btn btn-outline btn-primary">Clock In</button>
       {{/if}}
-      <button class="activate-ticket {{getButtonClasses _id}} mt-2 w-full" data-id="{{_id}}"
-        title="{{getButtonTooltip _id}}">
-        {{#if isActive _id}}
-        Stop
-        {{else}}
-        Start
-        {{/if}}
-      </button>
     </div>
-    {{/each}}
-  </div>
+    {{#if showCreateTicketForm}}
+      <form id="createTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
+        <input
+          type="text"
+          name="title"
+          placeholder="Activity Title (e.g., 'Create Dashboard', 'Implement Authentication')"
+          class="input input-bordered"
+          required
+        />
+        <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered" />
+        <div class="flex flex-wrap gap-2">
+          <input type="number" name="hours" min="0" placeholder="Hours" class="input input-bordered w-24" />
+          <input type="number" name="minutes" min="0" max="59" placeholder="Minutes" class="input input-bordered w-24" />
+          <input type="number" name="seconds" min="0" max="59" placeholder="Seconds" class="input input-bordered w-24" />
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary">Create</button>
+          <button type="button" id="cancelCreateTicket" class="btn btn-outline">Cancel</button>
+        </div>
+      </form>
+    {{/if}}
+    {{#if showEditTicketForm}}
+      <form id="editTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
+        <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
+        <input
+          type="text"
+          name="title"
+          value="{{editingTicket.title}}"
+          placeholder="Ticket Title"
+          class="input input-bordered"
+          required
+        />
+        <input
+          type="text"
+          name="github"
+          value="{{editingTicket.github}}"
+          placeholder="Reference Link or Notes"
+          class="input input-bordered"
+        />
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary">Update</button>
+          <button type="button" id="cancelEditTicket" class="btn btn-outline">Cancel</button>
+        </div>
+      </form>
+    {{/if}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {{#each tickets}}
+        <div class="card bg-base-100 shadow-md p-4 h-64 flex flex-col {{#if isActive _id}}border border-slate-600{{/if}}">
+          <div class="flex justify-between items-start mb-2">
+            <div class="ticket-title text-lg font-bold line-clamp-3 overflow-hidden flex-1" title="{{title}}">{{title}}</div>
+            <div class="flex gap-1 ml-2">
+              <button class="edit-ticket-btn btn btn-ghost btn-xs" data-id="{{_id}}" title="Edit Ticket">
+                <i class="fa-solid fa-pen text-primary"></i>
+              </button>
+              <button class="delete-ticket-btn btn btn-ghost btn-xs text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Ticket">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+          <div class="ticket-time mb-2">
+            <span class="badge bg-gray-700 text-white">{{formatTime displayTime}}</span>
+          </div>
+          <div class="flex-1 flex flex-col justify-end">
+            {{#if github}}
+              <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus text-sm mb-2">Reference</a>
+            {{/if}}
+            <button
+              class="activate-ticket {{getButtonClasses _id}} w-full"
+              data-id="{{_id}}"
+              title="{{getButtonTooltip _id}}"
+            >
+              {{#if isActive _id}}
+                Stop
+              {{else}}
+                Start
+              {{/if}}
+            </button>
+          </div>
+        </div>
+      {{/each}}
+    </div>
   {{else}}
-  <div class="alert alert-info mt-4">
-    <p>Create or join a project to start tracking your activities and time.</p>
-  </div>
+    <div class="alert alert-info mt-4">
+      <p>Create or join a project to start tracking your activities and time.</p>
+    </div>
   {{/if}}
+
+  <!-- Clock Out Confirmation Modal -->
+  <dialog id="clockOutModal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg text-success mb-4">✅ Clock Out Successful!</h3>
+      <div class="text-center">
+        <div class="text-6xl mb-4">⏰</div>
+        <p class="text-lg mb-2">You worked for:</p>
+        <p class="text-4xl font-bold text-primary font-mono" id="totalWorkTime">0:00:00</p>
+      </div>
+      <div class="modal-action">
+        <button class="btn btn-primary" onclick="document.getElementById('clockOutModal').close()">Close</button>
+      </div>
+    </div>
+  </dialog>
 </template>

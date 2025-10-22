@@ -1,0 +1,45 @@
+<template name="notificationSettings">
+  <div class="card bg-base-100 shadow-lg mb-6">
+    <div class="card-body">
+      <h3 class="card-title">
+        <i class="fa-solid fa-bell text-primary"></i>
+        Push Notifications
+      </h3>
+      
+      {{#if notificationSupported}}
+        {{#if notificationEnabled}}
+          <div class="alert alert-success">
+            <i class="fa-solid fa-check-circle"></i>
+            <span>Notifications are enabled! You'll receive alerts when team members clock in/out.</span>
+          </div>
+          <button id="disableNotifications" class="btn btn-outline btn-error">
+            <i class="fa-solid fa-bell-slash"></i>
+            Disable Notifications
+          </button>
+        {{else}}
+          <div class="alert alert-info">
+            <i class="fa-solid fa-info-circle"></i>
+            <span>Enable push notifications to get notified when your team members clock in or clock out.</span>
+          </div>
+          <button id="enableNotifications" class="btn btn-primary">
+            <i class="fa-solid fa-bell"></i>
+            Enable Notifications
+          </button>
+        {{/if}}
+      {{else}}
+        <div class="alert alert-warning">
+          <i class="fa-solid fa-exclamation-triangle"></i>
+          <span>Push notifications are not supported in your browser. Try using Chrome, Firefox, or Edge.</span>
+        </div>
+      {{/if}}
+      
+      {{#if loading}}
+        <div class="flex justify-center mt-4">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</template>
+
+

@@ -1,12 +1,12 @@
 <template name="teams">
-  <h3 class="text-xl font-semibold mb-4">Projects & Teams</h3>
+  <h3 class="text-xl font-semibold mb-4">Teams</h3>
   {{#if selectedTeam}}
     <div class="card bg-base-100 shadow p-6 mb-6">
-      <button id="backToTeams" class="btn btn-outline mb-4">&larr; Back to Projects</button>
+      <button id="backToTeams" class="btn btn-outline mb-4">&larr; Back to Teams</button>
       <h4 class="text-lg font-bold mb-2">{{selectedTeam.name}}</h4>
       <div class="flex items-center gap-2 mb-4">
         <span class="badge bg-neutral text-neutral-content">Join Code: {{selectedTeam.code}}</span>
-        <button id="copyTeamCode" class="btn btn-sm btn-outline btn-neutral">Copy Code</button>
+        <button id="copyTeamCode" class="btn btn-sm btn-outline">Copy Code</button>
       </div>
       <h5 class="font-semibold mb-2">Collaborators:</h5>
       <div class="flex flex-wrap gap-2">
@@ -17,31 +17,43 @@
     </div>
   {{else}}
     <div class="flex gap-4 mb-4">
-      <button id="showCreateTeamForm" class="btn bg-primary hover:bg-primary-focus text-primary-content">Create Project</button>
-      <button id="showJoinTeamForm" class="btn bg-gray-700 text-white hover:bg-opacity-90">Join Project</button>
+      <button id="showCreateTeamForm" class="btn bg-primary hover:bg-primary-focus text-primary-content">Create Team</button>
+      <button id="showJoinTeamForm" class="btn bg-gray-700 text-white hover:bg-opacity-90">Join Team</button>
     </div>
     {{#if showCreateTeam}}
       <form id="createTeamForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="teamName" placeholder="Project Name" class="input input-bordered" required />
+        <input type="text" name="teamName" placeholder="Team Name" class="input input-bordered" required />
         <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary">Create Project</button>
+          <button type="submit" class="btn btn-primary">Create</button>
           <button type="button" id="cancelCreateTeam" class="btn btn-outline">Cancel</button>
         </div>
       </form>
     {{/if}}
     {{#if showJoinTeam}}
       <form id="joinTeamForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="teamCode" placeholder="Enter Project Code" class="input input-bordered" required />
+        <input type="text" name="teamCode" placeholder="Enter Team Code" class="input input-bordered" required />
         <div class="flex gap-2">
-          <button type="submit" class="btn bg-gray-700 text-white hover:bg-opacity-90">Join Project</button>
-          <button type="button" id="cancelJoinTeam" class="btn btn-outline btn-neutral">Cancel</button>
+          <button type="submit" class="btn bg-gray-700 text-white hover:bg-opacity-90">Join</button>
+          <button type="button" id="cancelJoinTeam" class="btn btn-outline">Cancel</button>
         </div>
       </form>
     {{/if}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {{#each userTeams}}
         <div class="card bg-base-100 shadow p-4">
-          <a href="#" class="link team-link text-lg font-semibold" data-id="{{_id}}">{{name}}</a>
+          <div class="flex items-start justify-between gap-2">
+            <a href="#" class="link team-link text-lg font-semibold" data-id="{{_id}}">{{name}}</a>
+            {{#if isAdmin _id}}
+              <div class="flex items-center gap-2">
+                <button class="edit-team-btn text-blue-600 hover:text-blue-800" data-id="{{_id}}" title="Edit Team">
+                  <i class="fa-solid fa-pen text-primary"></i>
+                </button>
+                <button class="delete-team-btn text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Team">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            {{/if}}
+          </div>
         </div>
       {{/each}}
     </div>

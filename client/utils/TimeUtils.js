@@ -7,12 +7,24 @@ import { currentTime } from '../components/layout/MainLayout.js';
  * @example
  * formatTime(3661) // Returns "1:01:01"
  * formatTime(0) // Returns "0:00:00"
+ * formatTime(999999) // Returns "277:46:39" (handles large numbers)
  */
 export const formatTime = (time) => {
-    if (typeof time !== 'number' || isNaN(time)) return '0:00:00';
-    const h = Math.floor(time / 3600);
-    const m = Math.floor((time % 3600) / 60);
-    const s = time % 60;
+    if (typeof time !== 'number' || isNaN(time) || time < 0) return '0:00:00';
+    
+    // Handle extremely large numbers to prevent overflow
+    const maxHours = 9999; // Reasonable maximum for display
+    const clampedTime = Math.min(time, maxHours * 3600);
+    
+    const h = Math.floor(clampedTime / 3600);
+    const m = Math.floor((clampedTime % 3600) / 60);
+    const s = Math.floor(clampedTime % 60);
+    
+    // If the original time was clamped, indicate it
+    if (time > maxHours * 3600) {
+        return `${h}+:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    
     return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
