@@ -91,7 +91,7 @@ const sessionManager = {
   // Stop a session
   stopSession: async (teamId) => {
     try {
-      // Find ALL running tickets for this team created by current user and stop them
+      // Find running tickets created by current user and stop them
       const runningTickets = Tickets.find({ teamId, createdBy: Meteor.userId(), startTimestamp: { $exists: true } }).fetch();
       
       // Stop all running tickets
@@ -164,7 +164,7 @@ Template.tickets.helpers({
     const activeTicketId = Template.instance().activeTicketId.get();
     const now = currentTime.get();
     
-    // Only show tickets created by the current user
+    // Show only tickets created by the current user
     return Tickets.find({ teamId, createdBy: Meteor.userId() }).fetch().map(ticket => {
       const isActive = ticket._id === activeTicketId && ticket.startTimestamp;
       const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;

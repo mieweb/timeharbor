@@ -90,43 +90,48 @@ export const ticketMethods = {
     Tickets.update(ticketId, { $inc: { timeSpent: seconds } });
   },
 
-  updateTicketStart(ticketId, now) {
+  async updateTicketStart(ticketId, now) {
     check(ticketId, String);
     check(now, Number);
     if (!this.userId) throw new Meteor.Error('not-authorized');
     
-    // Verify user owns the ticket
-    const ticket = Tickets.findOne(ticketId);
+    // Verify ticket exists
+    const ticket = await Tickets.findOneAsync(ticketId);
     if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
-    if (ticket.createdBy !== this.userId) {
+    
+    // Ensure all tickets have ownership - assign to current user if missing
+    if (!ticket.createdBy) {
+      await Tickets.updateAsync(ticketId, { $set: { createdBy: this.userId } });
+    } else if (ticket.createdBy !== this.userId) {
       throw new Meteor.Error('not-authorized', 'You can only start your own tickets');
     }
     
-    return Tickets.updateAsync(ticketId, { $set: { startTimestamp: now } });
+    return await Tickets.updateAsync(ticketId, { $set: { startTimestamp: now } });
   },
 
-  updateTicketStop(ticketId, now) {
+  async updateTicketStop(ticketId, now) {
     check(ticketId, String);
     check(now, Number);
     if (!this.userId) throw new Meteor.Error('not-authorized');
     
-    return Tickets.findOneAsync(ticketId).then(ticket => {
-      if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
-      
-      // Verify user owns the ticket
-      if (ticket.createdBy !== this.userId) {
-        throw new Meteor.Error('not-authorized', 'You can only stop your own tickets');
-      }
-      
-      if (ticket.startTimestamp) {
-        const elapsed = Math.floor((now - ticket.startTimestamp) / 1000);
-        const prev = ticket.accumulatedTime || 0;
-        return Tickets.updateAsync(ticketId, {
-          $set: { accumulatedTime: prev + elapsed },
-          $unset: { startTimestamp: '' }
-        });
-      }
-    });
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
+    
+    // Ensure all tickets have ownership - assign to current user if missing
+    if (!ticket.createdBy) {
+      await Tickets.updateAsync(ticketId, { $set: { createdBy: this.userId } });
+    } else if (ticket.createdBy !== this.userId) {
+      throw new Meteor.Error('not-authorized', 'You can only stop your own tickets');
+    }
+    
+    if (ticket.startTimestamp) {
+      const elapsed = Math.floor((now - ticket.startTimestamp) / 1000);
+      const prev = ticket.accumulatedTime || 0;
+      return await Tickets.updateAsync(ticketId, {
+        $set: { accumulatedTime: prev + elapsed },
+        $unset: { startTimestamp: '' }
+      });
+    }
   },
 
   async updateTicket(ticketId, updates) {
@@ -137,8 +142,10 @@ export const ticketMethods = {
     const ticket = await Tickets.findOneAsync(ticketId);
     if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
 
-    // Verify user is the creator of the ticket
-    if (ticket.createdBy !== this.userId) {
+    // Ensure all tickets have ownership - assign to current user if missing
+    if (!ticket.createdBy) {
+      await Tickets.updateAsync(ticketId, { $set: { createdBy: this.userId } });
+    } else if (ticket.createdBy !== this.userId) {
       throw new Meteor.Error('not-authorized', 'You can only edit your own tickets');
     }
 
@@ -161,8 +168,10 @@ export const ticketMethods = {
     const ticket = await Tickets.findOneAsync(ticketId);
     if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
 
-    // Verify user is the creator of the ticket
-    if (ticket.createdBy !== this.userId) {
+    // Ensure all tickets have ownership - assign to current user if missing
+    if (!ticket.createdBy) {
+      await Tickets.updateAsync(ticketId, { $set: { createdBy: this.userId } });
+    } else if (ticket.createdBy !== this.userId) {
       throw new Meteor.Error('not-authorized', 'You can only delete your own tickets');
     }
 
