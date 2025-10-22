@@ -197,6 +197,16 @@ Template.tickets.helpers({
     const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
     return clockEvent ? calculateTotalTime(clockEvent) : 0;
   },
+  currentSessionTime() {
+    const teamId = Template.instance().selectedTeamId.get();
+    const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+    if (!clockEvent) return '0:00:00';
+    
+    const now = currentTime.get(); // This reactive variable updates every second
+    const elapsed = Math.floor((now - clockEvent.startTimestamp) / 1000);
+    
+    return formatTime(elapsed);
+  },
   currentActiveTicketInfo() {
     const activeTicketId = Template.instance().activeTicketId.get();
     if (!activeTicketId) return null;
@@ -363,9 +373,23 @@ Template.tickets.events({
   async 'click #clockOutBtn'(e, t) {
     const teamId = t.selectedTeamId.get();
     
+    // Get the current clock event to calculate total time BEFORE stopping
+    const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+    let totalWorkTime = 0;
+    
+    if (clockEvent) {
+      const now = Date.now();
+      totalWorkTime = Math.floor((now - clockEvent.startTimestamp) / 1000);
+    }
+    
     const success = await sessionManager.stopSession(teamId);
     if (success) {
       t.activeTicketId.set(null);
+      
+      // Show popup with total work time
+      const timeFormatted = formatTime(totalWorkTime);
+      document.getElementById('totalWorkTime').textContent = timeFormatted;
+      document.getElementById('clockOutModal').showModal();
     }
   }
 });
