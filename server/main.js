@@ -18,11 +18,13 @@ import { notificationMethods } from './methods/notifications.js';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
+// Import Ozwell methods
+import { ozwellMethods } from './methods/ozwell.js';
 Meteor.startup(async () => {
   // Configure Google OAuth from environment variables
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  
+
   if (googleClientId && googleClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
       { service: 'google' },
@@ -43,7 +45,7 @@ Meteor.startup(async () => {
   // Configure GitHub OAuth from environment variables
   const githubClientId = process.env.HUB_CLIENT_ID;
   const githubClientSecret = process.env.HUB_CLIENT_SECRET;
-  
+
   if (githubClientId && githubClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
       { service: 'github' },
@@ -72,7 +74,7 @@ Meteor.startup(async () => {
         // of how bad actors could play.
         return Accounts.findUserByEmail(serviceData.email);
       }
-      
+
       if (serviceName === "github") {
         // For GitHub, we can use the email from the service data
         // GitHub provides email in serviceData.email
@@ -128,9 +130,9 @@ Meteor.publish('teamDetails', function (teamId) {
 Meteor.publish('teamMembers', async function (teamIds) {
   // Filter out null/undefined values before validation
   const validTeamIds = teamIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   check(validTeamIds, [String]);
-  
+
   if (!this.userId) return this.ready();
 
   // Allow if user is a member, leader, or admin of the requested teams
@@ -152,9 +154,9 @@ Meteor.publish('teamMembers', async function (teamIds) {
 Meteor.publish('teamTickets', function (teamIds) {
   // Filter out null/undefined values before validation
   const validTeamIds = teamIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   check(validTeamIds, [String]);
-  
+
   // Publish all tickets for these teams (not just created by current user)
   return Tickets.find({ teamId: { $in: validTeamIds } });
 });
@@ -168,9 +170,9 @@ Meteor.publish('clockEventsForUser', function () {
 Meteor.publish('clockEventsForTeams', async function (teamIds) {
   // Filter out null/undefined values before validation
   const validTeamIds = teamIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   check(validTeamIds, [String]);
-  
+
   if (!this.userId) return this.ready();
 
   // Publish clock events for teams the user leads OR admins
@@ -191,8 +193,8 @@ Meteor.publish('adminTeamTickets', async function (teamId) {
   if (!this.userId) return this.ready();
 
   // Check if user is admin/leader of the team
-  const team = await Teams.findOneAsync({ 
-    _id: teamId, 
+  const team = await Teams.findOneAsync({
+    _id: teamId,
     $or: [
       { leader: this.userId },
       { admins: this.userId }
@@ -208,16 +210,16 @@ Meteor.publish('adminTeamTickets', async function (teamId) {
 Meteor.publish('usersByIds', async function (userIds) {
   // Filter out null/undefined values before validation
   const validUserIds = userIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   if (validUserIds.length === 0) {
     return this.ready();
   }
-  
+
   check(validUserIds, [String]);
-  
+
   // Only publish users that are in teams the current user is a member, leader, or admin of
   const userTeams = await Teams.find({ $or: [{ members: this.userId }, { leader: this.userId }, { admins: this.userId }] }).fetchAsync();
-  
+
   // Filter out null/undefined values and flatten the arrays safely
   const allowedUserIds = Array.from(new Set(
     userTeams.flatMap(team => {
@@ -227,22 +229,22 @@ Meteor.publish('usersByIds', async function (userIds) {
       return [...members, ...admins, leader].filter(id => id !== null && id !== undefined);
     })
   ));
-  
+
   const filteredUserIds = validUserIds.filter(id => allowedUserIds.includes(id));
-  
+
   if (filteredUserIds.length === 0) {
     return this.ready();
   }
-  
-  return Meteor.users.find({ _id: { $in: filteredUserIds } }, { 
-    fields: { 
-      'emails.address': 1, 
-      'services.google.email': 1, 
+
+  return Meteor.users.find({ _id: { $in: filteredUserIds } }, {
+    fields: {
+      'emails.address': 1,
+      'services.google.email': 1,
       'services.google.name': 1,
       'services.github.username': 1,
       'profile': 1,
       'username': 1
-    } 
+    }
   });
 });
 
@@ -251,6 +253,7 @@ Meteor.methods({
   ...teamMethods,
   ...ticketMethods,
   ...clockEventMethods,
+  ...ozwellMethods,
   ...notificationMethods,
 
   'participants.create'(name) {
