@@ -11,7 +11,7 @@ import './components/calendar/CalendarPage.html';
 import './components/admin/admin.html';
 import './components/timesheet/TimesheetPage.html';
 import './components/guide/UserGuide.html';
-
+import './components/activity/activity.html';
 // Import component JS files
 import './components/auth/AuthPage.js';
 import './components/layout/MainLayout.js';
@@ -22,6 +22,7 @@ import './components/calendar/CalendarPage.js';
 import './components/admin/admin.js';
 import './components/timesheet/TimesheetPage.js';
 import './components/guide/UserGuide.js';
+import './components/activity/activity.js';
 
 // Import routing configuration
 import './routes.js';

@@ -1,0 +1,74 @@
+<template name="activity">
+  <div class="activity-container">
+    <div class="activity-header">
+      <h2>ActivityWatch Buckets</h2>
+      <button class="refresh-btn btn btn-primary">
+        <i class="fa fa-refresh"></i> Refresh
+      </button>
+    </div>
+    
+    {{#if loading}}
+      <div class="loading">
+        <p>Loading buckets...</p>
+      </div>
+    {{/if}}
+    
+    {{#if error}}
+      <div class="alert alert-danger">
+        <strong>Error:</strong> {{error}}
+      </div>
+    {{/if}}
+    
+    {{#unless loading}}
+      <div class="buckets-table">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Bucket ID</th>
+              <th>Hostname</th>
+              <th>Type</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each buckets}}
+              <tr>
+                <td>{{id}}</td>
+                <td>{{hostname}}</td>
+                <td>{{type}}</td>
+                <td>{{formatTimestamp last_updated}}</td>
+                <td>
+                  <button class="open-btn btn btn-sm btn-info" data-bucket-id="{{id}}">
+                    <i class="fa fa-folder-open"></i> Open
+                  </button>
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-toggle="dropdown">
+                      More
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li>
+                        <a class="export-json-btn" data-bucket-id="{{id}}">
+                          Export as JSON
+                        </a>
+                      </li>
+                      <li>
+                        <a class="export-csv-btn" data-bucket-id="{{id}}">
+                          Export as CSV
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            {{else}}
+              <tr>
+                <td colspan="5" class="text-center">No buckets found</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    {{/unless}}
+  </div>
+</template>
