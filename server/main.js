@@ -14,6 +14,10 @@ import './methods/calendar.js';
 // Import notification methods
 import { notificationMethods } from './methods/notifications.js';
 
+import { activitywatchMethods } from './methods/activitywatch.js';
+import './api/activitywatch.js';
+import { ActivityData } from '../collections.js';
+
 // Load environment variables from .env file
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
@@ -246,12 +250,23 @@ Meteor.publish('usersByIds', async function (userIds) {
   });
 });
 
+Meteor.publish('myActivityData', function() {
+  if (!this.userId) {
+    return this.ready();
+  }
+  
+  return ActivityData.find({ userId: this.userId });
+});
+
 Meteor.methods({
   ...authMethods,
   ...teamMethods,
   ...ticketMethods,
   ...clockEventMethods,
   ...notificationMethods,
+
+  'activitywatch.generateApiKey': activitywatchMethods.generateApiKey,
+  'activitywatch.getApiKey': activitywatchMethods.getApiKey,
 
   'participants.create'(name) {
     check(name, String);
