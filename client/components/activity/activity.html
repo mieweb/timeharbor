@@ -1,74 +1,144 @@
 <template name="activity">
-  <div class="activity-container">
-    <div class="activity-header">
-      <h2>ActivityWatch Buckets</h2>
-      <button class="refresh-btn btn btn-primary">
-        <i class="fa fa-refresh"></i> Refresh
-      </button>
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">ActivityWatch Integration</h1>
+    {{#if isLoading}}
+      <div class="alert alert-info mb-6">
+        <span class="loading loading-spinner loading-sm"></span>
+        <span>Loading activity data...</span>
+      </div>
+    {{/if}}
+    <!-- API Key Section -->
+    <div class="card bg-base-200 shadow-xl mb-6">
+      <div class="card-body">
+        <h2 class="card-title text-2xl mb-4">🔑 Your API Key</h2>
+        <p class="text-sm text-gray-600 mb-4">
+          Use this API key in the browser extension to sync your ActivityWatch data.
+        </p>
+        
+        {{#if apiKey}}
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text font-semibold">API Key</span>
+            </label>
+            <div class="flex gap-2">
+              <input 
+                type="{{#if showApiKey}}text{{else}}password{{/if}}" 
+                value="{{apiKey}}" 
+                readonly 
+                class="input input-bordered flex-1 font-mono text-sm bg-white"
+              />
+              <button class="btn btn-outline toggle-api-key">
+                {{#if showApiKey}}👁️ Hide{{else}}👁️ Show{{/if}}
+              </button>
+              <button class="btn btn-primary copy-api-key">
+                {{#if copiedMessage}}
+                  ✓ Copied!
+                {{else}}
+                  📋 Copy
+                {{/if}}
+              </button>
+            </div>
+          </div>
+          
+          <button class="btn btn-warning btn-sm generate-api-key {{#if generatingKey}}loading{{/if}}">
+            {{#if generatingKey}}
+              Generating...
+            {{else}}
+              🔄 Regenerate API Key
+            {{/if}}
+          </button>
+        {{else}}
+          <button class="btn btn-primary generate-api-key {{#if generatingKey}}loading{{/if}}">
+            {{#if generatingKey}}
+              Generating...
+            {{else}}
+              Generate API Key
+            {{/if}}
+          </button>
+        {{/if}}
+        
+        <div class="alert alert-info mt-4">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <div>
+            <h3 class="font-bold">Setup Instructions:</h3>
+            <ol class="list-decimal list-inside text-sm mt-2">
+              <li>Download the TimeHarbor browser extension</li>
+              <li>Copy your API key above</li>
+              <li>Configure the extension with your API key</li>
+              <li>Your data will sync automatically every 60 seconds</li>
+            </ol>
+          </div>
+        </div>
+      </div>
     </div>
     
-    {{#if loading}}
-      <div class="loading">
-        <p>Loading buckets...</p>
+    <!-- Sync Status -->
+    <div class="stats shadow mb-6 w-full">
+      <div class="stat">
+        <div class="stat-title">Last Sync</div>
+        <div class="stat-value text-2xl">{{lastSync}}</div>
+        <div class="stat-desc">
+          {{#if activityData}}
+            ✅ Connected
+          {{else}}
+            ⏳ Waiting for data...
+          {{/if}}
+        </div>
+      </div>
+      
+      <div class="stat">
+        <div class="stat-title">Active Buckets</div>
+        <div class="stat-value text-2xl">{{buckets.length}}</div>
+        <div class="stat-desc">Tracking sources</div>
+      </div>
+      
+      {{#if activityData}}
+        <div class="stat">
+          <div class="stat-title">Hostname</div>
+          <div class="stat-value text-xl">{{activityData.hostname}}</div>
+          <div class="stat-desc">Device name</div>
+        </div>
+      {{/if}}
+    </div>
+    
+    <!-- Buckets Table -->
+    {{#if buckets.length}}
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title text-2xl mb-4">📊 Activity Buckets</h2>
+          
+          <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Bucket ID</th>
+                  <th>Hostname</th>
+                  <th>Type</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each buckets}}
+                  <tr>
+                    <td class="font-mono text-sm">{{id}}</td>
+                    <td>{{hostname}}</td>
+                    <td><span class="badge badge-primary">{{type}}</span></td>
+                    <td>{{formatTimestamp last_updated}}</td>
+                  </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    {{else}}
+      <div class="alert alert-warning shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <div>
+          <h3 class="font-bold">No activity data yet</h3>
+          <div class="text-sm">Make sure the browser extension is installed and configured with your API key.</div>
+        </div>
       </div>
     {{/if}}
-    
-    {{#if error}}
-      <div class="alert alert-danger">
-        <strong>Error:</strong> {{error}}
-      </div>
-    {{/if}}
-    
-    {{#unless loading}}
-      <div class="buckets-table">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th>Bucket ID</th>
-              <th>Hostname</th>
-              <th>Type</th>
-              <th>Updated</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{#each buckets}}
-              <tr>
-                <td>{{id}}</td>
-                <td>{{hostname}}</td>
-                <td>{{type}}</td>
-                <td>{{formatTimestamp last_updated}}</td>
-                <td>
-                  <button class="open-btn btn btn-sm btn-info" data-bucket-id="{{id}}">
-                    <i class="fa fa-folder-open"></i> Open
-                  </button>
-                  <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-toggle="dropdown">
-                      More
-                    </button>
-                    <ul class="dropdown-menu">
-                      <li>
-                        <a class="export-json-btn" data-bucket-id="{{id}}">
-                          Export as JSON
-                        </a>
-                      </li>
-                      <li>
-                        <a class="export-csv-btn" data-bucket-id="{{id}}">
-                          Export as CSV
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
-                </td>
-              </tr>
-            {{else}}
-              <tr>
-                <td colspan="5" class="text-center">No buckets found</td>
-              </tr>
-            {{/each}}
-          </tbody>
-        </table>
-      </div>
-    {{/unless}}
   </div>
 </template>

@@ -29,3 +29,8 @@ import './routes.js';
 
 // Import utilities
 import './utils/DateUtils.js';
+
+import { ActivityData } from '../collections.js';
+
+// Make available in console for debugging
+window.ActivityData = ActivityData;
