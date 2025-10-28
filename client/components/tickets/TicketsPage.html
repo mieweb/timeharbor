@@ -42,12 +42,12 @@
         </div>
       </form>
   {{/if}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-y-3 gap-x-2 md:gap-x-3">
       {{#each tickets}}
-        <div class="card bg-base-100 shadow-md p-4 flex flex-col {{#if isActive _id}}border border-slate-600{{/if}}">
-          <div class="flex justify-between items-start mb-2">
-            <div class="ticket-title text-lg font-bold line-clamp-1 truncate overflow-hidden flex-1" title="{{title}}">{{title}}</div>
-            <div class="flex gap-1 ml-2">
+        <div class="card bg-base-100 shadow-md p-2 flex flex-col {{#if isActive _id}}border border-slate-600{{/if}}">
+          <div class="flex justify-between items-start mb-1">
+            <div class="ticket-title text-base font-bold line-clamp-1 truncate overflow-hidden flex-1" title="{{title}}">{{title}}</div>
+            <div class="flex gap-1 ml-1">
               <button class="edit-ticket-btn btn btn-ghost btn-xs" data-id="{{_id}}" title="Edit Ticket">
                 <i class="fa-solid fa-pen text-primary"></i>
               </button>
@@ -56,12 +56,12 @@
               </button>
             </div>
           </div>
-          <div class="ticket-time mb-2"><span class="badge bg-gray-700 text-white">{{formatTime displayTime}}</span></div>
+          <div class="ticket-time mb-1"><span class="badge badge-sm bg-gray-700 text-white">{{formatTime displayTime}}</span></div>
           <div class="flex flex-col">
             {{#if github}}
-              <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus text-sm mb-2">Reference</a>
+              <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus text-sm mb-1">Reference</a>
             {{/if}}
-            <button class="activate-ticket {{getButtonClasses _id}} w-full" 
+            <button class="activate-ticket {{getButtonClasses _id}} btn-sm w-full" 
             data-id="{{_id}}"
             title="{{getButtonTooltip _id}}">
               {{#if isActive _id}}
