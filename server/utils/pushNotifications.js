@@ -6,13 +6,18 @@ const vapidKeys = {
   publicKey: process.env.VAPID_PUBLIC_KEY,
   privateKey: process.env.VAPID_PRIVATE_KEY
 };
+const hasVapidKeys = Boolean(vapidKeys.publicKey && vapidKeys.privateKey);
 
 // Configure web-push
-webpush.setVapidDetails(
-  'mailto:admin@timeharbor.com', // Your email
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-);
+if (hasVapidKeys) {
+  webpush.setVapidDetails(
+    'mailto:admin@timeharbor.com', // Your email
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+  );
+} else {
+  console.warn('[pushNotifications] VAPID keys are not set; push notifications are disabled.');
+}
 
 /**
  * Send a push notification to a specific subscription
@@ -20,6 +25,9 @@ webpush.setVapidDetails(
  * @param {Object} payload - The notification payload
  */
 export async function sendPushNotification(subscription, payload) {
+  if (!hasVapidKeys) {
+    return { success: false, error: 'Push notifications not configured' };
+  }
   try {
     await webpush.sendNotification(subscription, JSON.stringify(payload));
     return { success: true };
@@ -39,6 +47,10 @@ export async function sendPushNotification(subscription, payload) {
  * @param {Object} notificationData - The notification data
  */
 export async function notifyTeamAdmins(teamId, notificationData) {
+  if (!hasVapidKeys) {
+    console.warn('[pushNotifications] Skipping notifyTeamAdmins because VAPID keys are missing.');
+    return [];
+  }
   const { Teams } = require('../../collections.js');
   const { Meteor } = require('meteor/meteor');
   
@@ -82,6 +94,5 @@ export async function notifyTeamAdmins(teamId, notificationData) {
 }
 
 export function getVapidPublicKey() {
-  return vapidKeys.publicKey;
+  return vapidKeys.publicKey || null;
 }
-
