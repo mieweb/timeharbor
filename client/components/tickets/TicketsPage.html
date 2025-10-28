@@ -46,7 +46,7 @@
       {{#each tickets}}
         <div class="card bg-base-100 shadow-md p-4 h-64 flex flex-col {{#if isActive _id}}border border-slate-600{{/if}}">
           <div class="flex justify-between items-start mb-2">
-            <div class="ticket-title text-lg font-bold line-clamp-3 overflow-hidden flex-1" title="{{title}}">{{title}}</div>
+            <div class="ticket-title text-lg font-bold line-clamp-1 truncate overflow-hidden flex-1" title="{{title}}">{{title}}</div>
             <div class="flex gap-1 ml-2">
               <button class="edit-ticket-btn btn btn-ghost btn-xs" data-id="{{_id}}" title="Edit Ticket">
                 <i class="fa-solid fa-pen text-primary"></i>
