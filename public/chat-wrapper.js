@@ -238,10 +238,19 @@ class ChatWrapper {
       return;
     }
 
-    // Wait for Ozwell embed script to load
+    // Wait for Ozwell embed script to load, then mount the widget
     const waitForOzwell = setInterval(() => {
-      if (window.OzwellChat && window.OzwellChat.iframe) {
+      if (window.OzwellChat && typeof window.OzwellChat.mount === 'function') {
         clearInterval(waitForOzwell);
+
+        // Mount the widget iframe (new loading pattern)
+        console.log('[TimeHarbor] Mounting Ozwell widget...');
+        window.OzwellChat.mount();
+
+        // Now wait for the iframe to be created
+        const waitForIframe = setInterval(() => {
+          if (window.OzwellChat.iframe) {
+            clearInterval(waitForIframe);
 
         // Get the Ozwell iframe
         const ozwellIframe = window.OzwellChat.iframe;
@@ -264,7 +273,14 @@ class ChatWrapper {
         ozwellIframe.style.left = '0';
         ozwellIframe.style.top = '0';
 
-        console.log('Ozwell widget loaded successfully');
+            console.log('Ozwell widget loaded successfully');
+          }
+        }, 100);
+
+        // Timeout for iframe creation
+        setTimeout(() => {
+          clearInterval(waitForIframe);
+        }, 5000);
       }
     }, 100);
 

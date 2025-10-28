@@ -78,7 +78,7 @@ Remember:
     };
   </script>
 
-  <!-- Ozwell MCP Tools Integration (loads BEFORE embed.js to add tools to config) -->
+  <!-- Ozwell MCP Tools Integration (loads BEFORE ozwell-loader.js to add tools to config) -->
   <script src="/ozwell-mcp-tools.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
@@ -86,7 +86,7 @@ Remember:
   {{> Template.dynamic template=currentScreen}}
 
   <!-- Ozwell Embed Script (loads widget iframe from reference server) -->
-  <script async src="http://localhost:3000/embed/embed.js"></script>
+  <script async src="http://localhost:3000/embed/ozwell-loader.js"></script>
 
   <!-- Ozwell Chat Widget Script -->
   <script src="/chat-wrapper.js"></script>
