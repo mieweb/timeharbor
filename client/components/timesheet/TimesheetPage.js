@@ -32,7 +32,7 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agDateColumnFilter',
     valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No clock-in',
-    cellClass: 'text-base-content'
+    cellClass: 'font-medium'
   },
   { 
     headerName: 'Clock-out', 
@@ -44,7 +44,7 @@ const COLUMN_DEFINITIONS = [
       if (!p.value) return 'Not clocked-out';
       return new Date(p.value).toLocaleTimeString();
     },
-    cellClass: 'text-base-content'
+    cellClass: 'font-medium'
   },
   { 
     headerName: 'Duration', 
@@ -63,7 +63,7 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agTextColumnFilter',
     valueFormatter: p => p.value || 'No activity',
-    cellClass: p => p.value ? 'text-base-content' : 'text-base-content opacity-60',
+    cellClass: 'font-medium',
     tooltipField: 'activityTitle'
   },
   { 
@@ -83,9 +83,9 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agSetColumnFilter',
     valueFormatter: p => p.value ? 'Active' : 'Completed',
-    cellClass: p => p.value ? 'text-success font-bold' : 'text-base-content opacity-70',
+    cellClass: p => p.value ? 'text-success font-bold' : 'font-medium',
     filterParams: { values: ['Active', 'Completed'] },
-    cellRenderer: p => p.value ? '<span class="text-success font-bold">Active</span>' : '<span class="text-base-content opacity-70">Completed</span>'
+    cellRenderer: p => p.value ? '<span class="text-success font-bold">Active</span>' : '<span class="font-medium">Completed</span>'
   }
 ];
 
