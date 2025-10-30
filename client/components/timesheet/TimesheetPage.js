@@ -53,7 +53,7 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agNumberColumnFilter',
     valueFormatter: p => p.value ? formatTime(p.value) : (p.data?.isActive ? 'Running...' : 'No clock-in'),
-    cellClass: p => p.value ? 'text-info font-medium' : 'text-base-content opacity-60',
+    cellClass: p => p.value ? 'text-info font-medium' : 'font-medium',
     comparator: (valueA, valueB) => (valueA || 0) - (valueB || 0)
   },
   { 
@@ -73,7 +73,7 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agTextColumnFilter',
     valueFormatter: p => p.value || 'No team',
-    cellClass: p => p.value ? 'text-primary' : 'text-base-content opacity-60',
+    cellClass: p => p.value ? 'text-primary' : 'font-medium',
     tooltipField: 'teamName'
   },
   { 
