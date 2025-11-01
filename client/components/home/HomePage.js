@@ -91,6 +91,12 @@ const createGridOptions = (showClockTimes = true) => ({
     resizable: true,
     sortable: true,
     filter: true,
+  },
+  onFirstDataRendered: (params) => {
+    params.api.applyColumnState({
+      state: [{ colId: 'date', sort: 'desc' }],
+      defaultState: { sort: null }
+    });
   }
 });
 
@@ -247,7 +253,7 @@ Template.home.onCreated(function () {
     });
 
     return rows.sort((a, b) => {
-      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      if (a.date !== b.date) return b.date.localeCompare(a.date); // latest date first
       return a.displayName.localeCompare(b.displayName);
     });
   };
