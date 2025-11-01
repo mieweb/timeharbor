@@ -213,8 +213,8 @@ Template.home.onCreated(function () {
               totalSeconds += daySessionSeconds;
               
               if (sessionStart >= dayBoundaries.start && sessionStart <= dayBoundaries.end) {
-                if (!firstClockIn || sessionStart > firstClockIn) {
-                  firstClockIn = sessionStart;
+                if (!firstClockIn || sessionStart < firstClockIn) {
+                  firstClockIn = sessionStart; // earliest clock-in
                 }
               }
              
