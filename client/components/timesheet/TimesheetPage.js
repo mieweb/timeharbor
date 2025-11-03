@@ -41,7 +41,7 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agDateColumnFilter',
     valueFormatter: p => {
-      if (!p.value) return 'Not clocked-out';
+      if (!p.value) return 'Not clocked out';
       return new Date(p.value).toLocaleTimeString();
     },
     cellClass: 'font-medium'
@@ -161,6 +161,17 @@ Template.timesheet.onCreated(function () {
   
   // Subscribe to data
   this.autorun(() => {
+    // Apply start/end from query params on first run
+    const { queryParams } = FlowRouter.current();
+    if (queryParams) {
+      const qsStart = queryParams.start;
+      const qsEnd = queryParams.end;
+      let applied = false;
+      if (qsStart && typeof qsStart === 'string') { instance.startDate.set(qsStart); applied = true; }
+      if (qsEnd && typeof qsEnd === 'string') { instance.endDate.set(qsEnd); applied = true; }
+      if (applied) instance.selectedPreset.set('custom');
+    }
+
     const userId = instance.userId;
     const currentUserId = Meteor.userId();
     
