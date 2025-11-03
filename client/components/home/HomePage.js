@@ -68,7 +68,7 @@ const getColumnDefinitions = (showClockTimes = true) => {
           if (p.value) {
             return '<span class="text-success font-semibold flex items-center gap-1"><span class="inline-block w-2 h-2 bg-success rounded-full animate-pulse"></span>Active</span>';
           }
-          return '<span class="text-base-content opacity-60">Completed</span>';
+          return '<span class="text-base-content font-medium">Completed</span>';
         },
         filterParams: { values: ['Active', 'Completed'] }
       }
