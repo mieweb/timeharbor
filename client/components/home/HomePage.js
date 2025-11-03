@@ -281,10 +281,12 @@ Template.home.onRendered(function () {
       }
     });
 
-    // Global function for user timesheet navigation
+    // Global function for user timesheet navigation (preserve selected date range)
     window.viewUserTimesheet = (userId, userName) => {
-      console.log(`Viewing timesheet for user: ${userName} (${userId})`);
-      FlowRouter.go(`/timesheet/${userId}`);
+      const start = instance.startDate.get();
+      const end = instance.endDate.get();
+      const qs = `?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+      FlowRouter.go(`/timesheet/${userId}${qs}`);
     };
   });
 
