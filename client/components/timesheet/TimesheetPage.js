@@ -41,7 +41,7 @@ const COLUMN_DEFINITIONS = [
     sortable: true, 
     filter: 'agDateColumnFilter',
     valueFormatter: p => {
-      if (!p.value) return 'Not clocked-out';
+      if (!p.value) return 'Not clocked out';
       return new Date(p.value).toLocaleTimeString();
     },
     cellClass: 'font-medium'

@@ -41,9 +41,9 @@ const getColumnDefinitions = (showClockTimes = true) => {
       }
     },
     { headerName: 'Email', field: 'userEmail', flex: 1.5, sortable: true, filter: 'agTextColumnFilter' },
-    { 
+  { 
       headerName: 'Hours', field: 'totalSeconds', flex: 1, sortable: true, filter: 'agNumberColumnFilter',
-      valueFormatter: p => formatTime(p.value)
+      valueFormatter: p => (p.data?.hasActiveSession ? 'Running...' : formatTime(p.value))
     }
   ];
 
@@ -57,7 +57,8 @@ const getColumnDefinitions = (showClockTimes = true) => {
       { 
         headerName: 'Clock-out', field: 'lastClockOut', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
         valueFormatter: p => {
-          if (!p.value) return p.data?.hasActiveSession ? 'Running...' : '-';
+          if (p.data?.hasActiveSession) return 'Not clocked out';
+          if (!p.value) return 'Not clocked out';
           return new Date(p.value).toLocaleTimeString();
         }
       },
