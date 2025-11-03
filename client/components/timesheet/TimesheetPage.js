@@ -372,6 +372,11 @@ Template.timesheet.events({
     t.endDate.set(currentEnd);
   },
   
+  'click #editClockins': (e, t) => {
+    // Placeholder action for upcoming edit feature
+    alert('Edit clock-in feature coming soon.');
+  },
+  
   'click #apply-range': (e, t) => {
     const start = t.$('#start-date').val();
     const end = t.$('#end-date').val();
