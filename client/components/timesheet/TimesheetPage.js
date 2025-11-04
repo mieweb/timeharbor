@@ -242,6 +242,47 @@ Template.timesheet.onCreated(function () {
   instance.canEdit = new ReactiveVar(false);
   instance.pendingEdits = new Map(); // eventId -> { startTimestamp?, endTimestamp? }
   
+  // Helper to process a cell edit value
+  instance.processCellEdit = (row, field, newValue) => {
+    if (!instance.editMode.get() || !instance.canEdit.get()) return false;
+    if (field !== 'startTime' && field !== 'endTime') return false;
+    
+    const eventId = row.eventId;
+    if (!eventId) return false;
+    
+    // Parse the time string if it's a string
+    if (typeof newValue === 'string') {
+      const baseDateStr = row.date;
+      const timestamp = parseTimeString(newValue, baseDateStr);
+      
+      if (timestamp === null) {
+        alert('Invalid time format. Please use format like "9:00 AM" or "14:05"');
+        return false;
+      }
+      
+      // Store pending edit
+      const existing = instance.pendingEdits.get(eventId) || {};
+      if (field === 'startTime') {
+        existing.startTimestamp = timestamp;
+        row.startTime = new Date(timestamp);
+      } else if (field === 'endTime') {
+        existing.endTimestamp = timestamp;
+        row.endTime = new Date(timestamp);
+      }
+      instance.pendingEdits.set(eventId, existing);
+      
+      // Update the row data with the new Date
+      if (instance.gridApi && instance.gridApi.getRowNode) {
+        const rowNode = instance.gridApi.getRowNode(eventId);
+        if (rowNode) {
+          rowNode.setData(row);
+        }
+      }
+      return true;
+    }
+    return false;
+  };
+  
   // Cell value changed handler
   instance.handleCellEdit = (params) => {
     if (!instance.editMode.get() || !instance.canEdit.get()) return;
@@ -255,7 +296,6 @@ Template.timesheet.onCreated(function () {
     // Get the new value - it might be a string from the editor
     let newValue = params.newValue;
     if (typeof newValue === 'string') {
-      // Parse the time string
       const baseDateStr = row.date;
       const timestamp = parseTimeString(newValue, baseDateStr);
       
@@ -555,64 +595,94 @@ Template.timesheet.events({
     
     if (isCurrentlyEditing) {
       // Clicking Save - save all pending edits
+      // First, capture any currently editing cell's value before stopping
       if (t.gridApi) {
-        if (t.gridApi.stopEditing) t.gridApi.stopEditing(); // Stop any active cell edit
-      }
-      
-      const edits = Array.from(t.pendingEdits.entries());
-      if (edits.length === 0) {
-        // No edits, just exit edit mode
-        t.editMode.set(false);
-        if (t.gridApi) {
-          const colDefs = getColumnDefinitions(false);
-          if (t.gridApi.setGridOption) {
-            t.gridApi.setGridOption('columnDefs', colDefs);
-          } else if (t.gridApi.setColumnDefs) {
-            t.gridApi.setColumnDefs(colDefs);
-          }
+        // Get currently editing cells
+        const editingCells = t.gridApi.getEditingCells ? t.gridApi.getEditingCells() : [];
+        
+        if (editingCells && editingCells.length > 0) {
+          // Process each editing cell
+          editingCells.forEach(cellInfo => {
+            const rowNode = t.gridApi.getDisplayedRowAtIndex ? t.gridApi.getDisplayedRowAtIndex(cellInfo.rowIndex) : null;
+            if (rowNode && rowNode.data) {
+              // Get the editor instance and its value
+              const cellEditor = t.gridApi.getCellEditorInstances ? t.gridApi.getCellEditorInstances({ rowNodes: [rowNode], columns: [cellInfo.column] }) : null;
+              
+              if (cellEditor && cellEditor.length > 0 && cellEditor[0] && cellEditor[0].getValue) {
+                const editorValue = cellEditor[0].getValue();
+                const field = cellInfo.column.getColId();
+                const row = rowNode.data;
+                
+                // Process this edit before stopping
+                t.processCellEdit(row, field, editorValue);
+              }
+            }
+          });
         }
-        return;
+        
+        // Now stop editing (this will trigger onCellValueChanged as well)
+        if (t.gridApi.stopEditing) {
+          t.gridApi.stopEditing(false); // false = save (don't cancel)
+        }
       }
       
-      // Save all edits
-      let completed = 0;
-      let errors = 0;
-      const total = edits.length;
-      
-      edits.forEach(([eventId, payload]) => {
-        Meteor.call('updateClockEventTimes', {
-          clockEventId: eventId,
-          startTimestamp: payload.startTimestamp,
-          endTimestamp: payload.endTimestamp,
-        }, (err) => {
-          completed++;
-          if (err) {
-            errors++;
-            console.error('Failed to save edit for', eventId, err);
+      // Use setTimeout to ensure all cell value changed events have fired
+      Meteor.setTimeout(() => {
+        const edits = Array.from(t.pendingEdits.entries());
+        if (edits.length === 0) {
+          // No edits, just exit edit mode
+          t.editMode.set(false);
+          if (t.gridApi) {
+            const colDefs = getColumnDefinitions(false);
+            if (t.gridApi.setGridOption) {
+              t.gridApi.setGridOption('columnDefs', colDefs);
+            } else if (t.gridApi.setColumnDefs) {
+              t.gridApi.setColumnDefs(colDefs);
+            }
           }
-          
-          if (completed === total) {
-            if (errors > 0) {
-              alert(`Saved ${total - errors} of ${total} edit(s). Some failed - check console.`);
-            } else {
-              alert(`${total} edit(s) saved successfully.`);
+          return;
+        }
+        
+        // Save all edits
+        let completed = 0;
+        let errors = 0;
+        const total = edits.length;
+        
+        edits.forEach(([eventId, payload]) => {
+          Meteor.call('updateClockEventTimes', {
+            clockEventId: eventId,
+            startTimestamp: payload.startTimestamp,
+            endTimestamp: payload.endTimestamp,
+          }, (err) => {
+            completed++;
+            if (err) {
+              errors++;
+              console.error('Failed to save edit for', eventId, err);
             }
             
-            // Clear pending edits and refresh
-            t.pendingEdits.clear();
-            t.editMode.set(false);
-            if (t.gridApi) {
-              const colDefs = getColumnDefinitions(false);
-              if (t.gridApi.setGridOption) {
-                t.gridApi.setGridOption('columnDefs', colDefs);
-              } else if (t.gridApi.setColumnDefs) {
-                t.gridApi.setColumnDefs(colDefs);
+            if (completed === total) {
+              if (errors > 0) {
+                alert(`Saved ${total - errors} of ${total} edit(s). Some failed - check console.`);
+              } else {
+                alert(`${total} edit(s) saved successfully.`);
               }
-              t.updateGridData(); // Refresh grid to show updated data
+              
+              // Clear pending edits and refresh
+              t.pendingEdits.clear();
+              t.editMode.set(false);
+              if (t.gridApi) {
+                const colDefs = getColumnDefinitions(false);
+                if (t.gridApi.setGridOption) {
+                  t.gridApi.setGridOption('columnDefs', colDefs);
+                } else if (t.gridApi.setColumnDefs) {
+                  t.gridApi.setColumnDefs(colDefs);
+                }
+                t.updateGridData(); // Refresh grid to show updated data
+              }
             }
-          }
+          });
         });
-      });
+      }, 100); // Small delay to ensure all events have processed
       
     } else {
       // Clicking Edit - enter edit mode
