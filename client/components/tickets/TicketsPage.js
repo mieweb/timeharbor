@@ -119,6 +119,60 @@ Template.tickets.onCreated(function () {
   this.selectedTeamId = new ReactiveVar(null);
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
+  this.autoClockOutTriggered = new ReactiveVar(false); // Track if auto-clock-out was triggered
+
+  // Auto-clock-out: Check every second when timer reaches 10:00:00
+  this.autorun(() => {
+    const teamId = this.selectedTeamId.get();
+    const now = currentTime.get(); // This updates every second
+    
+    if (teamId && Meteor.userId()) {
+      const activeSession = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+      
+      if (activeSession && !this.autoClockOutTriggered.get()) {
+        // Calculate continuous session duration in seconds
+        const sessionDurationSeconds = Math.floor((now - activeSession.startTimestamp) / 1000);
+        const TEN_HOURS_SECONDS = 10 * 60 * 60; // 36000 seconds
+        
+        // Auto-clock-out when timer reaches exactly 10:00:00 or above
+        if (sessionDurationSeconds >= TEN_HOURS_SECONDS) {
+          this.autoClockOutTriggered.set(true);
+          
+          // Calculate total duration for notification (same format as server)
+          const totalSeconds = (activeSession.accumulatedTime || 0) + sessionDurationSeconds;
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+          const parts = [];
+          if (hours > 0) parts.push(`${hours}h`);
+          if (minutes > 0) parts.push(`${minutes}m`);
+          if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+          const durationText = parts.join(' ');
+          
+          // Get team name for notification
+          const team = Teams.findOne(teamId);
+          const teamName = team?.name || 'your team';
+          
+          // Automatically clock out
+          sessionManager.stopSession(teamId).then(() => {
+            // Send push notification to user
+            utils.meteorCall('notifyAutoClockOut', durationText, teamName).catch((err) => {
+              console.error('Failed to send auto-clock-out notification:', err);
+              // Don't fail if notification fails, just log it
+            });
+            
+            alert('You have been automatically clocked out after 10 hours of continuous work.');
+          }).catch((error) => {
+            console.error('Auto-clock-out failed:', error);
+            this.autoClockOutTriggered.set(false); // Reset flag if it failed
+          });
+        }
+      } else if (!activeSession) {
+        // Reset flag when there's no active session
+        this.autoClockOutTriggered.set(false);
+      }
+    }
+  });
 
   this.autorun(() => {
     const teamIds = Teams.find({}).map(t => t._id);
