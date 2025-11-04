@@ -478,8 +478,26 @@ Template.timesheet.helpers({
   selectedPreset: () => Template.instance().selectedPreset.get(),
   
   totalHours() {
-    const rows = Template.instance().computeSessionData();
-    const totalSeconds = rows.reduce((sum, row) => sum + (row.duration || 0), 0);
+    const instance = Template.instance();
+    const userId = instance.userId;
+    if (!userId) return '0:00:00';
+    
+    const startDateStr = instance.startDate.get();
+    const endDateStr = instance.endDate.get();
+    const dateRange = createDateRange(startDateStr, endDateStr);
+    
+    // Use same calculation as home page: directly from ClockEvents
+    const clockEvents = ClockEvents.find({ userId }).fetch();
+    const filteredEvents = clockEvents.filter(event => 
+      isEventInDateRange(new Date(event.startTimestamp), dateRange)
+    );
+    
+    // Same calculation as home page calculateTimeForEvents
+    const totalSeconds = filteredEvents.reduce((sum, event) => {
+      const endTime = event.endTime || Date.now();
+      return sum + Math.floor((endTime - event.startTimestamp) / 1000);
+    }, 0);
+    
     return formatTime(totalSeconds);
   },
   
@@ -535,7 +553,7 @@ Template.timesheet.events({
     const isCurrentlyEditing = t.editMode.get();
     
     if (isCurrentlyEditing) {
-      // Clicking Done - save all pending edits
+      // Clicking Save - save all pending edits
       if (t.gridApi) {
         if (t.gridApi.stopEditing) t.gridApi.stopEditing(); // Stop any active cell edit
       }
@@ -603,7 +621,7 @@ Template.timesheet.events({
       // Clicking Edit - enter edit mode
       t.editMode.set(true);
       const btn = t.find('#editClockins');
-      if (btn) btn.textContent = 'Done';
+      if (btn) btn.textContent = 'Save';
       if (t.gridApi) {
         // Update column defs with edit mode
         const colDefs = getColumnDefinitions(true);
