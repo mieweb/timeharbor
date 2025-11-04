@@ -11,8 +11,8 @@ module.exports = {
     themes: [
       {
         light: {
-          "primary": "#2C5282",        // Deep blue
-          "primary-focus": "#1A365D",  // Darker blue
+          "primary": "#6A5ACD",        // SlateBlue
+          "primary-focus": "#5A4ABD",  // Darker SlateBlue
           "primary-content": "#ffffff",
           
           "secondary": "#4A5568",      // Slate gray
