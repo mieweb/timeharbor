@@ -476,6 +476,7 @@ Template.timesheet.helpers({
   endDate: () => Template.instance().endDate.get(),
   isPresetSelected: (presetName) => Template.instance().selectedPreset.get() === presetName,
   selectedPreset: () => Template.instance().selectedPreset.get(),
+  isEditMode: () => Template.instance().editMode.get(),
   
   totalHours() {
     const instance = Template.instance();
@@ -562,8 +563,6 @@ Template.timesheet.events({
       if (edits.length === 0) {
         // No edits, just exit edit mode
         t.editMode.set(false);
-        const btn = t.find('#editClockins');
-        if (btn) btn.textContent = 'Edit';
         if (t.gridApi) {
           const colDefs = getColumnDefinitions(false);
           if (t.gridApi.setGridOption) {
@@ -602,8 +601,6 @@ Template.timesheet.events({
             // Clear pending edits and refresh
             t.pendingEdits.clear();
             t.editMode.set(false);
-            const btn = t.find('#editClockins');
-            if (btn) btn.textContent = 'Edit';
             if (t.gridApi) {
               const colDefs = getColumnDefinitions(false);
               if (t.gridApi.setGridOption) {
@@ -620,8 +617,6 @@ Template.timesheet.events({
     } else {
       // Clicking Edit - enter edit mode
       t.editMode.set(true);
-      const btn = t.find('#editClockins');
-      if (btn) btn.textContent = 'Save';
       if (t.gridApi) {
         // Update column defs with edit mode
         const colDefs = getColumnDefinitions(true);
