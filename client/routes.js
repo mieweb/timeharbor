@@ -62,6 +62,16 @@ FlowRouter.route('/admin', {
   }
 });
 
+// Activity route (ActivityWatch)
+FlowRouter.route('/activity', {
+  name: 'activity',
+  action() {
+    requireAuth(this, FlowRouter.go);
+    currentScreen.set('mainLayout');
+    currentRouteTemplate.set('activity');
+  }
+});
+
 // Individual Timesheet route - NEW!
 FlowRouter.route('/timesheet/:userId', {
   name: 'timesheet',

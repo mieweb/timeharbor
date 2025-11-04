@@ -84,7 +84,8 @@ if (Template.mainLayout) {
       } else if (href === '/admin' || target === 'admin') {
         FlowRouter.go('/admin');
       } else {
-        FlowRouter.go('/');
+        // For any other href (e.g. /activity), forward directly to FlowRouter
+        FlowRouter.go(href);
       }
     },
     'click #logoutBtn'(event, instance) {
