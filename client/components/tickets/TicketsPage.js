@@ -2,9 +2,7 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
-import { formatTime, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
-import { formatTime, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
-import { formatTime, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
+import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
 import { extractUrlTitle } from '../../utils/UrlUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
@@ -122,7 +120,6 @@ Template.tickets.onCreated(function () {
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
   this.autoClockOutTriggered = new ReactiveVar(false); // Track if auto-clock-out was triggered
-  this.searchQuery = new ReactiveVar(''); // Initialize search query
 
   // Auto-clock-out: Check every second when timer reaches 10:00:00
   this.autorun(() => {
@@ -141,9 +138,16 @@ Template.tickets.onCreated(function () {
         if (sessionDurationSeconds >= TEN_HOURS_SECONDS) {
           this.autoClockOutTriggered.set(true);
           
-          // Calculate total duration for notification (using utility function)
+          // Calculate total duration for notification (same format as server)
           const totalSeconds = (activeSession.accumulatedTime || 0) + sessionDurationSeconds;
-          const durationText = formatDurationText(totalSeconds);
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+          const parts = [];
+          if (hours > 0) parts.push(`${hours}h`);
+          if (minutes > 0) parts.push(`${minutes}m`);
+          if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+          const durationText = parts.join(' ');
           
           // Get team name for notification
           const team = Teams.findOne(teamId);
@@ -213,20 +217,20 @@ Template.tickets.helpers({
     
     const activeTicketId = Template.instance().activeTicketId.get();
     const now = currentTime.get();
-    const searchQuery = (Template.instance().searchQuery.get() || '').toLowerCase().trim();
+    const searchQuery = Template.instance().searchQuery.get().toLowerCase();
     
     // Show only tickets created by the current user
     return Tickets.find({ teamId, createdBy: Meteor.userId() }).fetch()
       .filter(ticket => !searchQuery || ticket.title.toLowerCase().includes(searchQuery))
       .map(ticket => {
-        const isActive = ticket._id === activeTicketId && ticket.startTimestamp;
-        const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
-        
-        return {
-          ...ticket,
-          displayTime: (ticket.accumulatedTime || 0) + elapsed
-        };
-      });
+      const isActive = ticket._id === activeTicketId && ticket.startTimestamp;
+      const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
+      
+      return {
+        ...ticket,
+        displayTime: (ticket.accumulatedTime || 0) + elapsed
+      };
+    });
   },
   isActive(ticketId) {
     const ticket = Tickets.findOne(ticketId);
