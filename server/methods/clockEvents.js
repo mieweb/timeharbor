@@ -1,7 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 import { ClockEvents, Tickets, Teams } from '../../collections.js';
-import { stopTicketInClockEvent } from '../utils/ClockEventHelpers.js';
+import { stopTicketInClockEvent, formatDurationText } from '../utils/ClockEventHelpers.js';
 import { notifyTeamAdmins } from '../utils/pushNotifications.js';
 
 export const clockEventMethods = {
@@ -91,17 +91,8 @@ export const clockEventMethods = {
         const prev = clockEvent.accumulatedTime || 0;
         totalSeconds = prev + elapsed;
         
-        // Format duration as hours, minutes, seconds
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        
-        // Build duration text
-        const parts = [];
-        if (hours > 0) parts.push(`${hours}h`);
-        if (minutes > 0) parts.push(`${minutes}m`);
-        if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-        durationText = parts.join(' ');
+        // Format duration text (using utility function)
+        durationText = formatDurationText(totalSeconds);
         
         await ClockEvents.updateAsync(clockEvent._id, {
           $set: { accumulatedTime: totalSeconds }
