@@ -120,6 +120,7 @@ Template.tickets.onCreated(function () {
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
   this.autoClockOutTriggered = new ReactiveVar(false); // Track if auto-clock-out was triggered
+  this.searchQuery = new ReactiveVar(''); // Initialize search query
 
   // Auto-clock-out: Check every second when timer reaches 10:00:00
   this.autorun(() => {
@@ -217,7 +218,7 @@ Template.tickets.helpers({
     
     const activeTicketId = Template.instance().activeTicketId.get();
     const now = currentTime.get();
-    const searchQuery = Template.instance().searchQuery.get().toLowerCase();
+    const searchQuery = (Template.instance().searchQuery?.get() || '').toLowerCase().trim();
     
     // Show only tickets created by the current user
     return Tickets.find({ teamId, createdBy: Meteor.userId() }).fetch()
