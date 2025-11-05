@@ -62,15 +62,6 @@ FlowRouter.route('/admin', {
   }
 });
 
-FlowRouter.route('/settings', {
-  name: 'settings',
-  action() {
-    requireAuth(this, FlowRouter.go);
-    currentScreen.set('mainLayout');
-    currentRouteTemplate.set('settings');
-  }
-});
-
 // Individual Timesheet route - NEW!
 FlowRouter.route('/timesheet/:userId', {
   name: 'timesheet',
@@ -118,9 +109,6 @@ export const navigateToRoute = (routeName, params = {}) => {
       break;
     case 'admin':
       FlowRouter.go('/admin');
-      break;
-    case 'settings':
-      FlowRouter.go('/settings');
       break;
     case 'timesheet':
       FlowRouter.go(`/timesheet/${params.userId}`);

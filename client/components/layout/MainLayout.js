@@ -83,8 +83,6 @@ if (Template.mainLayout) {
         FlowRouter.go('/calendar');
       } else if (href === '/admin' || target === 'admin') {
         FlowRouter.go('/admin');
-      } else if (href === '/settings' || target === 'settings') {
-        FlowRouter.go('/settings');
       } else {
         FlowRouter.go('/');
       }

@@ -9,7 +9,6 @@ import './components/tickets/TicketsPage.html';
 import './components/home/HomePage.html';
 import './components/calendar/CalendarPage.html';
 import './components/admin/admin.html';
-import './components/settings/SettingsPage.html';
 import './components/timesheet/TimesheetPage.html';
 import './components/guide/UserGuide.html';
 
@@ -21,7 +20,6 @@ import './components/tickets/TicketsPage.js';
 import './components/home/HomePage.js';
 import './components/calendar/CalendarPage.js';
 import './components/admin/admin.js';
-import './components/settings/SettingsPage.js';
 import './components/timesheet/TimesheetPage.js';
 import './components/guide/UserGuide.js';
 
