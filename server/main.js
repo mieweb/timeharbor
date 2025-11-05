@@ -14,7 +14,7 @@ import './methods/calendar.js';
 // Import notification methods
 import { notificationMethods } from './methods/notifications.js';
 // Import clock event helpers for auto-clock-out
-import { stopTicketInClockEvent } from './utils/ClockEventHelpers.js';
+import { stopTicketInClockEvent, formatDurationText } from './utils/ClockEventHelpers.js';
 import { notifyTeamAdmins, notifyUser } from './utils/pushNotifications.js';
 
 // Load environment variables from .env file
@@ -143,15 +143,8 @@ Meteor.startup(async () => {
               const prev = clockEvent.accumulatedTime || 0;
               const totalSeconds = prev + elapsed;
 
-              // Format duration text
-              const hours = Math.floor(totalSeconds / 3600);
-              const minutes = Math.floor((totalSeconds % 3600) / 60);
-              const seconds = totalSeconds % 60;
-              const parts = [];
-              if (hours > 0) parts.push(`${hours}h`);
-              if (minutes > 0) parts.push(`${minutes}m`);
-              if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-              const durationText = parts.join(' ');
+              // Format duration text using utility function
+              const durationText = formatDurationText(totalSeconds);
 
               // Stop all running tickets in this clock event
               if (clockEvent.tickets) {

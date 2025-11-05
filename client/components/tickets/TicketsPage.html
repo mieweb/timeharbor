@@ -10,6 +10,9 @@
       </select>
       <button id="showCreateTicketForm" class="btn btn-primary">Create Ticket</button>
     </div>
+    <div class="mb-4">
+      <input type="text" id="searchTickets" placeholder="Search tickets..." class="input input-bordered w-full max-w-md" />
+    </div>
     <div class="mb-4 flex items-center gap-4">
       {{#if isClockedInForTeam selectedTeamId}}
         <button id="clockOutBtn" class="btn btn-outline btn-primary">Clock Out</button>
