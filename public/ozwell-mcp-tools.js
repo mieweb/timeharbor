@@ -227,21 +227,24 @@ const toolHandlers = {
     const updated = [];
 
     if (params.hours !== undefined && hoursInput) {
-      hoursInput.value = params.hours;
+      // Convert to number (model might send as string)
+      hoursInput.value = Number(params.hours);
       hoursInput.dispatchEvent(new Event('input', { bubbles: true }));
       hoursInput.dispatchEvent(new Event('change', { bubbles: true }));
       updated.push(`hours: ${params.hours}`);
     }
 
     if (params.minutes !== undefined && minutesInput) {
-      minutesInput.value = params.minutes;
+      // Convert to number (model might send as string)
+      minutesInput.value = Number(params.minutes);
       minutesInput.dispatchEvent(new Event('input', { bubbles: true }));
       minutesInput.dispatchEvent(new Event('change', { bubbles: true }));
       updated.push(`minutes: ${params.minutes}`);
     }
 
     if (params.seconds !== undefined && secondsInput) {
-      secondsInput.value = params.seconds;
+      // Convert to number (model might send as string)
+      secondsInput.value = Number(params.seconds);
       secondsInput.dispatchEvent(new Event('input', { bubbles: true }));
       secondsInput.dispatchEvent(new Event('change', { bubbles: true }));
       updated.push(`seconds: ${params.seconds}`);
@@ -273,8 +276,9 @@ const toolHandlers = {
     }
 
     const teamId = teamSelect.value;
-    const days = params.days || 30;
-    const limit = params.limit || 20;
+    // Convert to numbers (model might send as strings)
+    const days = params.days ? Number(params.days) : 30;
+    const limit = params.limit ? Number(params.limit) : 20;
 
     try {
       // Call Meteor method to get project history
@@ -309,7 +313,8 @@ const toolHandlers = {
     }
 
     const teamId = teamSelect.value;
-    const days = params.days || 30;
+    // Convert days to number (model might send as string)
+    const days = params.days ? Number(params.days) : 30;
 
     try {
       // Call Meteor method to get time statistics
@@ -344,7 +349,8 @@ const toolHandlers = {
     }
 
     const teamId = teamSelect.value;
-    const limit = params.limit || 10;
+    // Convert to number (model might send as string)
+    const limit = params.limit ? Number(params.limit) : 10;
 
     try {
       // Call Meteor method to get conversation history
