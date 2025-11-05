@@ -1,6 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 import { check, Match } from 'meteor/check';
-import { getVapidPublicKey } from '../utils/pushNotifications.js';
+import { getVapidPublicKey, notifyUser } from '../utils/pushNotifications.js';
 
 export const notificationMethods = {
   /**
@@ -73,6 +73,38 @@ export const notificationMethods = {
     return {
       enabled: !!(user?.profile?.pushSubscription)
     };
+  },
+
+  /**
+   * Send auto-clock-out notification to the current user
+   */
+  async 'notifyAutoClockOut'(durationText, teamName) {
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in');
+    }
+
+    try {
+      const result = await notifyUser(this.userId, {
+        title: 'Time Harbor - Auto Clock Out',
+        body: `You were automatically clocked out as your timer reached 10 hours straight. Total time: ${durationText}`,
+        icon: '/timeharbor-icon.svg',
+        badge: '/timeharbor-icon.svg',
+        tag: `auto-clockout-user-${this.userId}-${Date.now()}`,
+        data: {
+          type: 'auto-clock-out',
+          userId: this.userId,
+          duration: durationText,
+          teamName: teamName,
+          autoClockOut: true,
+          url: '/tickets'
+        }
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error sending auto-clock-out notification to user:', error);
+      throw new Meteor.Error('notification-failed', 'Failed to send notification');
+    }
   }
 };
 
