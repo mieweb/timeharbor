@@ -120,6 +120,9 @@ class ChatWrapper {
 
     // Prevent text selection while dragging
     this.header.addEventListener('selectstart', (e) => e.preventDefault());
+
+    // Window resize - keep chat within viewport bounds
+    window.addEventListener('resize', () => this.constrainToViewport());
   }
 
   toggle() {
@@ -222,6 +225,34 @@ class ChatWrapper {
         cancelAnimationFrame(this.rafId);
         this.rafId = null;
       }
+    }
+  }
+
+  constrainToViewport() {
+    // Only constrain if chat is open
+    if (!this.isOpen) {
+      return;
+    }
+
+    // Get current position
+    const rect = this.container.getBoundingClientRect();
+    const currentLeft = rect.left;
+    const currentTop = rect.top;
+
+    // Calculate max allowed positions
+    const maxX = window.innerWidth - this.container.offsetWidth;
+    const maxY = window.innerHeight - this.container.offsetHeight;
+
+    // Clamp to viewport bounds
+    const newLeft = Math.max(0, Math.min(currentLeft, maxX));
+    const newTop = Math.max(0, Math.min(currentTop, maxY));
+
+    // Only update if position changed
+    if (newLeft !== currentLeft || newTop !== currentTop) {
+      this.currentPosition.x = newLeft;
+      this.currentPosition.y = newTop;
+      this.container.style.transform = `translate(${newLeft}px, ${newTop}px)`;
+      console.log(`[ChatWrapper] Position adjusted to stay in viewport: (${newLeft}, ${newTop})`);
     }
   }
 
