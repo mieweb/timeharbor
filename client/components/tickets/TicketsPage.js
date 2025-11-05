@@ -4,6 +4,7 @@ import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
 import { formatTime, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
+import { formatTime, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
 import { extractUrlTitle } from '../../utils/UrlUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
