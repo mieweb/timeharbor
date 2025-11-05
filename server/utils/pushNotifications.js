@@ -93,6 +93,39 @@ export async function notifyTeamAdmins(teamId, notificationData) {
   }
 }
 
+/**
+ * Send a push notification to a specific user
+ * @param {String} userId - The user ID
+ * @param {Object} notificationData - The notification data
+ */
+export async function notifyUser(userId, notificationData) {
+  const { Meteor } = require('meteor/meteor');
+  
+  try {
+    const user = await Meteor.users.findOneAsync(userId);
+    if (!user || !user.profile?.pushSubscription) {
+      return { success: false, reason: 'User not found or no subscription' };
+    }
+
+    const result = await sendPushNotification(
+      user.profile.pushSubscription,
+      notificationData
+    );
+    
+    // If subscription expired, remove it
+    if (result.expired) {
+      await Meteor.users.updateAsync(userId, {
+        $unset: { 'profile.pushSubscription': '' }
+      });
+    }
+    
+    return { userId, ...result };
+  } catch (error) {
+    console.error('Error notifying user:', error);
+    throw error;
+  }
+}
+
 export function getVapidPublicKey() {
   return vapidKeys.publicKey || null;
 }

@@ -2,7 +2,7 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
-import { formatTime, calculateTotalTime } from '../../utils/TimeUtils.js';
+import { formatTime, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
 import { extractUrlTitle } from '../../utils/UrlUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
@@ -117,6 +117,54 @@ Template.tickets.onCreated(function () {
   this.selectedTeamId = new ReactiveVar(null);
   this.activeTicketId = new ReactiveVar(null);
   this.clockedIn = new ReactiveVar(false);
+  this.autoClockOutTriggered = new ReactiveVar(false); // Track if auto-clock-out was triggered
+  this.searchQuery = new ReactiveVar(''); // Initialize search query
+
+  // Auto-clock-out: Check every second when timer reaches 10:00:00
+  this.autorun(() => {
+    const teamId = this.selectedTeamId.get();
+    const now = currentTime.get(); // This updates every second
+    
+    if (teamId && Meteor.userId()) {
+      const activeSession = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+      
+      if (activeSession && !this.autoClockOutTriggered.get()) {
+        // Calculate continuous session duration in seconds
+        const sessionDurationSeconds = Math.floor((now - activeSession.startTimestamp) / 1000);
+        const TEN_HOURS_SECONDS = 10 * 60 * 60; // 36000 seconds
+        
+        // Auto-clock-out when timer reaches exactly 10:00:00 or above
+        if (sessionDurationSeconds >= TEN_HOURS_SECONDS) {
+          this.autoClockOutTriggered.set(true);
+          
+          // Calculate total duration for notification (using utility function)
+          const totalSeconds = (activeSession.accumulatedTime || 0) + sessionDurationSeconds;
+          const durationText = formatDurationText(totalSeconds);
+          
+          // Get team name for notification
+          const team = Teams.findOne(teamId);
+          const teamName = team?.name || 'your team';
+          
+          // Automatically clock out
+          sessionManager.stopSession(teamId).then(() => {
+            // Send push notification to user
+            utils.meteorCall('notifyAutoClockOut', durationText, teamName).catch((err) => {
+              console.error('Failed to send auto-clock-out notification:', err);
+              // Don't fail if notification fails, just log it
+            });
+            
+            alert('You have been automatically clocked out after 10 hours of continuous work.');
+          }).catch((error) => {
+            console.error('Auto-clock-out failed:', error);
+            this.autoClockOutTriggered.set(false); // Reset flag if it failed
+          });
+        }
+      } else if (!activeSession) {
+        // Reset flag when there's no active session
+        this.autoClockOutTriggered.set(false);
+      }
+    }
+  });
 
   this.getOzwellContext = () => {
     const teamId = this.selectedTeamId.get();
@@ -227,9 +275,13 @@ Template.tickets.helpers({
 
     const activeTicketId = template.activeTicketId.get();
     const now = currentTime.get();
+    const searchQuery = (Template.instance().searchQuery?.get() || '').toLowerCase().trim();
 
-    return Tickets.find({ teamId, createdBy: Meteor.userId() }).fetch().map(ticket => {
-      const isActive = ticket._id === activeTicketId && ticket.startTimestamp && !ticket.endTime;
+    // Show only tickets created by the current user
+    return Tickets.find({ teamId, createdBy: Meteor.userId() }).fetch()
+      .filter(ticket => !searchQuery || ticket.title.toLowerCase().includes(searchQuery))
+      .map(ticket => {
+      const isActive = ticket._id === activeTicketId && ticket.startTimestamp;
       const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
 
       return {
@@ -315,9 +367,11 @@ Template.tickets.events({
     templateInstance.showCreateTicketForm.set(false);
     templateInstance.showEditTicketForm.set(false);
   },
-  'click #showCreateTicketForm'(event, templateInstance) {
-    templateInstance.showCreateTicketForm.set(true);
-    templateInstance.showEditTicketForm.set(false);
+  'input #searchTickets'(e, t) {
+    t.searchQuery.set(e.target.value);
+  },
+  'click #showCreateTicketForm'(e, t) {
+    t.showCreateTicketForm.set(true);
   },
   'click #cancelCreateTicket'(event, templateInstance) {
     templateInstance.showCreateTicketForm.set(false);

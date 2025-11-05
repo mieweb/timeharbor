@@ -41,9 +41,9 @@ const getColumnDefinitions = (showClockTimes = true) => {
       }
     },
     { headerName: 'Email', field: 'userEmail', flex: 1.5, sortable: true, filter: 'agTextColumnFilter' },
-    { 
+  { 
       headerName: 'Hours', field: 'totalSeconds', flex: 1, sortable: true, filter: 'agNumberColumnFilter',
-      valueFormatter: p => formatTime(p.value)
+      valueFormatter: p => (p.data?.hasActiveSession ? 'Running...' : formatTime(p.value))
     }
   ];
 
@@ -57,7 +57,8 @@ const getColumnDefinitions = (showClockTimes = true) => {
       { 
         headerName: 'Clock-out', field: 'lastClockOut', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
         valueFormatter: p => {
-          if (!p.value) return p.data?.hasActiveSession ? 'Running...' : '-';
+          if (p.data?.hasActiveSession) return 'Not clocked out';
+          if (!p.value) return 'Not clocked out';
           return new Date(p.value).toLocaleTimeString();
         }
       },
@@ -68,7 +69,7 @@ const getColumnDefinitions = (showClockTimes = true) => {
           if (p.value) {
             return '<span class="text-success font-semibold flex items-center gap-1"><span class="inline-block w-2 h-2 bg-success rounded-full animate-pulse"></span>Active</span>';
           }
-          return '<span class="text-base-content opacity-60">Completed</span>';
+          return '<span class="font-medium">Completed</span>';
         },
         filterParams: { values: ['Active', 'Completed'] }
       }
@@ -91,6 +92,12 @@ const createGridOptions = (showClockTimes = true) => ({
     resizable: true,
     sortable: true,
     filter: true,
+  },
+  onFirstDataRendered: (params) => {
+    params.api.applyColumnState({
+      state: [{ colId: 'date', sort: 'desc' }],
+      defaultState: { sort: null }
+    });
   }
 });
 
@@ -207,8 +214,8 @@ Template.home.onCreated(function () {
               totalSeconds += daySessionSeconds;
               
               if (sessionStart >= dayBoundaries.start && sessionStart <= dayBoundaries.end) {
-                if (!firstClockIn || sessionStart > firstClockIn) {
-                  firstClockIn = sessionStart;
+                if (!firstClockIn || sessionStart < firstClockIn) {
+                  firstClockIn = sessionStart; // earliest clock-in
                 }
               }
              
@@ -247,7 +254,7 @@ Template.home.onCreated(function () {
     });
 
     return rows.sort((a, b) => {
-      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      if (a.date !== b.date) return b.date.localeCompare(a.date); // latest date first
       return a.displayName.localeCompare(b.displayName);
     });
   };
@@ -274,10 +281,12 @@ Template.home.onRendered(function () {
       }
     });
 
-    // Global function for user timesheet navigation
+    // Global function for user timesheet navigation (preserve selected date range)
     window.viewUserTimesheet = (userId, userName) => {
-      console.log(`Viewing timesheet for user: ${userName} (${userId})`);
-      FlowRouter.go(`/timesheet/${userId}`);
+      const start = instance.startDate.get();
+      const end = instance.endDate.get();
+      const qs = `?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+      FlowRouter.go(`/timesheet/${userId}${qs}`);
     };
   });
 

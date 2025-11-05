@@ -1,7 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
 import { ClockEvents, Tickets, Teams } from '../../collections.js';
-import { stopTicketInClockEvent } from '../utils/ClockEventHelpers.js';
+import { stopTicketInClockEvent, formatDurationText } from '../utils/ClockEventHelpers.js';
 import { notifyTeamAdmins } from '../utils/pushNotifications.js';
 
 export const clockEventMethods = {
@@ -91,17 +91,8 @@ export const clockEventMethods = {
         const prev = clockEvent.accumulatedTime || 0;
         totalSeconds = prev + elapsed;
         
-        // Format duration as hours, minutes, seconds
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        
-        // Build duration text
-        const parts = [];
-        if (hours > 0) parts.push(`${hours}h`);
-        if (minutes > 0) parts.push(`${minutes}m`);
-        if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-        durationText = parts.join(' ');
+        // Format duration text (using utility function)
+        durationText = formatDurationText(totalSeconds);
         
         await ClockEvents.updateAsync(clockEvent._id, {
           $set: { accumulatedTime: totalSeconds }
@@ -281,4 +272,51 @@ export const clockEventMethods = {
       }
     };
   },
+
+  // Admin/leader: update clock event times
+  async updateClockEventTimes({ clockEventId, startTimestamp, endTimestamp }) {
+    check(clockEventId, String);
+    if (startTimestamp !== undefined && typeof startTimestamp !== 'number') {
+      throw new Meteor.Error('validation-error', 'startTimestamp must be a number (ms since epoch)');
+    }
+    if (endTimestamp !== undefined && endTimestamp !== null && typeof endTimestamp !== 'number') {
+      throw new Meteor.Error('validation-error', 'endTimestamp must be a number (ms since epoch) or null');
+    }
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    const clockEvent = await ClockEvents.findOneAsync(clockEventId);
+    if (!clockEvent) throw new Meteor.Error('not-found', 'Clock event not found');
+
+    // Only team leader/admins can edit clock events
+    const team = await Teams.findOneAsync({
+      _id: clockEvent.teamId,
+      $or: [
+        { leader: this.userId },
+        { admins: this.userId }
+      ]
+    });
+    if (!team) throw new Meteor.Error('not-authorized', 'You are not allowed to edit this clock event');
+
+    // Validate ordering if both provided
+    if (typeof startTimestamp === 'number' && typeof endTimestamp === 'number') {
+      if (endTimestamp < startTimestamp) {
+        throw new Meteor.Error('validation-error', 'Clock-out cannot be earlier than clock-in');
+      }
+    }
+
+    const $set = {};
+    if (typeof startTimestamp === 'number') {
+      $set.startTimestamp = startTimestamp;
+    }
+    if (endTimestamp === null) {
+      $set.endTime = null;
+    } else if (typeof endTimestamp === 'number') {
+      $set.endTime = new Date(endTimestamp);
+    }
+
+    if (Object.keys($set).length === 0) return true;
+
+    await ClockEvents.updateAsync(clockEventId, { $set });
+    return true;
+  }
 }; 

@@ -13,6 +13,9 @@ import { clockEventMethods } from './methods/clockEvents.js';
 import './methods/calendar.js';
 // Import notification methods
 import { notificationMethods } from './methods/notifications.js';
+// Import clock event helpers for auto-clock-out
+import { stopTicketInClockEvent, formatDurationText } from './utils/ClockEventHelpers.js';
+import { notifyTeamAdmins, notifyUser } from './utils/pushNotifications.js';
 
 // Load environment variables from .env file
 import dotenv from 'dotenv';
@@ -108,6 +111,134 @@ Meteor.startup(async () => {
     const code = Math.random().toString(36).substr(2, 8).toUpperCase();
     await Teams.updateAsync(team._id, { $set: { code } });
   }
+
+  // Auto-clock-out: Server-side backup check (runs every minute as backup to client-side check)
+  const TEN_HOURS_MS = 10 * 60 * 60 * 1000; // 10 hours in milliseconds
+  const CHECK_INTERVAL_MS = 60 * 1000; // Check every 1 minute (backup check)
+
+  Meteor.setInterval(async () => {
+    try {
+      const now = Date.now();
+      // Find all active clock events (still running)
+      const activeEvents = await ClockEvents.find({
+        endTime: null // Still running
+      }).fetchAsync();
+
+      if (activeEvents.length > 0) {
+        const longRunningEvents = [];
+        
+        // Check each active event to see if it has been running for 10+ hours continuously
+        for (const clockEvent of activeEvents) {
+          const sessionDuration = now - clockEvent.startTimestamp;
+          if (sessionDuration >= TEN_HOURS_MS) {
+            longRunningEvents.push(clockEvent);
+          }
+        }
+
+        if (longRunningEvents.length > 0) {
+          console.log(`Auto-clock-out: Found ${longRunningEvents.length} clock event(s) running for 10+ hours`);
+
+          for (const clockEvent of longRunningEvents) {
+            try {
+              // Calculate total accumulated time
+              const elapsed = Math.floor((now - clockEvent.startTimestamp) / 1000);
+              const prev = clockEvent.accumulatedTime || 0;
+              const totalSeconds = prev + elapsed;
+
+              // Format duration text (using utility function)
+              const durationText = formatDurationText(totalSeconds);
+
+              // Stop all running tickets in this clock event
+              if (clockEvent.tickets) {
+                const updates = clockEvent.tickets
+                  .filter(t => t.startTimestamp)
+                  .map(ticket =>
+                    stopTicketInClockEvent(clockEvent._id, ticket.ticketId, now, ClockEvents)
+                  );
+                await Promise.all(updates);
+              }
+
+              // Mark clock event as ended
+              await ClockEvents.updateAsync(clockEvent._id, {
+                $set: {
+                  endTime: new Date(),
+                  accumulatedTime: totalSeconds
+                }
+              });
+
+              // Get user and team info for logging/notification
+              const user = await Meteor.users.findOneAsync(clockEvent.userId);
+              const userName = user?.services?.google?.name || 
+                               user?.services?.github?.username || 
+                               user?.profile?.name || 
+                               user?.username || 
+                               user?.emails?.[0]?.address?.split('@')[0] || 
+                               'A user';
+              
+              const team = await Teams.findOneAsync(clockEvent.teamId);
+              const teamName = team?.name || 'a team';
+
+              console.log(`Auto-clock-out: Clocked out ${userName} from ${teamName} after ${durationText} (10+ hours continuous session)`);
+
+              // Send notification to the user who was auto-clock-out
+              try {
+                await notifyUser(clockEvent.userId, {
+                  title: 'Time Harbor - Auto Clock Out',
+                  body: `You were automatically clocked out as your timer reached 10 hours straight. Total time: ${durationText}`,
+                  icon: '/timeharbor-icon.svg',
+                  badge: '/timeharbor-icon.svg',
+                  tag: `auto-clockout-user-${clockEvent.userId}-${Date.now()}`,
+                  data: {
+                    type: 'auto-clock-out',
+                    userId: clockEvent.userId,
+                    userName: userName,
+                    teamName: teamName,
+                    teamId: clockEvent.teamId,
+                    clockEventId: clockEvent._id,
+                    duration: durationText,
+                    autoClockOut: true,
+                    url: '/tickets'
+                  }
+                });
+              } catch (error) {
+                console.error('Failed to send auto-clock-out notification to user:', error);
+              }
+
+              // Send notification to team admins/leaders
+              try {
+                await notifyTeamAdmins(clockEvent.teamId, {
+                  title: 'Time Harbor - Auto Clock Out',
+                  body: `${userName} was automatically clocked out of ${teamName} after ${durationText} (10+ hours limit)`,
+                  icon: '/timeharbor-icon.svg',
+                  badge: '/timeharbor-icon.svg',
+                  tag: `auto-clockout-admin-${clockEvent.userId}-${Date.now()}`,
+                  data: {
+                    type: 'clock-out',
+                    userId: clockEvent.userId,
+                    userName: userName,
+                    teamName: teamName,
+                    teamId: clockEvent.teamId,
+                    clockEventId: clockEvent._id,
+                    duration: durationText,
+                    autoClockOut: true,
+                    url: '/admin'
+                  }
+                });
+              } catch (error) {
+                console.error('Failed to send auto-clock-out notification to admins:', error);
+              }
+            } catch (error) {
+              console.error(`Failed to auto-clock-out event ${clockEvent._id}:`, error);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in auto-clock-out check:', error);
+    }
+  }, CHECK_INTERVAL_MS);
+
+  console.log('Auto-clock-out service started: Server-side backup check runs every 1 minute');
 });
 
 Meteor.publish('userTeams', function () {
