@@ -393,7 +393,7 @@ class OzwellMCPIntegration {
 
       // For null origin, verify it's from our widget iframe
       if (event.origin === 'null') {
-        const widgetIframe = document.querySelector('iframe[src*="widget.html"]');
+        const widgetIframe = document.querySelector('iframe[src*="ozwell.html"]');
         if (!widgetIframe || event.source !== widgetIframe.contentWindow) {
           return;
         }
@@ -443,7 +443,7 @@ class OzwellMCPIntegration {
 
   sendToolResult(result) {
     // Find widget iframe dynamically
-    const widgetIframe = document.querySelector('iframe[src*="widget.html"]');
+    const widgetIframe = document.querySelector('iframe[src*="ozwell.html"]');
 
     if (!widgetIframe) {
       console.warn('[MCP Tools] Widget iframe not found, cannot send result');

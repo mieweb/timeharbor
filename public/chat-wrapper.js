@@ -51,7 +51,7 @@ class ChatWrapper {
 
     // Check for existing iframes
     const checkExisting = () => {
-      const iframes = document.querySelectorAll('iframe[src*="widget.html"]');
+      const iframes = document.querySelectorAll('iframe[src*="ozwell.html"]');
       iframes.forEach(hideIframeIfNotInContainer);
     };
 
@@ -62,7 +62,7 @@ class ChatWrapper {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
-          if (node.tagName === 'IFRAME' && node.src && node.src.includes('widget.html')) {
+          if (node.tagName === 'IFRAME' && node.src && node.src.includes('ozwell.html')) {
             hideIframeIfNotInContainer(node);
           }
         });
@@ -121,8 +121,12 @@ class ChatWrapper {
     // Prevent text selection while dragging
     this.header.addEventListener('selectstart', (e) => e.preventDefault());
 
-    // Window resize - keep chat within viewport bounds
-    window.addEventListener('resize', () => this.constrainToViewport());
+    // Window resize - keep chat within viewport bounds (throttled)
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => this.constrainToViewport(), 250);
+    });
   }
 
   toggle() {
@@ -249,6 +253,13 @@ class ChatWrapper {
 
     // Only update if position changed
     if (newLeft !== currentLeft || newTop !== currentTop) {
+      // Remove bottom/right positioning to prevent conflicts with transform
+      // (same approach as startDrag)
+      this.container.style.bottom = 'auto';
+      this.container.style.right = 'auto';
+      this.container.style.left = '0';
+      this.container.style.top = '0';
+
       this.currentPosition.x = newLeft;
       this.currentPosition.y = newTop;
       this.container.style.transform = `translate(${newLeft}px, ${newTop}px)`;
