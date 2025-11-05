@@ -210,9 +210,12 @@ Template.tickets.helpers({
     
     const activeTicketId = Template.instance().activeTicketId.get();
     const now = currentTime.get();
+    const searchQuery = Template.instance().searchQuery.get().toLowerCase();
     
     // Show only tickets created by the current user
-    return Tickets.find({ teamId, createdBy: Meteor.userId() }).fetch().map(ticket => {
+    return Tickets.find({ teamId, createdBy: Meteor.userId() }).fetch()
+      .filter(ticket => !searchQuery || ticket.title.toLowerCase().includes(searchQuery))
+      .map(ticket => {
       const isActive = ticket._id === activeTicketId && ticket.startTimestamp;
       const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
       
@@ -291,6 +294,9 @@ Template.tickets.helpers({
 Template.tickets.events({
   'change #teamSelect'(e, t) {
     t.selectedTeamId.set(e.target.value);
+  },
+  'input #searchTickets'(e, t) {
+    t.searchQuery.set(e.target.value);
   },
   'click #showCreateTicketForm'(e, t) {
     t.showCreateTicketForm.set(true);
