@@ -13,20 +13,21 @@
     <div class="flex-none">
       <button id="logoutBtn" class="btn btn-outline btn-error" {{logoutBtnAttrs}}>
         {{#if isLogoutLoading}}
-        <span class="loading loading-spinner loading-sm"></span>
-        Logging out...
+          <span class="loading loading-spinner loading-sm"></span>
+          Logging out...
         {{else}}
-        Logout
+          Logout
         {{/if}}
       </button>
     </div>
   </header>
-
+  
   {{#if logoutMessage}}
-  <div class="alert alert-error mx-4 mb-4">
-    <span>{{logoutMessage}}</span>
-  </div>
+    <div class="alert alert-error mx-4 mb-4">
+      <span>{{logoutMessage}}</span>
+    </div>
   {{/if}}
+  
   <main class="container mx-auto px-4 pb-20">
     {{> Template.dynamic template=main}}
   </main>

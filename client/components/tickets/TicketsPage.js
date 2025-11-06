@@ -6,37 +6,38 @@ import { formatTime, calculateTotalTime, formatDurationText } from '../../utils/
 import { extractUrlTitle } from '../../utils/UrlUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
-const SECONDS_PER_HOUR = 3600;
-const SECONDS_PER_MINUTE = 60;
-
+// Utility functions
 const utils = {
-  meteorCall: (methodName, ...args) =>
-    new Promise((resolve, reject) => {
+  // Safe Meteor call wrapper
+  meteorCall: (methodName, ...args) => {
+    return new Promise((resolve, reject) => {
       Meteor.call(methodName, ...args, (err, result) => {
         if (err) reject(err);
         else resolve(result);
       });
-    }),
+    });
+  },
 
-  calculateAccumulatedTime: (hours = 0, minutes = 0, seconds = 0) =>
-    (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE) + seconds,
-
+  // Get current timestamp
   now: () => Date.now(),
 
+  // Safe error handling
   handleError: (error, message = 'Operation failed') => {
     console.error(message, error);
     alert(`${message}: ${error.reason || error.message}`);
   }
 };
 
+// Ticket management functions
 const ticketManager = {
+  // Start a new ticket
   startTicket: async (ticketId, templateInstance, clockEvent) => {
     try {
       templateInstance.activeTicketId.set(ticketId);
       const now = utils.now();
-
+      
       await utils.meteorCall('updateTicketStart', ticketId, now);
-
+      
       if (clockEvent) {
         await utils.meteorCall('clockEventAddTicket', clockEvent._id, ticketId, now);
       }
@@ -46,11 +47,12 @@ const ticketManager = {
     }
   },
 
+  // Stop a ticket
   stopTicket: async (ticketId, clockEvent) => {
     try {
       const now = utils.now();
       await utils.meteorCall('updateTicketStop', ticketId, now);
-
+      
       if (clockEvent) {
         await utils.meteorCall('clockEventStopTicket', clockEvent._id, ticketId, now);
       }
@@ -61,20 +63,23 @@ const ticketManager = {
     }
   },
 
+  // Switch from one ticket to another
   switchTicket: async (newTicketId, templateInstance, clockEvent) => {
     const currentActiveId = templateInstance.activeTicketId.get();
-
-    if (currentActiveId && currentActiveId !== newTicketId) {
+    
+    if (currentActiveId) {
       const success = await ticketManager.stopTicket(currentActiveId, clockEvent);
       if (!success) return false;
     }
-
+    
     await ticketManager.startTicket(newTicketId, templateInstance, clockEvent);
     return true;
   }
 };
 
+// Session management functions
 const sessionManager = {
+  // Start a session
   startSession: async (teamId) => {
     try {
       await utils.meteorCall('clockEventStart', teamId);
@@ -83,29 +88,26 @@ const sessionManager = {
     }
   },
 
-  stopSession: async (teamId, templateInstance) => {
+  // Stop a session
+  stopSession: async (teamId) => {
     try {
-      const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
-      const totalWorkTime = clockEvent ? Math.floor((utils.now() - clockEvent.startTimestamp) / 1000) : 0;
-
-      const runningTickets = Tickets.find({
-        teamId,
-        createdBy: Meteor.userId(),
-        startTimestamp: { $exists: true },
-        endTime: { $exists: false }
-      }).fetch();
-
-      for (const ticket of runningTickets) {
-        await ticketManager.stopTicket(ticket._id, clockEvent);
-      }
-
+      // Find running tickets created by current user and stop them
+      const runningTickets = Tickets.find({ teamId, createdBy: Meteor.userId(), startTimestamp: { $exists: true } }).fetch();
+      
+      // Stop all running tickets
+      const stopPromises = runningTickets.map(ticket => 
+        ticketManager.stopTicket(ticket._id)
+      );
+      
+      // Wait for all tickets to stop
+      await Promise.all(stopPromises);
+      
+      // Then stop the clock event (which will also stop any remaining tickets)
       await utils.meteorCall('clockEventStop', teamId);
-      templateInstance?.activeTicketId.set(null);
-
-      return { success: true, totalWorkTime };
+      return true;
     } catch (error) {
       utils.handleError(error, 'Failed to stop session');
-      return { success: false, totalWorkTime: 0 };
+      return false;
     }
   }
 };
@@ -166,86 +168,21 @@ Template.tickets.onCreated(function () {
     }
   });
 
-  this.getOzwellContext = () => {
-    const teamId = this.selectedTeamId.get();
-    const team = Teams.findOne(teamId);
-    const activeTicketId = this.activeTicketId.get();
-    const activeTicket = activeTicketId ? Tickets.findOne(activeTicketId) : null;
-
-    const recentTickets = teamId
-      ? Tickets.find({ teamId }, { sort: { updatedAt: -1 }, limit: 5 }).fetch()
-      : [];
-
-    const totalProjectTime = recentTickets.reduce((sum, ticket) => sum + (ticket.totalTime || 0), 0);
-    const today = new Date();
-    const totalTimeToday = recentTickets
-      .filter(ticket => {
-        const ticketDate = new Date(ticket.updatedAt || ticket.createdAt);
-        return ticketDate.toDateString() === today.toDateString();
-      })
-      .reduce((sum, ticket) => sum + (ticket.totalTime || 0), 0);
-
-    const recentActivitySummary = recentTickets.length > 0
-      ? recentTickets
-          .map(ticket => `• ${ticket.title} (${Math.round((ticket.totalTime || 0) / 60)}min)`)
-          .join('\n')
-      : 'No recent activity';
-
-    return {
-      teamId,
-      teamName: team?.name || 'Unknown Project',
-      user: {
-        username: Meteor.user()?.username || 'Unknown User',
-        email: Meteor.user()?.emails?.[0]?.address || ''
-      },
-      currentTicket: activeTicket
-        ? {
-            title: activeTicket.title,
-            description: activeTicket.github || '',
-            status: 'active',
-            totalTime: activeTicket.totalTime || 0,
-            formattedTime: `${Math.floor((activeTicket.totalTime || 0) / 3600)}h ${Math.floor(((activeTicket.totalTime || 0) % 3600) / 60)}m`
-          }
-        : null,
-      projectStats: {
-        totalTickets: recentTickets.length,
-        totalProjectTime: Math.round(totalProjectTime / 60),
-        totalTimeToday: Math.round(totalTimeToday / 60),
-        formattedProjectTime: `${Math.floor(totalProjectTime / 3600)}h ${Math.floor((totalProjectTime % 3600) / 60)}m`,
-        formattedTimeToday: `${Math.floor(totalTimeToday / 3600)}h ${Math.floor((totalTimeToday % 3600) / 60)}m`
-      },
-      recentActivitySummary,
-      recentActivity: recentTickets.map(ticket => ({
-        title: ticket.title,
-        description: ticket.github || '',
-        totalTime: ticket.totalTime || 0,
-        lastUpdated: ticket.updatedAt || ticket.createdAt,
-        formattedTime: `${Math.round((ticket.totalTime || 0) / 60)}min`
-      }))
-    };
-  };
-
   this.autorun(() => {
-    const teamIds = Teams.find({}).map(team => team._id);
+    const teamIds = Teams.find({}).map(t => t._id);
     let teamId = this.selectedTeamId.get();
-
+    
     if (!teamId && teamIds.length > 0) {
       this.selectedTeamId.set(teamIds[0]);
       teamId = this.selectedTeamId.get();
     }
-
+    
     this.subscribe('teamTickets', teamIds);
-    this.subscribe('clockEventsForUser');
-
+    
     if (teamId) {
       const activeSession = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
       if (activeSession) {
-        const runningTicket = Tickets.findOne({
-          teamId,
-          createdBy: Meteor.userId(),
-          startTimestamp: { $exists: true },
-          endTime: { $exists: false }
-        });
+        const runningTicket = Tickets.findOne({ teamId, createdBy: Meteor.userId(), startTimestamp: { $exists: true } });
         this.activeTicketId.set(runningTicket ? runningTicket._id : null);
       } else {
         this.activeTicketId.set(null);
@@ -269,21 +206,20 @@ Template.tickets.helpers({
     return Template.instance().editingTicket.get();
   },
   tickets() {
-    const template = Template.instance();
-    const teamId = template.selectedTeamId.get();
+    const teamId = Template.instance().selectedTeamId.get();
     if (!teamId) return [];
-
-    const activeTicketId = template.activeTicketId.get();
+    
+    const activeTicketId = Template.instance().activeTicketId.get();
     const now = currentTime.get();
     const searchQuery = (Template.instance().searchQuery?.get() || '').toLowerCase().trim();
-
+    
     // Show only tickets created by the current user
     return Tickets.find({ teamId, createdBy: Meteor.userId() }).fetch()
       .filter(ticket => !searchQuery || ticket.title.toLowerCase().includes(searchQuery))
       .map(ticket => {
       const isActive = ticket._id === activeTicketId && ticket.startTimestamp;
       const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
-
+      
       return {
         ...ticket,
         displayTime: (ticket.accumulatedTime || 0) + elapsed
@@ -292,18 +228,21 @@ Template.tickets.helpers({
   },
   isActive(ticketId) {
     const ticket = Tickets.findOne(ticketId);
-    return !!(ticket && ticket.startTimestamp && !ticket.endTime);
+    return ticket && ticket.startTimestamp && !ticket.endTime;
   },
   formatTime,
   githubLink(github) {
     if (!github) return '';
     return github.startsWith('http') ? github : `https://github.com/${github}`;
   },
-  isClockedInForTeam(teamId) {
-    return !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+  isClockedIn() {
+    return Template.instance().clockedIn.get();
   },
   selectedTeamId() {
     return Template.instance().selectedTeamId.get();
+  },
+  isClockedInForTeam(teamId) {
+    return !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
   },
   currentClockEventTime() {
     const teamId = Template.instance().selectedTeamId.get();
@@ -314,58 +253,48 @@ Template.tickets.helpers({
     const teamId = Template.instance().selectedTeamId.get();
     const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
     if (!clockEvent) return '0:00:00';
-
-    const now = currentTime.get();
+    
+    const now = currentTime.get(); // This reactive variable updates every second
     const elapsed = Math.floor((now - clockEvent.startTimestamp) / 1000);
-
+    
     return formatTime(elapsed);
   },
   currentActiveTicketInfo() {
     const activeTicketId = Template.instance().activeTicketId.get();
     if (!activeTicketId) return null;
-
+    
     const ticket = Tickets.findOne(activeTicketId);
-    return ticket
-      ? {
-          id: ticket._id,
-          title: ticket.title,
-          isRunning: !!ticket.startTimestamp
-        }
-      : null;
+    return ticket ? {
+      id: ticket._id,
+      title: ticket.title,
+      isRunning: !!ticket.startTimestamp
+    } : null;
   },
   getButtonClasses(ticketId) {
-    const template = Template.instance();
-    const activeTicketId = template.activeTicketId.get();
     const ticket = Tickets.findOne(ticketId);
     const isActive = ticket && ticket.startTimestamp && !ticket.endTime;
-    const teamId = template.selectedTeamId.get();
+    const teamId = Template.instance().selectedTeamId.get();
     const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
-
-    if (isActive || activeTicketId === ticketId) return 'btn btn-outline btn-primary';
-    if (hasActiveSession && (!activeTicketId || activeTicketId === ticketId)) return 'btn btn-outline btn-primary';
-    if (hasActiveSession) return 'btn btn-disabled';
+    
+    if (isActive) return 'btn btn-outline btn-primary';
+    if (hasActiveSession) return 'btn btn-outline btn-primary';
     return 'btn btn-disabled';
   },
   getButtonTooltip(ticketId) {
-    const template = Template.instance();
-    const activeTicketId = template.activeTicketId.get();
     const ticket = Tickets.findOne(ticketId);
     const isActive = ticket && ticket.startTimestamp && !ticket.endTime;
-    const teamId = template.selectedTeamId.get();
+    const teamId = Template.instance().selectedTeamId.get();
     const hasActiveSession = teamId ? !!ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null }) : false;
-
-    if (isActive || activeTicketId === ticketId) return 'Click to stop this activity';
-    if (hasActiveSession && (!activeTicketId || activeTicketId === ticketId)) return 'Click to start this activity';
-    if (hasActiveSession) return 'Stop the current activity first';
+    
+    if (isActive) return 'Click to stop this activity';
+    if (hasActiveSession) return 'Click to start this activity';
     return 'Start a session first to begin activities';
   }
 });
 
 Template.tickets.events({
-  'change #teamSelect'(event, templateInstance) {
-    templateInstance.selectedTeamId.set(event.target.value);
-    templateInstance.showCreateTicketForm.set(false);
-    templateInstance.showEditTicketForm.set(false);
+  'change #teamSelect'(e, t) {
+    t.selectedTeamId.set(e.target.value);
   },
   'input #searchTickets'(e, t) {
     t.searchQuery.set(e.target.value);
@@ -373,34 +302,36 @@ Template.tickets.events({
   'click #showCreateTicketForm'(e, t) {
     t.showCreateTicketForm.set(true);
   },
-  'click #cancelCreateTicket'(event, templateInstance) {
-    templateInstance.showCreateTicketForm.set(false);
+  'click #cancelCreateTicket'(e, t) {
+    t.showCreateTicketForm.set(false);
   },
-  'click #cancelEditTicket'(event, templateInstance) {
-    templateInstance.showEditTicketForm.set(false);
-    templateInstance.editingTicket.set(null);
+  'click #cancelEditTicket'(e, t) {
+    t.showEditTicketForm.set(false);
+    t.editingTicket.set(null);
   },
-  'blur [name="title"]'(event) {
-    extractUrlTitle(event.target.value, event.target);
+  'blur [name="title"]'(e) {
+    extractUrlTitle(e.target.value, e.target);
   },
-  'paste [name="title"]'(event) {
-    setTimeout(() => extractUrlTitle(event.target.value, event.target), 0);
+  'paste [name="title"]'(e) {
+    setTimeout(() => extractUrlTitle(e.target.value, e.target), 0);
   },
-  'click .edit-ticket-btn'(event, templateInstance) {
-    event.preventDefault();
-    event.stopPropagation();
-    const ticketId = event.currentTarget.dataset.id;
+  
+  'click .edit-ticket-btn'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const ticketId = e.currentTarget.dataset.id;
     const ticket = Tickets.findOne(ticketId);
     if (ticket) {
-      templateInstance.editingTicket.set(ticket);
-      templateInstance.showEditTicketForm.set(true);
-      templateInstance.showCreateTicketForm.set(false);
+      t.editingTicket.set(ticket);
+      t.showEditTicketForm.set(true);
+      t.showCreateTicketForm.set(false);
     }
   },
-  async 'click .delete-ticket-btn'(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    const ticketId = event.currentTarget.dataset.id;
+
+  async 'click .delete-ticket-btn'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const ticketId = e.currentTarget.dataset.id;
     const ticket = Tickets.findOne(ticketId);
     if (!ticket) return;
 
@@ -413,13 +344,14 @@ Template.tickets.events({
       utils.handleError(error, 'Error deleting ticket');
     }
   },
-  async 'submit #editTicketForm'(event, templateInstance) {
-    event.preventDefault();
+
+  async 'submit #editTicketForm'(e, t) {
+    e.preventDefault();
 
     const formData = {
-      ticketId: event.target.ticketId.value,
-      title: event.target.title.value?.trim(),
-      github: event.target.github.value?.trim()
+      ticketId: e.target.ticketId.value,
+      title: e.target.title.value?.trim(),
+      github: e.target.github.value?.trim()
     };
 
     if (!formData.title) {
@@ -433,81 +365,83 @@ Template.tickets.events({
         github: formData.github
       });
 
-      templateInstance.showEditTicketForm.set(false);
-      templateInstance.editingTicket.set(null);
+      t.showEditTicketForm.set(false);
+      t.editingTicket.set(null);
     } catch (error) {
       utils.handleError(error, 'Error updating ticket');
     }
   },
-  async 'submit #createTicketForm'(event, templateInstance) {
-    event.preventDefault();
 
-    const hours = parseInt(event.target.hours?.value, 10) || 0;
-    const minutes = parseInt(event.target.minutes?.value, 10) || 0;
-    const seconds = parseInt(event.target.seconds?.value, 10) || 0;
-
+  async 'submit #createTicketForm'(e, t) {
+    e.preventDefault();
+    
     const formData = {
-      teamId: templateInstance.selectedTeamId.get(),
-      title: event.target.title.value.trim(),
-      github: event.target.github.value.trim(),
-      accumulatedTime: utils.calculateAccumulatedTime(hours, minutes, seconds)
+      teamId: t.selectedTeamId.get(),
+      title: e.target.title.value.trim(),
+      github: e.target.github.value.trim()
     };
-
+    
     if (!formData.title) {
       alert('Ticket title is required.');
       return;
     }
-
+    
     try {
-      const ticketId = await utils.meteorCall('createTicket', formData);
-
-      templateInstance.showCreateTicketForm.set(false);
-      event.target.reset();
-
-      if (formData.accumulatedTime > 0) {
-        const clockEvent = ClockEvents.findOne({
-          userId: Meteor.userId(),
-          teamId: formData.teamId,
-          endTime: null
-        });
-        if (clockEvent) {
-          await ticketManager.startTicket(ticketId, templateInstance, clockEvent);
-        }
-      }
+      const ticketId = await utils.meteorCall('createTicket', { 
+        teamId: formData.teamId, 
+        title: formData.title, 
+        github: formData.github, 
+        accumulatedTime: 0
+      });
+      
+      t.showCreateTicketForm.set(false);
+      e.target.reset();
     } catch (error) {
       utils.handleError(error, 'Error creating ticket');
     }
   },
-  async 'click .activate-ticket'(event, templateInstance) {
-    const ticketId = event.currentTarget.dataset.id;
-    const teamId = templateInstance.selectedTeamId.get();
-    const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+  
+  async 'click .activate-ticket'(e, t) {
+    const ticketId = e.currentTarget.dataset.id;
     const ticket = Tickets.findOne(ticketId);
-    const isActive = !!(ticket && ticket.startTimestamp && !ticket.endTime);
-
+    const isActive = ticket && ticket.startTimestamp && !ticket.endTime;
+    const teamId = t.selectedTeamId.get();
+    const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+    
     if (!isActive) {
       if (!clockEvent) {
         alert('Please start a session before starting an activity.');
         return;
       }
-
-      await ticketManager.switchTicket(ticketId, templateInstance, clockEvent);
+      
+      await ticketManager.startTicket(ticketId, t, clockEvent);
     } else {
-      const stopped = await ticketManager.stopTicket(ticketId, clockEvent);
-      if (stopped) {
-        templateInstance.activeTicketId.set(null);
-      }
+      await ticketManager.stopTicket(ticketId, clockEvent);
     }
   },
-  'click #clockInBtn'(event, templateInstance) {
-    const teamId = templateInstance.selectedTeamId.get();
+  
+  'click #clockInBtn'(e, t) {
+    const teamId = t.selectedTeamId.get();
     sessionManager.startSession(teamId);
   },
-  async 'click #clockOutBtn'(event, templateInstance) {
-    const teamId = templateInstance.selectedTeamId.get();
-    const { success, totalWorkTime } = await sessionManager.stopSession(teamId, templateInstance);
-
+  
+  async 'click #clockOutBtn'(e, t) {
+    const teamId = t.selectedTeamId.get();
+    
+    // Get the current clock event to calculate total time BEFORE stopping
+    const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+    let totalWorkTime = 0;
+    
+    if (clockEvent) {
+      const now = Date.now();
+      totalWorkTime = Math.floor((now - clockEvent.startTimestamp) / 1000);
+    }
+    
+    const success = await sessionManager.stopSession(teamId);
     if (success) {
+      t.activeTicketId.set(null);
+      
+      // Show popup with total work time
       const timeFormatted = formatTime(totalWorkTime);
       document.getElementById('totalWorkTime').textContent = timeFormatted;
       document.getElementById('clockOutModal').showModal();

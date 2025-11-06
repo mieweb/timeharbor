@@ -29,7 +29,7 @@ Template.authPage.helpers({
 
 Template.formField.helpers({
   emailPattern() {
-    return this.type === 'email' ? '[^@]+@[^@]+\\.[^@]+' : '.*';
+    return this.type === 'email' ? '[^@]+@[^@]+\\.[^@]+' : '';
   },
   emailTitle() {
     return this.type === 'email' ? 'Please enter a valid email with domain (e.g., user@example.com)' : '';

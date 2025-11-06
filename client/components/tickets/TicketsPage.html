@@ -2,13 +2,13 @@
   <h3 class="text-xl font-semibold mb-4">My Tickets & Activities</h3>
   {{#if userTeams.length}}
     <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-      <label for="teamSelect" class="label">Select Project:</label>
+      <label for="teamSelect" class="label">Select Team:</label>
       <select id="teamSelect" class="select select-bordered">
         {{#each userTeams}}
           <option value="{{_id}}" {{isSelectedTeam _id}}>{{name}}</option>
         {{/each}}
       </select>
-      <button id="showCreateTicketForm" class="btn btn-primary">Create Activity</button>
+      <button id="showCreateTicketForm" class="btn btn-primary">Create Ticket</button>
     </div>
     <div class="mb-4">
       <input type="text" id="searchTickets" placeholder="Search tickets..." class="input input-bordered w-full max-w-md" />
@@ -26,43 +26,19 @@
     </div>
     {{#if showCreateTicketForm}}
       <form id="createTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input
-          type="text"
-          name="title"
-          placeholder="Activity Title (e.g., 'Create Dashboard', 'Implement Authentication')"
-          class="input input-bordered"
-          required
-        />
+        <input type="text" name="title" placeholder="Ticket Title (e.g., 'Create Dashboard', 'ImplementAuthentication')" class="input input-bordered" required />
         <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered" />
-        <div class="flex flex-wrap gap-2">
-          <input type="number" name="hours" min="0" placeholder="Hours" class="input input-bordered w-24" />
-          <input type="number" name="minutes" min="0" max="59" placeholder="Minutes" class="input input-bordered w-24" />
-          <input type="number" name="seconds" min="0" max="59" placeholder="Seconds" class="input input-bordered w-24" />
-        </div>
         <div class="flex gap-2">
           <button type="submit" class="btn btn-primary">Create</button>
           <button type="button" id="cancelCreateTicket" class="btn btn-outline">Cancel</button>
         </div>
       </form>
     {{/if}}
-    {{#if showEditTicketForm}}
+  {{#if showEditTicketForm}}
       <form id="editTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
         <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
-        <input
-          type="text"
-          name="title"
-          value="{{editingTicket.title}}"
-          placeholder="Ticket Title"
-          class="input input-bordered"
-          required
-        />
-        <input
-          type="text"
-          name="github"
-          value="{{editingTicket.github}}"
-          placeholder="Reference Link or Notes"
-          class="input input-bordered"
-        />
+        <input type="text" name="title" value="{{editingTicket.title}}" placeholder="Ticket Title" class="input input-bordered" required />
+        <input type="text" name="github" value="{{editingTicket.github}}" placeholder="Reference Link or Notes" class="input input-bordered" />
         <div class="flex gap-2">
           <button type="submit" class="btn btn-primary">Update</button>
           <button type="button" id="cancelEditTicket" class="btn btn-outline">Cancel</button>
@@ -88,7 +64,7 @@
             {{#if github}}
               <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus text-sm mb-1">Reference</a>
             {{/if}}
-            <button class="activate-ticket {{getButtonClasses _id}} btn-sm w-full"
+            <button class="activate-ticket {{getButtonClasses _id}} btn-sm w-full" 
             data-id="{{_id}}"
             title="{{getButtonTooltip _id}}">
               {{#if isActive _id}}

@@ -113,9 +113,6 @@ export const navigateToRoute = (routeName, params = {}) => {
     case 'timesheet':
       FlowRouter.go(`/timesheet/${params.userId}`);
       break;
-    case 'guide':
-      FlowRouter.go('/guide');
-      break;
     default:
       FlowRouter.go('/');
   }
