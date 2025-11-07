@@ -9,7 +9,7 @@ const mcpTools = [
     type: 'function',
     function: {
       name: 'get_current_ticket_form',
-      description: 'Retrieves the current values from all ticket form fields (title, description, hours, minutes, seconds, team). Use this when the user asks what is currently filled in or to check current values.',
+      description: 'Retrieves the current values from all ticket form fields (title, description, team). Use this when the user asks what is currently filled in or to check current values.',
       parameters: {
         type: 'object',
         properties: {},
@@ -48,31 +48,6 @@ const mcpTools = [
           }
         },
         required: ['description']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'update_ticket_time',
-      description: 'Updates the time fields (hours, minutes, seconds) of the current ticket form',
-      parameters: {
-        type: 'object',
-        properties: {
-          hours: {
-            type: 'number',
-            description: 'Hours spent (0-23)'
-          },
-          minutes: {
-            type: 'number',
-            description: 'Minutes spent (0-59)'
-          },
-          seconds: {
-            type: 'number',
-            description: 'Seconds spent (0-59)'
-          }
-        },
-        required: []
       }
     }
   },
@@ -150,9 +125,6 @@ const toolHandlers = {
   get_current_ticket_form: async (params) => {
     const titleInput = document.querySelector('[name="title"]');
     const descInput = document.querySelector('[name="github"]');
-    const hoursInput = document.querySelector('[name="hours"]');
-    const minutesInput = document.querySelector('[name="minutes"]');
-    const secondsInput = document.querySelector('[name="seconds"]');
     const teamSelect = document.querySelector('#teamSelect');
 
     const result = {
@@ -160,9 +132,6 @@ const toolHandlers = {
       data: {
         title: titleInput?.value || '',
         description: descInput?.value || '',
-        hours: hoursInput?.value || '0',
-        minutes: minutesInput?.value || '0',
-        seconds: secondsInput?.value || '0',
         team: teamSelect?.value || '',
         teamName: teamSelect?.selectedOptions[0]?.text || 'No team selected'
       },
@@ -216,52 +185,6 @@ const toolHandlers = {
     return {
       success: true,
       message: `Description updated`
-    };
-  },
-
-  update_ticket_time: async (params) => {
-    const hoursInput = document.querySelector('[name="hours"]');
-    const minutesInput = document.querySelector('[name="minutes"]');
-    const secondsInput = document.querySelector('[name="seconds"]');
-
-    const updated = [];
-
-    if (params.hours !== undefined && hoursInput) {
-      // Convert to number (model might send as string)
-      hoursInput.value = Number(params.hours);
-      hoursInput.dispatchEvent(new Event('input', { bubbles: true }));
-      hoursInput.dispatchEvent(new Event('change', { bubbles: true }));
-      updated.push(`hours: ${params.hours}`);
-    }
-
-    if (params.minutes !== undefined && minutesInput) {
-      // Convert to number (model might send as string)
-      minutesInput.value = Number(params.minutes);
-      minutesInput.dispatchEvent(new Event('input', { bubbles: true }));
-      minutesInput.dispatchEvent(new Event('change', { bubbles: true }));
-      updated.push(`minutes: ${params.minutes}`);
-    }
-
-    if (params.seconds !== undefined && secondsInput) {
-      // Convert to number (model might send as string)
-      secondsInput.value = Number(params.seconds);
-      secondsInput.dispatchEvent(new Event('input', { bubbles: true }));
-      secondsInput.dispatchEvent(new Event('change', { bubbles: true }));
-      updated.push(`seconds: ${params.seconds}`);
-    }
-
-    if (updated.length === 0) {
-      return { success: false, error: 'No time fields found or updated' };
-    }
-
-    // Sync state with widget
-    if (window.ozwellStateSync) {
-      window.ozwellStateSync.syncCurrentState();
-    }
-
-    return {
-      success: true,
-      message: `Time updated: ${updated.join(', ')}`
     };
   },
 
