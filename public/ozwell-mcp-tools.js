@@ -478,3 +478,139 @@ if (document.readyState === 'loading') {
 } else {
   window.ozwellMCPIntegration = new OzwellMCPIntegration();
 }
+
+/**
+ * ============================================
+ * OPTIONAL: REAL-TIME FORM STATE SYNC
+ * ============================================
+ *
+ * STATUS: Currently DISABLED (works fine without it)
+ *
+ * Syncs ticket form changes to AI widget in real-time for proactive suggestions.
+ *
+ * To enable: Uncomment the code block below
+ * Documentation: See OZWELL_SETUP.md → "Optional Features" section
+ *
+ * Uses: OzwellChat.updateContext() API (bundled in ozwell-loader.js)
+ */
+
+/*
+// ============================================
+// UNCOMMENT THIS BLOCK TO ENABLE REAL-TIME SYNC
+// ============================================
+
+(function() {
+  'use strict';
+
+  console.log('[TimeHarbor] Real-time form sync module loaded (OPTIONAL)');
+
+  /**
+   * Syncs current ticket form state to Ozwell widget
+   * Called automatically when form fields change
+   */
+  function syncTicketFormToWidget() {
+    // Check if Ozwell API is available
+    if (typeof OzwellChat === 'undefined' || !OzwellChat.updateContext) {
+      console.warn('[TimeHarbor] OzwellChat.updateContext not available - sync disabled');
+      return;
+    }
+
+    // Get form field references
+    const titleInput = document.querySelector('[name="title"]');
+    const descInput = document.querySelector('[name="github"]');
+    const hoursInput = document.querySelector('[name="hours"]');
+    const minutesInput = document.querySelector('[name="minutes"]');
+    const secondsInput = document.querySelector('[name="seconds"]');
+    const teamSelect = document.querySelector('select[name="team"]');
+
+    // Wait for form to be available
+    if (!titleInput) {
+      console.log('[TimeHarbor] Form not loaded yet, skipping sync');
+      return;
+    }
+
+    // Build state object with current form values
+    const formState = {
+      ticketForm: {
+        title: titleInput.value || '',
+        description: descInput.value || '',
+        hours: hoursInput.value || '0',
+        minutes: minutesInput.value || '0',
+        seconds: secondsInput.value || '0',
+        team: teamSelect?.value || '',
+        teamName: teamSelect?.selectedOptions[0]?.text || ''
+      }
+    };
+
+    // Send state update to widget using official API
+    OzwellChat.updateContext(formState);
+
+    console.log('[TimeHarbor] Synced form state to widget:', formState);
+  }
+
+  /**
+   * Initialize real-time sync when DOM is ready
+   * Attaches listeners to all form fields
+   */
+  function initializeFormSync() {
+    console.log('[TimeHarbor] Initializing real-time form sync...');
+
+    // Wait for Ozwell widget to be ready
+    if (typeof OzwellChat !== 'undefined' && OzwellChat.ready) {
+      OzwellChat.ready().then(() => {
+        console.log('[TimeHarbor] Ozwell widget ready, setting up form sync');
+        attachFormListeners();
+      });
+    } else {
+      // Fallback: try after a delay
+      setTimeout(attachFormListeners, 2000);
+    }
+  }
+
+  /**
+   * Attach event listeners to form fields
+   */
+  function attachFormListeners() {
+    const formFields = [
+      'input[name="title"]',
+      'textarea[name="github"]',
+      'input[name="hours"]',
+      'input[name="minutes"]',
+      'input[name="seconds"]',
+      'select[name="team"]'
+    ];
+
+    let listenersAttached = 0;
+
+    formFields.forEach(selector => {
+      const field = document.querySelector(selector);
+      if (field) {
+        // Sync on input (as user types)
+        field.addEventListener('input', syncTicketFormToWidget);
+        // Sync on change (dropdowns, blur events)
+        field.addEventListener('change', syncTicketFormToWidget);
+        listenersAttached++;
+      }
+    });
+
+    if (listenersAttached > 0) {
+      console.log(`[TimeHarbor] Form sync enabled - listening to ${listenersAttached} fields`);
+      // Do initial sync
+      syncTicketFormToWidget();
+    } else {
+      console.warn('[TimeHarbor] No form fields found - sync not enabled');
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeFormSync);
+  } else {
+    initializeFormSync();
+  }
+
+})();
+
+// END OF OPTIONAL SYNC CODE
+// ============================================
+*/

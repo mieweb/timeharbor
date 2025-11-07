@@ -1,73 +1,67 @@
-# Ozwell AI Assistant Setup
+# Ozwell AI Assistant Integration
 
-Quick setup guide for the AI chat widget in TimeHarbor.
+This guide explains how to integrate the Ozwell AI chat widget into TimeHarbor.
+
+---
+
+## Prerequisites
+
+You need an Ozwell endpoint URL. This can be either:
+
+**Option 1: Local Development**
+- Ozwell reference server running at `http://localhost:3000`
+- (See Ozwell reference server repo for setup instructions)
+
+**Option 2: Hosted Ozwell (Recommended)**
+- Production URL: `https://ozwell.timeharbor.com` *(URL coming soon)*
+- Contact your team admin for the endpoint URL
 
 ---
 
 ## Quick Start
 
-**Time required:** ~5 minutes
+**Time required:** ~2 minutes
 
-1. **Install Ollama**
-   ```bash
-   # macOS
-   brew install ollama
-
-   # Linux
-   curl -fsSL https://ollama.com/install.sh | sh
+1. **Configure the endpoint** in `/public/ozwell-config.js`:
+   ```javascript
+   window.OzwellChatConfig = {
+     widgetUrl: 'https://ozwell.timeharbor.com/embed/ozwell.html', // Or http://localhost:3000/embed/ozwell.html
+     endpoint: 'https://ozwell.timeharbor.com/embed/chat',          // Or http://localhost:3000/embed/chat
+     model: 'llama3.1:8b',
+     // ... rest of config
+   };
    ```
 
-2. **Pull the AI model**
+2. **Start TimeHarbor**:
    ```bash
-   ollama pull qwen2.5:14b
-   ```
-
-3. **Clone & start reference server**
-   ```bash
-   # TODO: Add final clone URL after reference server PR is merged
-   # For now, contact maintainers for development branch access
-
-   cd reference-server
-   npm install
-   npm run dev
-   ```
-   The server will start at `http://localhost:3000`
-
-4. **Start TimeHarbor**
-   ```bash
-   cd timeharbor
    meteor --port 3001
    ```
 
-5. **Test the widget**
+3. **Test the widget**:
+   - Login to TimeHarbor
    - Look for chat button (bottom-right corner)
    - Click to open chat
-   - Try: "how much time have I spent?"
-
----
-
-## What You Get
-
-- **Context-aware suggestions** - AI reads your actual project history
-- **Instant time stats** - Ask about hours logged across tickets
-- **Auto-fill forms** - AI can update ticket fields for you
-- **Project search** - Find recent tickets and activity
+   - Try: `suggest some ticket titles`
 
 ---
 
 ## Architecture
 
-```
-TimeHarbor (localhost:3001)
-    |
-    v
-Reference Server (localhost:3000)
-    |
-    v
-Ollama (qwen2.5:14b model)
+```mermaid
+graph LR
+    A[TimeHarbor<br/>localhost:3001] -->|Script Tag| B[Ozwell Widget<br/>ozwell-loader.js]
+    B -->|HTTP POST| C[Ozwell Server<br/>localhost:3000 or hosted]
+    C -->|API Call| D[LLM<br/>Ollama/OpenAI]
+    D -->|Response| C
+    C -->|Streaming| B
+    B -->|MCP Tool Calls| A
+    A -->|Tool Results| B
 ```
 
-All processing happens locally on your machine. No external API calls.
+**Key Points:**
+- TimeHarbor loads Ozwell via script tag (iframe-sync bundled, no separate import needed)
+- MCP tools run in TimeHarbor, controlled by postMessage
+- All AI processing happens on Ozwell server (local or hosted)
 
 ---
 
@@ -83,15 +77,79 @@ The AI has access to these tools when chatting:
 | `update_ticket_title` | Auto-fills the title field | "set title to Fix login bug" |
 | `update_ticket_description` | Auto-fills description field | "add description: Fixed auth issue" |
 | `update_ticket_time` | Sets hours/minutes/seconds | "set time to 2 hours 30 minutes" |
-| `get_conversation_history` | Retrieves past conversations (currently unused) | - |
+| `get_conversation_history` | Retrieves past conversations | *(currently unused)* |
+
+**How it works:**
+1. User asks a question
+2. AI decides which tool(s) to call
+3. Widget sends tool call to TimeHarbor via postMessage
+4. TimeHarbor executes tool, returns result
+5. AI uses result to respond
 
 ---
 
-## Adding Your Own Tool
+## Configuration
 
-Want to add custom functionality? Here's a quick example:
+### System Prompt
 
-**1. Define the tool** in `/public/ozwell-mcp-tools.js`:
+Edit `/public/ozwell-config.js` to customize AI behavior:
+
+```javascript
+window.OzwellChatConfig = {
+  system: `Your custom instructions here...`,
+  // ...
+};
+```
+
+The system prompt defines:
+- How AI should use tools (READ vs UPDATE)
+- When to call get_project_history
+- Context reset rules
+- Tool usage examples
+
+### Widget Appearance
+
+```javascript
+window.OzwellChatConfig = {
+  welcomeMessage: 'Hi! I can help you track time...',
+  title: 'TimeHarbor Assistant',
+  placeholder: 'Ask about your tickets...',
+  // ...
+};
+```
+
+### Model Selection
+
+```javascript
+window.OzwellChatConfig = {
+  model: 'llama3.1:8b',  // Must be available on Ozwell server
+  // ...
+};
+```
+
+---
+
+## Optional Features
+
+### Real-Time Form Sync
+
+**Status:** Currently disabled (works fine without it)
+
+Syncs form changes to AI in real-time for proactive suggestions.
+
+**To enable:** Uncomment code block in `/public/ozwell-mcp-tools.js` (~line 550)
+
+**Uses:** `OzwellChat.updateContext()` API (bundled in ozwell-loader.js)
+
+**Example:** AI says "I see you're working on auth issues, want related tickets?" as you type
+
+---
+
+## Adding Custom Tools
+
+Want to add custom functionality? Here's how:
+
+**1. Define tool in `/public/ozwell-mcp-tools.js`:**
 ```javascript
 {
   type: 'function',
@@ -107,14 +165,11 @@ Want to add custom functionality? Here's a quick example:
 }
 ```
 
-**2. Add the handler** in the same file:
+**2. Add handler in same file:**
 ```javascript
 const toolHandlers = {
-  // ... existing handlers
-
   get_ticket_count: async (params) => {
-    const teamSelect = document.querySelector('#teamSelect');
-    const teamId = teamSelect?.value;
+    const teamId = document.querySelector('select[name="team"]')?.value;
 
     const count = await new Promise((resolve, reject) => {
       Meteor.call('getTicketCount', { teamId }, (error, result) => {
@@ -123,23 +178,18 @@ const toolHandlers = {
       });
     });
 
-    return {
-      success: true,
-      count,
-      message: `Found ${count} tickets`
-    };
+    return { success: true, count };
   }
 };
 ```
 
-**3. Add server method** in `/server/methods/ozwell.js`:
+**3. Add server method in `/server/methods/ozwell.js`:**
 ```javascript
 async getTicketCount({ teamId }) {
   check(teamId, String);
   if (!this.userId) throw new Meteor.Error('not-authorized');
 
-  const count = await Tickets.find({ teamId }).countAsync();
-  return count;
+  return await Tickets.find({ teamId }).countAsync();
 }
 ```
 
@@ -147,37 +197,47 @@ That's it! The AI can now use your custom tool.
 
 ---
 
-## Troubleshooting
+## File Reference
 
-**Chat widget not appearing?**
-- Check reference server is running: `curl http://localhost:3000`
-- Verify browser console for errors (F12 > Console tab)
+### Configuration
+- `/public/ozwell-config.js` - Widget config (system prompt, model, endpoints)
 
-**AI not calling tools?**
-- Check Ollama is running: `ollama list`
-- Verify model is downloaded: Should see `qwen2.5:14b` in list
-- Try restarting reference server
+### Client-Side
+- `/public/chat-wrapper.js` - Widget UI and drag behavior
+- `/public/chat-wrapper.css` - Widget styles
+- `/public/ozwell-mcp-tools.js` - MCP tool definitions and handlers
+- `/client/main.html` - Loads Ozwell scripts
 
-**Reference server failing to start?**
-- Check Node.js version: `node --version` (needs v18+)
-- Verify Ollama is accessible: `curl http://localhost:11434`
-- Check logs in terminal for specific errors
+### Server-Side
+- `/server/methods/ozwell.js` - Meteor server methods for MCP tools
+- `/server/main.js` - Registers ozwellMethods
 
-**Where's the reference server code?**
-- TODO: Add GitHub URL after PR merge
-- Contact TimeHarbor maintainers for current development branch
+### External (Ozwell Server)
+- `http://localhost:3000/embed/ozwell-loader.js` - Main widget loader
+- `http://localhost:3000/embed/ozwell.html` - Widget iframe
 
 ---
 
-## File Reference
+## Troubleshooting
 
-Key files for Ozwell integration:
+**Chat widget not appearing?**
+- Check Ozwell server is running: `curl http://localhost:3000` (for local)
+- Verify browser console for errors (F12 → Console)
+- Check `/public/ozwell-config.js` has correct endpoint URLs
 
-- `/public/chat-wrapper.js` - Widget UI and drag behavior
-- `/public/ozwell-mcp-tools.js` - Tool definitions and handlers
-- `/public/ozwell-iframe-sync.js` - Form state synchronization
-- `/client/main.html` - Widget configuration
-- `/server/methods/ozwell.js` - Meteor server methods
+**AI not calling tools?**
+- Open browser console and look for tool call logs: `[MCP Tools] Tool call requested`
+- Verify system prompt is loaded: `window.OzwellChatConfig.system`
+- Check Ozwell server logs for errors
+
+**Tools returning errors?**
+- Check browser console for specific error messages
+- Verify Meteor methods exist in `/server/methods/ozwell.js`
+- Test Meteor method directly in browser console: `Meteor.call('getProjectHistory', ...)`
+
+**Widget styling broken?**
+- Verify `/public/chat-wrapper.css` loaded (check Network tab)
+- Check for CSS conflicts with TimeHarbor styles
 
 ---
 
@@ -186,7 +246,8 @@ Key files for Ozwell integration:
 After setup works:
 1. Try different queries to see tool capabilities
 2. Check browser console to see which tools get called
-3. Customize system prompt in `/client/main.html` if needed
+3. Customize system prompt in `/public/ozwell-config.js` if needed
 4. Add your own tools using the example above
+5. (Optional) Enable real-time form sync for proactive suggestions
 
 For issues or questions, create an issue in the TimeHarbor repository.
