@@ -2,7 +2,7 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
-import { formatTime, formatDate, calculateTotalTime } from '../../utils/TimeUtils.js';
+import { formatTime, formatTimeHoursMinutes, formatDate, calculateTotalTime } from '../../utils/TimeUtils.js';
 import { getTeamName, getUserEmail, getUserName } from '../../utils/UserTeamUtils.js';
 import { dateToLocalString, formatDateForDisplay, getTodayBoundaries, getWeekBoundaries, getDayBoundaries } from '../../utils/DateUtils.js';
 import { Grid } from 'ag-grid-community';
@@ -43,7 +43,7 @@ const getColumnDefinitions = (showClockTimes = true) => {
     { headerName: 'Email', field: 'userEmail', flex: 1.5, sortable: true, filter: 'agTextColumnFilter' },
   { 
       headerName: 'Hours', field: 'totalSeconds', flex: 1, sortable: true, filter: 'agNumberColumnFilter',
-      valueFormatter: p => (p.data?.hasActiveSession ? 'Running...' : formatTime(p.value))
+      valueFormatter: p => (p.data?.hasActiveSession ? 'Running...' : formatTimeHoursMinutes(p.value))
     }
   ];
 

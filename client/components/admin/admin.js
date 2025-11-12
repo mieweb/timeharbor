@@ -4,6 +4,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets } from '../../../collections.js';
 import { Grid } from 'ag-grid-community';
 import { getUserName } from '../../utils/UserTeamUtils.js';
+import { formatTimeHoursMinutes } from '../../utils/TimeUtils.js';
 
 const GRID_INIT_DELAY = 200;
 
@@ -46,7 +47,7 @@ Template.admin.onRendered(function () {
       field: 'accumulatedTime', 
       sortable: true, 
       filter: 'agNumberColumnFilter', 
-      valueFormatter: p => formatTime(p.value) 
+      valueFormatter: p => formatTimeHoursMinutes(p.value) 
     },
     { 
       headerName: 'Status', 

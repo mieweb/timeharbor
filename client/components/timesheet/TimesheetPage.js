@@ -2,7 +2,7 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { ClockEvents, Teams, Tickets } from '../../../collections.js';
-import { formatTime, formatDate } from '../../utils/TimeUtils.js';
+import { formatTime, formatTimeHoursMinutes, formatDate } from '../../utils/TimeUtils.js';
 import { getUserName, getUserEmail } from '../../utils/UserTeamUtils.js';
 import { dateToLocalString, getToday, getYesterday, getDaysAgo, getThisWeekStart, formatDateForDisplay } from '../../utils/DateUtils.js';
 import { Grid, createGrid } from 'ag-grid-community';
@@ -69,7 +69,7 @@ const getColumnDefinitions = (isEditable) => [
     flex: 0.8, 
     sortable: true, 
     filter: 'agNumberColumnFilter',
-    valueFormatter: p => p.value ? formatTime(p.value) : (p.data?.isActive ? 'Running...' : 'No clock-in'),
+    valueFormatter: p => p.value ? formatTimeHoursMinutes(p.value) : (p.data?.isActive ? 'Running...' : 'No clock-in'),
     cellClass: p => p.value ? 'text-info font-medium' : 'font-medium',
     comparator: (valueA, valueB) => (valueA || 0) - (valueB || 0)
   },

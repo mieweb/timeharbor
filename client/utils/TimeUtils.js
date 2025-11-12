@@ -53,6 +53,34 @@ export const formatDurationText = (totalSeconds) => {
 };
 
 /**
+ * Formats a time duration in seconds into "H:MM" format (hours:minutes only)
+ * Used specifically for ag-grid displays where seconds are not needed
+ * @param {number} time - Time in seconds
+ * @returns {string} Formatted time string (hours:minutes only)
+ * @example
+ * formatTimeHoursMinutes(3661) // Returns "1:01"
+ * formatTimeHoursMinutes(0) // Returns "0:00"
+ * formatTimeHoursMinutes(999999) // Returns "277:46"
+ */
+export const formatTimeHoursMinutes = (time) => {
+    if (typeof time !== 'number' || isNaN(time) || time < 0) return '0:00';
+    
+    // Handle extremely large numbers to prevent overflow
+    const maxHours = 9999; // Reasonable maximum for display
+    const clampedTime = Math.min(time, maxHours * 3600);
+    
+    const h = Math.floor(clampedTime / 3600);
+    const m = Math.floor((clampedTime % 3600) / 60);
+    
+    // If the original time was clamped, indicate it
+    if (time > maxHours * 3600) {
+        return `${h}+:${m.toString().padStart(2, '0')}`;
+    }
+    
+    return `${h}:${m.toString().padStart(2, '0')}`;
+};
+
+/**
  * Formats a timestamp into a locale-specific date string
  * @param {number} timestamp - Unix timestamp in milliseconds
  * @returns {string} Formatted date string
