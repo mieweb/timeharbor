@@ -40,7 +40,7 @@ const getColumnDefinitions = (isEditable) => [
     valueFormatter: p => {
       if (!p.value) return 'No clock-in';
       const d = p.value instanceof Date ? p.value : new Date(p.value);
-      return isNaN(d.getTime()) ? 'Invalid' : d.toLocaleTimeString();
+      return isNaN(d.getTime()) ? 'Invalid' : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     },
     cellClass: 'font-medium'
   },
@@ -59,7 +59,7 @@ const getColumnDefinitions = (isEditable) => [
     valueFormatter: p => {
       if (!p.value) return 'Not clocked out';
       const d = p.value instanceof Date ? p.value : new Date(p.value);
-      return isNaN(d.getTime()) ? 'Invalid' : d.toLocaleTimeString();
+      return isNaN(d.getTime()) ? 'Invalid' : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     },
     cellClass: 'font-medium'
   },
@@ -145,10 +145,10 @@ TimeCellEditor.prototype.init = function(params) {
   // Convert Date to time string for editing
   const value = params.value;
   if (value instanceof Date) {
-    this.eInput.value = value.toLocaleTimeString();
+    this.eInput.value = value.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
   } else if (value) {
     const d = new Date(value);
-    this.eInput.value = isNaN(d.getTime()) ? '' : d.toLocaleTimeString();
+    this.eInput.value = isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
   } else {
     this.eInput.value = '';
   }

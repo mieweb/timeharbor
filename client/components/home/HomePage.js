@@ -52,14 +52,14 @@ const getColumnDefinitions = (showClockTimes = true) => {
     columns.push(
       { 
         headerName: 'Clock-in', field: 'firstClockIn', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
-        valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No activity'
+        valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'No activity'
       },
       { 
         headerName: 'Clock-out', field: 'lastClockOut', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
         valueFormatter: p => {
           if (p.data?.hasActiveSession) return 'Not clocked out';
           if (!p.value) return 'Not clocked out';
-          return new Date(p.value).toLocaleTimeString();
+          return new Date(p.value).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
       },
       { 
