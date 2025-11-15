@@ -91,24 +91,6 @@ const mcpTools = [
         required: []
       }
     }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_conversation_history',
-      description: 'Retrieves past chat conversations for the current project to provide context from previous interactions',
-      parameters: {
-        type: 'object',
-        properties: {
-          limit: {
-            type: 'number',
-            description: 'Maximum number of conversations to retrieve (default: 10)',
-            default: 10
-          }
-        },
-        required: []
-      }
-    }
   }
 ];
 
@@ -257,42 +239,6 @@ const toolHandlers = {
       return {
         success: false,
         error: `Failed to retrieve time statistics: ${error.message}`
-      };
-    }
-  },
-
-  get_conversation_history: async (params) => {
-    // Get current team ID from the page
-    const teamSelect = document.querySelector('#teamSelect');
-    if (!teamSelect || !teamSelect.value) {
-      return {
-        success: false,
-        error: 'No team selected. Please select a team first.'
-      };
-    }
-
-    const teamId = teamSelect.value;
-    // Convert to number (model might send as string)
-    const limit = params.limit ? Number(params.limit) : 10;
-
-    try {
-      // Call Meteor method to get conversation history
-      const history = await new Promise((resolve, reject) => {
-        Meteor.call('getProjectChatHistory', teamId, limit, (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        });
-      });
-
-      return {
-        success: true,
-        data: history,
-        message: `Retrieved ${history.length} previous conversations`
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: `Failed to retrieve conversation history: ${error.message}`
       };
     }
   }

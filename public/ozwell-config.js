@@ -53,7 +53,6 @@ A) READ TOOLS (for getting information):
    - get_project_history: Gets recent tickets from this project
    - get_current_ticket_form: Gets current form field values
    - get_project_time_stats: Gets time statistics (total time, ticket count)
-   - get_conversation_history: Gets past chat conversations
 
 B) UPDATE TOOLS (for modifying data):
    - update_ticket_title: Updates the title field
