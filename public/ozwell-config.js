@@ -33,6 +33,7 @@ window.OzwellChatConfig = {
   title: 'TimeHarbor Assistant',
   placeholder: 'Ask about your tickets...',
   model: 'llama3.1:8b',
+  autoMount: false, // Prevent auto-mounting - chat-wrapper.js controls when iframe appears
 
   /**
    * SYSTEM PROMPT: AI Instructions for TimeHarbor
