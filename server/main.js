@@ -21,6 +21,9 @@ import { notifyTeamAdmins, notifyUser } from './utils/pushNotifications.js';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
+// Import Ozwell methods
+import { ozwellMethods } from './methods/ozwell.js';
+
 Meteor.startup(async () => {
   // Configure Google OAuth from environment variables
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -382,6 +385,7 @@ Meteor.methods({
   ...teamMethods,
   ...ticketMethods,
   ...clockEventMethods,
+  ...ozwellMethods,
   ...notificationMethods,
 
   'participants.create'(name) {

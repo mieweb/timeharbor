@@ -1,0 +1,514 @@
+/**
+ * Ozwell Chat Widget - Draggable Wrapper
+ * Provides floating button and draggable chat window
+ */
+
+// Inject widget styles
+(function() {
+  const styles = `
+/* Ozwell Chat Widget - Floating Wrapper Styles */
+
+/* Floating Chat Button */
+#ozwell-chat-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 9998;
+  font-size: 28px;
+}
+
+#ozwell-chat-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+#ozwell-chat-button.hidden {
+  display: none;
+}
+
+/* Chat Container */
+#ozwell-chat-container {
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  width: 400px;
+  height: 600px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  display: none;
+  flex-direction: column;
+  z-index: 9999;
+  overflow: hidden;
+  transition: opacity 0.3s ease, box-shadow 0.3s ease;
+  transform: translate(0, 0);
+}
+
+#ozwell-chat-container.open {
+  display: flex;
+}
+
+#ozwell-chat-container.minimized {
+  height: 60px;
+  overflow: hidden;
+}
+
+#ozwell-chat-container.dragging {
+  opacity: 0.9;
+  cursor: move;
+  user-select: none;
+  will-change: transform;
+  pointer-events: auto;
+  transition: none;
+}
+
+#ozwell-chat-container.dragging * {
+  pointer-events: none;
+}
+
+/* Chat Header */
+#ozwell-chat-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: move;
+  user-select: none;
+}
+
+#ozwell-chat-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+}
+
+#ozwell-chat-controls {
+  display: flex;
+  gap: 8px;
+}
+
+#ozwell-chat-controls button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  font-size: 16px;
+}
+
+#ozwell-chat-controls button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Chat Content (iframe container) */
+#ozwell-chat-content {
+  flex: 1;
+  overflow: hidden;
+  background: white;
+}
+
+#ozwell-chat-content iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #ozwell-chat-container {
+    width: calc(100vw - 40px);
+    height: calc(100vh - 140px);
+    right: 20px;
+    bottom: 100px;
+  }
+
+  #ozwell-chat-button {
+    bottom: 20px;
+    right: 20px;
+  }
+}
+
+/* Animation for opening */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#ozwell-chat-container.open {
+  animation: slideIn 0.3s ease;
+}
+`;
+
+  const styleElement = document.createElement('style');
+  styleElement.textContent = styles;
+  document.head.appendChild(styleElement);
+})();
+
+class ChatWrapper {
+  constructor() {
+    this.isOpen = false;
+    this.isMinimized = false;
+    this.isDragging = false;
+    this.dragOffset = { x: 0, y: 0 };
+    this.currentPosition = { x: 0, y: 0 };
+    this.rafId = null;
+
+    this.init();
+  }
+
+  init() {
+    // Immediately hide any auto-created Ozwell iframes (they load before our wrapper)
+    this.hideAutoCreatedOzwellIframes();
+
+    // Only create widget if user is logged in (Meteor specific check)
+    if (typeof Meteor !== 'undefined' && !Meteor.userId()) {
+      // User not logged in, don't create widget
+      // Check again when user logs in
+      const checkLogin = setInterval(() => {
+        if (Meteor.userId()) {
+          clearInterval(checkLogin);
+          this.createElements();
+          this.attachEventListeners();
+        }
+      }, 500);
+      return;
+    }
+
+    this.createElements();
+    this.attachEventListeners();
+  }
+
+  hideAutoCreatedOzwellIframes() {
+    // Watch for Ozwell iframes being created and hide them temporarily
+    const hideIframeIfNotInContainer = (iframe) => {
+      // Only hide if it's not already in our container
+      if (!iframe.closest('#ozwell-chat-content')) {
+        iframe.style.visibility = 'hidden';
+        iframe.style.position = 'fixed';
+        iframe.style.left = '-9999px';
+        iframe.style.top = '-9999px';
+      }
+    };
+
+    // Check for existing iframes
+    const checkExisting = () => {
+      const iframes = document.querySelectorAll('iframe[src*="ozwell.html"]');
+      iframes.forEach(hideIframeIfNotInContainer);
+    };
+
+    // Initial check
+    checkExisting();
+
+    // Watch for new iframes (but only run once per iframe)
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.tagName === 'IFRAME' && node.src && node.src.includes('ozwell.html')) {
+            hideIframeIfNotInContainer(node);
+          }
+        });
+      });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+    this.iframeObserver = observer;
+  }
+
+  createElements() {
+    // Create floating button
+    this.button = document.createElement('button');
+    this.button.id = 'ozwell-chat-button';
+    this.button.innerHTML = '💬';
+    this.button.title = 'Open TimeHarbor Assistant';
+    document.body.appendChild(this.button);
+
+    // Create chat container
+    this.container = document.createElement('div');
+    this.container.id = 'ozwell-chat-container';
+    this.container.innerHTML = `
+      <div id="ozwell-chat-header">
+        <h3>TimeHarbor Assistant</h3>
+        <div id="ozwell-chat-controls">
+          <button id="ozwell-minimize-btn" title="Minimize">−</button>
+          <button id="ozwell-close-btn" title="Close">×</button>
+        </div>
+      </div>
+      <div id="ozwell-chat-content">
+        <!-- Ozwell widget iframe will be injected here -->
+      </div>
+    `;
+    document.body.appendChild(this.container);
+
+    // Store references
+    this.header = document.getElementById('ozwell-chat-header');
+    this.content = document.getElementById('ozwell-chat-content');
+    this.minimizeBtn = document.getElementById('ozwell-minimize-btn');
+    this.closeBtn = document.getElementById('ozwell-close-btn');
+  }
+
+  attachEventListeners() {
+    // Button click - toggle open/close
+    this.button.addEventListener('click', () => this.toggle());
+
+    // Header drag functionality
+    this.header.addEventListener('mousedown', (e) => this.startDrag(e));
+    document.addEventListener('mousemove', (e) => this.drag(e));
+    document.addEventListener('mouseup', () => this.stopDrag());
+
+    // Control buttons
+    this.minimizeBtn.addEventListener('click', () => this.toggleMinimize());
+    this.closeBtn.addEventListener('click', () => this.close());
+
+    // Prevent text selection while dragging
+    this.header.addEventListener('selectstart', (e) => e.preventDefault());
+
+    // Window resize - keep chat within viewport bounds (throttled)
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => this.constrainToViewport(), 250);
+    });
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.button.classList.add('hidden');
+
+    // Load Ozwell widget if configured
+    this.loadWidget();
+  }
+
+  close() {
+    this.isOpen = false;
+    this.isMinimized = false;
+    this.container.classList.remove('open', 'minimized');
+    this.button.classList.remove('hidden');
+  }
+
+  toggleMinimize() {
+    this.isMinimized = !this.isMinimized;
+    if (this.isMinimized) {
+      this.container.classList.add('minimized');
+      this.minimizeBtn.innerHTML = '□';
+      this.minimizeBtn.title = 'Maximize';
+    } else {
+      this.container.classList.remove('minimized');
+      this.minimizeBtn.innerHTML = '−';
+      this.minimizeBtn.title = 'Minimize';
+    }
+  }
+
+  startDrag(e) {
+    if (e.target.closest('button')) return; // Don't drag when clicking buttons
+
+    this.isDragging = true;
+    this.container.classList.add('dragging');
+
+    // Cache container dimensions (they don't change during drag)
+    this.containerWidth = this.container.offsetWidth;
+    this.containerHeight = this.container.offsetHeight;
+
+    const rect = this.container.getBoundingClientRect();
+    this.dragOffset.x = e.clientX - rect.left;
+    this.dragOffset.y = e.clientY - rect.top;
+
+    // Store current absolute position (where it actually is on screen)
+    this.currentPosition.x = rect.left;
+    this.currentPosition.y = rect.top;
+
+    // Remove bottom/right positioning to prevent conflicts with transform
+    this.container.style.bottom = 'auto';
+    this.container.style.right = 'auto';
+    this.container.style.left = '0';
+    this.container.style.top = '0';
+  }
+
+  drag(e) {
+    if (!this.isDragging) return;
+
+    e.preventDefault();
+
+    // Just store the mouse position, don't update DOM yet
+    const newX = e.clientX - this.dragOffset.x;
+    const newY = e.clientY - this.dragOffset.y;
+
+    // Keep within viewport bounds (use cached dimensions)
+    const maxX = window.innerWidth - this.containerWidth;
+    const maxY = window.innerHeight - this.containerHeight;
+
+    this.currentPosition.x = Math.max(0, Math.min(newX, maxX));
+    this.currentPosition.y = Math.max(0, Math.min(newY, maxY));
+
+    // Request animation frame for smooth updates
+    if (!this.rafId) {
+      this.rafId = requestAnimationFrame(() => this.updatePosition());
+    }
+  }
+
+  updatePosition() {
+    // Update DOM only once per frame using transform (GPU accelerated)
+    this.container.style.transform = `translate(${this.currentPosition.x}px, ${this.currentPosition.y}px)`;
+    this.rafId = null;
+  }
+
+  stopDrag() {
+    if (this.isDragging) {
+      this.isDragging = false;
+      this.container.classList.remove('dragging');
+
+      // Cancel any pending animation frame
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+    }
+  }
+
+  constrainToViewport() {
+    // Only constrain if chat is open
+    if (!this.isOpen) {
+      return;
+    }
+
+    // Get current position
+    const rect = this.container.getBoundingClientRect();
+    const currentLeft = rect.left;
+    const currentTop = rect.top;
+
+    // Calculate max allowed positions
+    const maxX = window.innerWidth - this.container.offsetWidth;
+    const maxY = window.innerHeight - this.container.offsetHeight;
+
+    // Clamp to viewport bounds
+    const newLeft = Math.max(0, Math.min(currentLeft, maxX));
+    const newTop = Math.max(0, Math.min(currentTop, maxY));
+
+    // Only update if position changed
+    if (newLeft !== currentLeft || newTop !== currentTop) {
+      // Remove bottom/right positioning to prevent conflicts with transform
+      // (same approach as startDrag)
+      this.container.style.bottom = 'auto';
+      this.container.style.right = 'auto';
+      this.container.style.left = '0';
+      this.container.style.top = '0';
+
+      this.currentPosition.x = newLeft;
+      this.currentPosition.y = newTop;
+      this.container.style.transform = `translate(${newLeft}px, ${newTop}px)`;
+      console.log(`[ChatWrapper] Position adjusted to stay in viewport: (${newLeft}, ${newTop})`);
+    }
+  }
+
+  loadWidget() {
+    // Check if Ozwell widget is configured
+    if (!window.OzwellChatConfig) {
+      console.warn('OzwellChatConfig not found. Widget will not load.');
+      this.content.innerHTML = '<div style="padding: 20px; text-align: center;">Chat widget configuration missing.</div>';
+      return;
+    }
+
+    // Check if widget already loaded
+    if (this.content.querySelector('iframe')) {
+      return;
+    }
+
+    // Wait for Ozwell embed script to load, then mount the widget
+    const waitForOzwell = setInterval(() => {
+      if (window.OzwellChat && typeof window.OzwellChat.mount === 'function') {
+        clearInterval(waitForOzwell);
+
+        // Mount the widget iframe (new loading pattern)
+        console.log('[TimeHarbor] Mounting Ozwell widget...');
+        window.OzwellChat.mount();
+
+        // Now wait for the iframe to be created
+        const waitForIframe = setInterval(() => {
+          if (window.OzwellChat.iframe) {
+            clearInterval(waitForIframe);
+
+        // Get the Ozwell iframe
+        const ozwellIframe = window.OzwellChat.iframe;
+
+        // Remove from its current location
+        if (ozwellIframe.parentElement && ozwellIframe.parentElement !== this.content) {
+          ozwellIframe.remove();
+        }
+
+        // Move Ozwell iframe into our container
+        this.content.appendChild(ozwellIframe);
+
+        // IMPORTANT: Reset all styles to make it visible in our container
+        ozwellIframe.style.width = '100%';
+        ozwellIframe.style.height = '100%';
+        ozwellIframe.style.border = 'none';
+        ozwellIframe.style.display = 'block';
+        ozwellIframe.style.visibility = 'visible';
+        ozwellIframe.style.position = 'relative';
+        ozwellIframe.style.left = '0';
+        ozwellIframe.style.top = '0';
+
+            console.log('Ozwell widget loaded successfully');
+          }
+        }, 100);
+
+        // Timeout for iframe creation
+        setTimeout(() => {
+          clearInterval(waitForIframe);
+        }, 5000);
+      }
+    }, 100);
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      clearInterval(waitForOzwell);
+      if (!this.content.querySelector('iframe')) {
+        console.error('Ozwell widget failed to load');
+        this.content.innerHTML = '<div style="padding: 20px; text-align: center;">Failed to load chat widget. Please refresh.</div>';
+      }
+    }, 5000);
+  }
+}
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.chatWrapper = new ChatWrapper();
+  });
+} else {
+  window.chatWrapper = new ChatWrapper();
+}
