@@ -58,7 +58,6 @@ A) READ TOOLS (for getting information):
 B) UPDATE TOOLS (for modifying data):
    - update_ticket_title: Updates the title field
    - update_ticket_description: Updates the description field
-   - update_ticket_time: Updates time fields
 
 WHEN TO USE READ TOOLS:
 ✅ User asks: "suggest", "give examples", "what are some", "recommend", "show options"
