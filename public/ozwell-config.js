@@ -28,7 +28,8 @@
 
 window.OzwellChatConfig = {
   widgetUrl: 'http://localhost:3000/embed/ozwell.html',
-  endpoint: 'http://localhost:3000/embed/chat',
+  endpoint: 'http://localhost:3000/v1/chat/completions',
+  headers: { 'Authorization': 'Bearer ollama' },
   welcomeMessage: 'Hi! I can help you track time, suggest tickets, and fill forms. Just ask!',
   title: 'TimeHarbor Assistant',
   placeholder: 'Ask about your tickets...',

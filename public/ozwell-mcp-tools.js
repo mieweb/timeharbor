@@ -312,16 +312,22 @@ class OzwellMCPIntegration {
       const validOrigins = [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
-        'null' // Widget iframe may have null origin due to CORS/iframe loading
+        'http://localhost:3001', // TimeHarbor's port (if widget is proxied through it)
+        'null', // Widget iframe may have null origin due to CORS/iframe loading
+        'about:' // about:srcdoc origin for sandboxed iframes
       ];
 
-      if (!validOrigins.includes(event.origin)) {
+      // Check if origin starts with valid prefixes (for about:srcdoc, about:blank, etc.)
+      const isValidOrigin = validOrigins.includes(event.origin) ||
+                           event.origin.startsWith('about:');
+
+      if (!isValidOrigin) {
         // Silently ignore Meteor and other internal messages
         return;
       }
 
-      // For null origin, verify it's from our widget iframe
-      if (event.origin === 'null') {
+      // For null or about: origins, verify it's from our widget iframe
+      if (event.origin === 'null' || event.origin.startsWith('about:')) {
         const widgetIframe = document.querySelector('iframe[src*="ozwell.html"]');
         if (!widgetIframe || event.source !== widgetIframe.contentWindow) {
           return;
@@ -371,16 +377,15 @@ class OzwellMCPIntegration {
   }
 
   sendToolResult(result) {
-    // Find widget iframe dynamically
-    const widgetIframe = document.querySelector('iframe[src*="ozwell.html"]');
-
-    if (!widgetIframe) {
-      console.warn('[MCP Tools] Widget iframe not found, cannot send result');
+    // Use the global OzwellChat object (created by ozwell-loader.js)
+    if (!window.OzwellChat || !window.OzwellChat.iframe) {
+      console.warn('[MCP Tools] window.OzwellChat.iframe not found, cannot send result');
+      console.warn('[MCP Tools] Make sure Ozwell widget is loaded before executing tools');
       return;
     }
 
-    // Send result back to widget (Ozwell convention)
-    widgetIframe.contentWindow.postMessage(
+    // Send result back to widget (Ozwell's recommended pattern)
+    window.OzwellChat.iframe.contentWindow.postMessage(
       {
         source: 'ozwell-chat-parent',
         type: 'tool_result',
