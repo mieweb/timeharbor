@@ -2,7 +2,7 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
-import { formatTime, formatDate, calculateTotalTime } from '../../utils/TimeUtils.js';
+import { formatTime, formatTimeHoursMinutes, formatDate, formatTimestampHoursMinutes, calculateTotalTime } from '../../utils/TimeUtils.js';
 import { getTeamName, getUserEmail, getUserName } from '../../utils/UserTeamUtils.js';
 import { dateToLocalString, formatDateForDisplay, getTodayBoundaries, getWeekBoundaries, getDayBoundaries } from '../../utils/DateUtils.js';
 import { Grid } from 'ag-grid-community';
@@ -21,7 +21,8 @@ const GRID_CONFIG = {
 const calculateTimeForEvents = (events) => {
   return events.reduce((totalSeconds, event) => {
     const endTime = event.endTime || Date.now();
-    return totalSeconds + Math.floor((endTime - event.startTimestamp) / 1000);
+    const durationMinutes = Math.floor((endTime - event.startTimestamp) / 60000);
+    return totalSeconds + (durationMinutes * 60);
   }, 0);
 };
 
@@ -43,7 +44,7 @@ const getColumnDefinitions = (showClockTimes = true) => {
     { headerName: 'Email', field: 'userEmail', flex: 1.5, sortable: true, filter: 'agTextColumnFilter' },
   { 
       headerName: 'Hours', field: 'totalSeconds', flex: 1, sortable: true, filter: 'agNumberColumnFilter',
-      valueFormatter: p => (p.data?.hasActiveSession ? 'Running...' : formatTime(p.value))
+      valueFormatter: p => (p.data?.hasActiveSession ? 'Running...' : formatTimeHoursMinutes(p.value))
     }
   ];
 
@@ -52,14 +53,14 @@ const getColumnDefinitions = (showClockTimes = true) => {
     columns.push(
       { 
         headerName: 'Clock-in', field: 'firstClockIn', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
-        valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString() : 'No activity'
+        valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'No activity'
       },
       { 
         headerName: 'Clock-out', field: 'lastClockOut', flex: 1.2, sortable: true, filter: 'agDateColumnFilter',
         valueFormatter: p => {
           if (p.data?.hasActiveSession) return 'Not clocked out';
           if (!p.value) return 'Not clocked out';
-          return new Date(p.value).toLocaleTimeString();
+          return new Date(p.value).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
       },
       { 
@@ -334,7 +335,7 @@ Template.home.helpers({
       startTimestamp: { $gte: todayBoundaries.start, $lte: todayBoundaries.end }
     }).fetch();
     
-    return formatTime(calculateTimeForEvents(todayEvents));
+    return formatTimeHoursMinutes(calculateTimeForEvents(todayEvents));
   },
   
   weekHours() {
@@ -344,7 +345,7 @@ Template.home.helpers({
       startTimestamp: { $gte: weekBoundaries.start, $lte: weekBoundaries.end }
     }).fetch();
     
-    return formatTime(calculateTimeForEvents(weekEvents));
+    return formatTimeHoursMinutes(calculateTimeForEvents(weekEvents));
   },
   
   activeSessionsCount() {
@@ -387,6 +388,7 @@ Template.home.helpers({
   teamName: getTeamName,
   userName: getUserEmail,
   formatDate,
+  formatTimestampHoursMinutes,
   
   ticketTitle(ticketId) {
     const ticket = Tickets.findOne(ticketId);
@@ -396,7 +398,7 @@ Template.home.helpers({
   clockEventTotalTime: calculateTotalTime,
   ticketTotalTime: calculateTotalTime,
   formatTime,
-  
+  formatTimeHoursMinutes,
   // Team Dashboard helpers
   startDate() { return Template.instance().startDate.get(); },
   endDate() { return Template.instance().endDate.get(); },
