@@ -110,6 +110,9 @@ Quick start: [click here](./HOW_TO_USE.md)
 4. **Access the app:**
    Open your browser and navigate to `http://localhost:3000`
 
+5. **Optional: Configure Ozwell AI assistant**
+   - If you plan to use the Ozwell writing assistant, follow the [Ozwell configuration](#configuring-ozwell-ai-assistant) steps to add your API key
+
 ---
 
 ## Usage
@@ -120,6 +123,33 @@ Quick start: [click here](./HOW_TO_USE.md)
 - **Add Reflections:** Include notes about challenges, accomplishments, or context for each session
 - **Control Your Privacy:** All data stays private unless you choose to share specific summaries or reports
 - **Generate Reports:** Create summaries to share with mentors, teachers, or supervisors when beneficial
+
+### Configuring Ozwell AI Assistant
+
+Ozwell provides AI-assisted writing for tickets and reflections. Setup is optional, but required to use the Ozwell modal or Settings automation.
+
+1. **Obtain credentials**
+   - Create an account at [BlueHive AI developers](https://ai.bluehive.com/developers) and generate an Ozwell API key (`BHSK-...`).
+   - If you plan to use Google or GitHub login, add the following to a `.env` file at the project root:
+     ```
+     GOOGLE_CLIENT_ID=your-google-client-id
+     GOOGLE_CLIENT_SECRET=your-google-client-secret
+     GITHUB_CLIENT_ID=your-github-client-id
+     GITHUB_CLIENT_SECRET=your-github-client-secret
+     ```
+     (These are optional for Ozwell itself—they only power OAuth login.)
+
+2. **Start a reference server (optional)**  
+   If you have an Ozwell-compatible reference server running locally, note its base URL (defaults to `http://localhost:3000/v1`). This is only needed if you want the Ozwell modal to use a local inference endpoint.
+
+3. **Configure inside TimeHarbor**
+   - Sign in and navigate to **Settings** (`/settings`).
+   - In the “Ozwell AI Writing Assistant” card, click **Configure Ozwell**.
+   - Fill in:
+     - **API Key** – the BlueHive key you generated (required).
+     - **Reference Server Base URL** – defaults to `http://localhost:3000/v1`; use your MCP server URL if different.
+     - **Model** – defaults to `llama3`.
+   - Submit to test and save. On success, Ozwell is enabled for your account. You can re-test or disable it from the same page.
 
 ---
 
