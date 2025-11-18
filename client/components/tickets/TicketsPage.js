@@ -2,7 +2,7 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
-import { formatTime, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
+import { formatTime, formatTimeHoursMinutes, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
 import { extractUrlTitle } from '../../utils/UrlUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
@@ -442,7 +442,7 @@ Template.tickets.events({
       t.activeTicketId.set(null);
       
       // Show popup with total work time
-      const timeFormatted = formatTime(totalWorkTime);
+      const timeFormatted = formatTimeHoursMinutes(totalWorkTime);
       document.getElementById('totalWorkTime').textContent = timeFormatted;
       document.getElementById('clockOutModal').showModal();
     }

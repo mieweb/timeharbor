@@ -121,15 +121,15 @@
                   <div class="font-semibold">{{teamName teamId}}</div>
                   <div class="text-sm text-base-content opacity-70">
                     {{#if endTime}}
-                      {{formatDate startTimestamp}} - {{formatDate endTime}}
+                      {{formatTimestampHoursMinutes startTimestamp}} - {{formatTimestampHoursMinutes endTime}}
                     {{else}}
-                      Started {{formatDate startTimestamp}} (Active)
+                      Started {{formatTimestampHoursMinutes startTimestamp}} (Active)
                     {{/if}}
                   </div>
                 </div>
               </div>
               <div class="text-right">
-                <div class="badge badge-primary">{{formatTime (clockEventTotalTime this)}}</div>
+                <div class="badge badge-primary">{{formatTimeHoursMinutes (clockEventTotalTime this)}}</div>
                 {{#unless endTime}}
                   <div class="text-xs text-success mt-1">Running</div>
                 {{/unless}}

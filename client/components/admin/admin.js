@@ -4,7 +4,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets } from '../../../collections.js';
 import { Grid } from 'ag-grid-community';
 import { getUserName } from '../../utils/UserTeamUtils.js';
-import { formatTimeHoursMinutes } from '../../utils/TimeUtils.js';
+import { formatTimeHoursMinutes, formatTimestampHoursMinutes } from '../../utils/TimeUtils.js';
 
 const GRID_INIT_DELAY = 200;
 
@@ -40,7 +40,7 @@ Template.admin.onRendered(function () {
       field: 'createdAt', 
       sortable: true, 
       filter: 'agDateColumnFilter', 
-      valueFormatter: p => p.value ? new Date(p.value).toLocaleString() : '' 
+      valueFormatter: p => formatTimestampHoursMinutes(p.value)
     },
     { 
       headerName: 'Time', 
@@ -66,7 +66,7 @@ Template.admin.onRendered(function () {
         const reviewedBy = params.data.reviewedBy;
         const reviewerName = reviewedBy ? getUserName(reviewedBy) : 'Unknown';
         return `<div class="text-xs">
-          <div>${new Date(params.value).toLocaleString()}</div>
+          <div>${formatTimestampHoursMinutes(params.value)}</div>
           <div class="text-gray-500">by ${reviewerName}</div>
         </div>`;
       }

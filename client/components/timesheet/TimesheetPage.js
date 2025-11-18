@@ -521,7 +521,7 @@ Template.timesheet.helpers({
   totalHours() {
     const instance = Template.instance();
     const userId = instance.userId;
-    if (!userId) return '0:00:00';
+    if (!userId) return '0:00';
     
     const startDateStr = instance.startDate.get();
     const endDateStr = instance.endDate.get();
@@ -533,13 +533,14 @@ Template.timesheet.helpers({
       isEventInDateRange(new Date(event.startTimestamp), dateRange)
     );
     
-    // Same calculation as home page calculateTimeForEvents
-    const totalSeconds = filteredEvents.reduce((sum, event) => {
+    // Same calculation logic as home page but clamped to minutes
+    const totalMinutes = filteredEvents.reduce((sum, event) => {
       const endTime = event.endTime || Date.now();
-      return sum + Math.floor((endTime - event.startTimestamp) / 1000);
+      const durationMinutes = Math.floor((endTime - event.startTimestamp) / 60000);
+      return sum + durationMinutes;
     }, 0);
     
-    return formatTime(totalSeconds);
+    return formatTimeHoursMinutes(totalMinutes * 60);
   },
   
   totalSessions() {
@@ -550,23 +551,24 @@ Template.timesheet.helpers({
     const rows = Template.instance().computeSessionData();
     const completedSessions = rows.filter(row => row.duration && typeof row.duration === 'number' && row.duration > 0);
     
-    if (completedSessions.length === 0) return '0:00:00';
+    if (completedSessions.length === 0) return '0:00';
     
-    const totalSeconds = completedSessions.reduce((sum, row) => {
-      const duration = row.duration || 0;
-      return sum + (typeof duration === 'number' ? duration : 0);
+    const totalMinutes = completedSessions.reduce((sum, row) => {
+      const durationSeconds = row.duration || 0;
+      const durationMinutes = Math.floor(durationSeconds / 60);
+      return sum + (durationMinutes > 0 ? durationMinutes : 0);
     }, 0);
     
-    if (totalSeconds <= 0) return '0:00:00';
+    if (totalMinutes <= 0) return '0:00';
     
-    const averageSeconds = totalSeconds / completedSessions.length;
+    const averageMinutes = totalMinutes / completedSessions.length;
     
     // Additional safety check for reasonable average values
-    if (averageSeconds > 24 * 3600) { // More than 24 hours average seems unreasonable
-      console.warn('Unusually large average session time detected:', averageSeconds);
+    if (averageMinutes > 24 * 60) { // More than 24 hours average seems unreasonable
+      console.warn('Unusually large average session time detected:', averageMinutes);
     }
     
-    return formatTime(averageSeconds);
+    return formatTimeHoursMinutes(Math.floor(averageMinutes) * 60);
   },
   
   workingDays() {

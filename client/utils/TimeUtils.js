@@ -92,6 +92,20 @@ export const formatDate = (timestamp) => {
 };
 
 /**
+ * Formats a timestamp into "MM/DD/YYYY, H:MM AM/PM" (hours and minutes only)
+ * @param {number} timestamp - Unix timestamp in milliseconds
+ * @param {boolean} includeDate - Whether to include the date portion
+ * @returns {string} Formatted timestamp string
+ */
+export const formatTimestampHoursMinutes = (timestamp, includeDate = true) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const datePart = includeDate ? `${date.toLocaleDateString()}, ` : '';
+    const timePart = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return `${datePart}${timePart}`;
+};
+
+/**
  * Calculates total time for a clock event or ticket including current running time
  * @param {Object} item - Clock event or ticket object with startTimestamp and accumulatedTime
  * @returns {number} Total time in seconds
