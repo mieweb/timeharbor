@@ -1,0 +1,14 @@
+{
+  "name": "timeharbor-migration",
+  "version": "1.0.0",
+  "description": "Migration scripts for TimeHarbor",
+  "main": "migrate.js",
+  "scripts": {
+    "start": "node migrate.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1"
+  }
+}
