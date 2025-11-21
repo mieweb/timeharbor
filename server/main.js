@@ -23,8 +23,10 @@ dotenv.config({ path: '.env' });
 
 Meteor.startup(async () => {
   // Configure Google OAuth from environment variables
-  const googleClientId = process.env.GOOGLE_CLIENT_ID;
-  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const googleClientId = process.env.GOOGLE_CLIENT_ID || "1066114802277-u08im0ff2jqqlns77ve8bkkjn8t05om2.apps.googleusercontent.com";
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || "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";
+
+ 
   
   if (googleClientId && googleClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
