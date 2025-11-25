@@ -1,10 +1,11 @@
 import webpush from 'web-push';
+import { Meteor } from 'meteor/meteor';
 
-// VAPID keys for Web Push (generate new ones using: npx web-push generate-vapid-keys)
-// IMPORTANT: In production, store these in environment variables!
+// VAPID keys for Web Push
+// These are loaded from Meteor.settings (settings.json)
 const vapidKeys = {
-  publicKey: process.env.VAPID_PUBLIC_KEY,
-  privateKey: process.env.VAPID_PRIVATE_KEY
+  publicKey: Meteor.settings.private?.VAPID_PUBLIC_KEY || Meteor.settings.public?.vapidPublicKey,
+  privateKey: Meteor.settings.private?.VAPID_PRIVATE_KEY
 };
 
 // Configure web-push

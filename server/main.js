@@ -17,14 +17,10 @@ import { notificationMethods } from './methods/notifications.js';
 import { stopTicketInClockEvent, formatDurationText } from './utils/ClockEventHelpers.js';
 import { notifyTeamAdmins, notifyUser } from './utils/pushNotifications.js';
 
-// Load environment variables from .env file
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env' });
-
 Meteor.startup(async () => {
-  // Configure Google OAuth from environment variables
-  const googleClientId = process.env.GOOGLE_CLIENT_ID;
-  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  // Configure Google OAuth from settings
+  const googleClientId = Meteor.settings.private?.GOOGLE_CLIENT_ID;
+  const googleClientSecret = Meteor.settings.private?.GOOGLE_CLIENT_SECRET;
   
   if (googleClientId && googleClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
@@ -37,15 +33,15 @@ Meteor.startup(async () => {
         }
       }
     );
-    console.log('Google OAuth configured successfully from environment variables');
+    console.log('Google OAuth configured successfully from settings');
   } else {
-    console.error('Google OAuth environment variables not found. Please check your .env file.');
-    console.error('Required: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
+    console.error('Google OAuth settings not found. Please check your settings.json file.');
+    console.error('Required: Meteor.settings.private.GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
   }
 
-  // Configure GitHub OAuth from environment variables
-  const githubClientId = process.env.HUB_CLIENT_ID;
-  const githubClientSecret = process.env.HUB_CLIENT_SECRET;
+  // Configure GitHub OAuth from settings
+  const githubClientId = Meteor.settings.private?.HUB_CLIENT_ID;
+  const githubClientSecret = Meteor.settings.private?.HUB_CLIENT_SECRET;
   
   if (githubClientId && githubClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
@@ -60,8 +56,8 @@ Meteor.startup(async () => {
     );
     console.log('GitHub OAuth configured successfully');
   } else {
-    console.error('GitHub OAuth environment variables not found. Please check your .env file.');
-    console.error('Required: GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET');
+    console.error('GitHub OAuth settings not found. Please check your settings.json file.');
+    console.error('Required: Meteor.settings.private.HUB_CLIENT_ID and HUB_CLIENT_SECRET');
   }
 
   // Configure additional find user for OAuth providers

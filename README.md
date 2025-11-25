@@ -102,12 +102,30 @@ Quick start: [click here](./HOW_TO_USE.md)
    meteor npm install
    ```
 
-3. **Run the application:**
-   ```bash
-   meteor
+3. **Configure settings:**
+   Copy `settings.json` and add your OAuth credentials and VAPID keys:
+   ```json
+   {
+     "public": {
+       "vapidPublicKey": "YOUR_VAPID_PUBLIC_KEY"
+     },
+     "private": {
+       "GOOGLE_CLIENT_ID": "YOUR_GOOGLE_CLIENT_ID",
+       "GOOGLE_CLIENT_SECRET": "YOUR_GOOGLE_CLIENT_SECRET",
+       "HUB_CLIENT_ID": "YOUR_GITHUB_CLIENT_ID",
+       "HUB_CLIENT_SECRET": "YOUR_GITHUB_CLIENT_SECRET",
+       "VAPID_PRIVATE_KEY": "YOUR_VAPID_PRIVATE_KEY",
+       "VAPID_PUBLIC_KEY": "YOUR_VAPID_PUBLIC_KEY"
+     }
+   }
    ```
 
-4. **Access the app:**
+4. **Run the application:**
+   ```bash
+   meteor run --settings settings.json
+   ```
+
+5. **Access the app:**
    Open your browser and navigate to `http://localhost:3000`
 
 ---
