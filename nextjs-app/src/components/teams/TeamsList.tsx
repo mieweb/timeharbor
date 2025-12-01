@@ -21,6 +21,7 @@ export default function TeamsList({ teams, userId }: { teams: Team[], userId: st
       await createTeam(formData)
       setShowCreate(false)
     } catch (e: any) {
+      if (e.message === 'NEXT_REDIRECT') return
       setError(e.message)
     }
   }
@@ -30,6 +31,7 @@ export default function TeamsList({ teams, userId }: { teams: Team[], userId: st
       await joinTeam(formData)
       setShowJoin(false)
     } catch (e: any) {
+      if (e.message === 'NEXT_REDIRECT') return
       setError(e.message)
     }
   }
