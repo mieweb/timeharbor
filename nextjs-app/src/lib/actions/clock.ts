@@ -196,3 +196,58 @@ export async function startTicket(ticketId: string, teamId: string) {
   revalidatePath('/tickets')
   revalidatePath(`/teams?id=${teamId}`)
 }
+
+export async function stopTicket(ticketId: string, teamId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Not authenticated')
+
+  const now = new Date().toISOString()
+
+  // Find active clock event
+  const { data: activeEvent } = await supabase
+    .from('clock_events')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('team_id', teamId)
+    .is('end_timestamp', null)
+    .single()
+
+  if (!activeEvent) return // No active session, so no active ticket to stop
+
+  // Find the specific active ticket entry
+  const { data: ticketEntry } = await supabase
+    .from('clock_event_tickets')
+    .select('*')
+    .eq('clock_event_id', activeEvent.id)
+    .eq('ticket_id', ticketId)
+    .not('start_timestamp', 'is', null)
+    .single()
+
+  if (!ticketEntry) return // Ticket not running
+
+  const startTime = new Date(ticketEntry.start_timestamp).getTime()
+  const endTime = new Date(now).getTime()
+  const duration = Math.floor((endTime - startTime) / 1000) + (ticketEntry.accumulated_time || 0)
+
+  // Update clock_event_tickets
+  await supabase
+    .from('clock_event_tickets')
+    .update({
+      start_timestamp: null,
+      accumulated_time: duration
+    })
+    .eq('id', ticketEntry.id)
+
+  // Update main tickets table
+  const { data: ticketData } = await supabase.from('tickets').select('accumulated_time').eq('id', ticketId).single()
+  if (ticketData) {
+    await supabase.from('tickets').update({
+      accumulated_time: (ticketData.accumulated_time || 0) + Math.floor((endTime - startTime) / 1000)
+    }).eq('id', ticketId)
+  }
+
+  revalidatePath('/tickets')
+  revalidatePath(`/teams?id=${teamId}`)
+}

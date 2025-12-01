@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { startTicket, stopClock } from '@/lib/actions/clock'
+import { startTicket, stopTicket } from '@/lib/actions/clock'
 import { updateTicketStatus, deleteTicket } from '@/lib/actions/tickets'
 
 interface TicketCardProps {
@@ -56,17 +56,9 @@ export default function TicketCard({ ticket, activeTicketId, activeEvent, active
   }
 
   const handleStop = async () => {
-    // Stopping a ticket effectively means stopping the clock or switching.
-    // If we just want to stop working on this ticket but keep the clock running?
-    // Usually "Stop" on a ticket means "Stop Clock" or "Pause".
-    // For now, let's assume it stops the clock entirely or we can just have "Start" which switches.
-    // The screenshot shows "Start". If it's running, maybe it should show "Pause" or "Stop"?
-    // The screenshot only shows "Start" on inactive tickets.
-    // If active, maybe show "Running..." or "Stop"?
-    
     setIsLoading(true)
     try {
-      await stopClock(ticket.team_id)
+      await stopTicket(ticket.id, ticket.team_id)
     } catch (error) {
       console.error(error)
     } finally {
