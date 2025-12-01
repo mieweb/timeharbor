@@ -78,6 +78,41 @@ export const teamMethods = {
     }
     await Teams.updateAsync(teamId, { $set: { name: trimmed } });
   },
+  async removeTeamMember(teamId, memberId) {
+    check(teamId, String);
+    check(memberId, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isAdmin) {
+      throw new Meteor.Error('forbidden', 'Only admins can remove team members');
+    }
+
+    if (!Array.isArray(team.members) || !team.members.includes(memberId)) {
+      throw new Meteor.Error('bad-request', 'User is not a member of this team');
+    }
+
+    if (team.leader === memberId) {
+      throw new Meteor.Error('forbidden', 'You cannot remove the team leader');
+    }
+
+    const update = {
+      $pull: { members: memberId },
+    };
+
+    if (Array.isArray(team.admins) && team.admins.includes(memberId)) {
+      update.$pull.admins = memberId;
+    }
+
+    await Teams.updateAsync(teamId, update);
+  },
   async deleteTeam(teamId) {
     check(teamId, String);
     if (!this.userId) {

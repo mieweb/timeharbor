@@ -11,7 +11,19 @@
       <h5 class="font-semibold mb-2">Collaborators:</h5>
       <div class="flex flex-wrap gap-2">
         {{#each selectedTeam.members}}
-          <div class="badge badge-neutral">{{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}</div>
+          <div class="badge badge-neutral flex items-center gap-1">
+            <span>{{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}</span>
+            {{#if canRemoveMember id}}
+              <button
+                type="button"
+                class="remove-member-btn text-xs text-red-500 hover:text-red-700 ml-1"
+                data-member-id="{{id}}"
+                title="Remove from team"
+              >
+                ✕
+              </button>
+            {{/if}}
+          </div>
         {{/each}}
       </div>
     </div>

@@ -57,6 +57,21 @@ Template.teams.helpers({
     const userId = Meteor.userId();
     return !!(team && Array.isArray(team.admins) && userId && team.admins.includes(userId));
   },
+  canRemoveMember(memberId) {
+    const instance = Template.instance();
+    const teamId = instance.selectedTeamId.get();
+    if (!teamId || !memberId) return false;
+
+    const team = Teams.findOne(teamId);
+    const userId = Meteor.userId();
+    if (!team || !userId) return false;
+
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(userId);
+    const isLeader = team.leader === memberId;
+
+    // Admins can remove any member except the team leader
+    return isAdmin && !isLeader;
+  },
 });
 
 Template.teams.events({
@@ -129,6 +144,26 @@ Template.teams.events({
           alert('Failed to copy code to clipboard');
         });
     }
+  },
+  'click .remove-member-btn'(e, t) {
+    e.preventDefault();
+    const memberId = e.currentTarget.dataset.memberId;
+    const teamId = t.selectedTeamId.get();
+    if (!teamId || !memberId) return;
+
+    const users = t.selectedTeamUsers.get() || [];
+    const user = users.find(u => u.id === memberId);
+    const displayName = user?.name || user?.email || 'this member';
+
+    if (!confirm(`Remove ${displayName} from this team?`)) {
+      return;
+    }
+
+    Meteor.call('removeTeamMember', teamId, memberId, (err) => {
+      if (err) {
+        alert('Error removing member: ' + (err.reason || err.message));
+      }
+    });
   },
   'click .edit-team-btn'(e, t) {
     e.preventDefault();
