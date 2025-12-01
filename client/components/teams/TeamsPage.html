@@ -9,9 +9,58 @@
         <button id="copyTeamCode" class="btn btn-sm btn-outline">Copy Code</button>
       </div>
       <h5 class="font-semibold mb-2">Collaborators:</h5>
-      <div class="flex flex-wrap gap-2">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {{#each selectedTeam.members}}
-          <div class="badge badge-neutral">{{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}</div>
+          <div class="card bg-base-200 shadow-sm p-3 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <span class="font-medium truncate">{{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}</span>
+              {{#if isMemberAdmin id}}
+                <span class="text-sm text-blue-500 flex-shrink-0" title="Admin">👑</span>
+              {{/if}}
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              {{#if canViewMemberDashboard id}}
+                <button
+                  type="button"
+                  class="view-dashboard-btn btn btn-xs btn-ghost text-green-600 hover:text-green-700 hover:bg-green-50"
+                  data-member-id="{{id}}"
+                  title="View Dashboard"
+                >
+                  📊
+                </button>
+              {{/if}}
+              {{#if canPromoteToAdmin id}}
+                <button
+                  type="button"
+                  class="promote-admin-btn btn btn-xs btn-ghost text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  data-member-id="{{id}}"
+                  title="Make Admin"
+                >
+                  ⬆
+                </button>
+              {{/if}}
+              {{#if canDemoteFromAdmin id}}
+                <button
+                  type="button"
+                  class="demote-admin-btn btn btn-xs btn-ghost text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  data-member-id="{{id}}"
+                  title="Remove Admin"
+                >
+                  ⬇
+                </button>
+              {{/if}}
+              {{#if canRemoveMember id}}
+                <button
+                  type="button"
+                  class="remove-member-btn btn btn-xs btn-ghost text-red-600 hover:text-red-700 hover:bg-red-50"
+                  data-member-id="{{id}}"
+                  title="Remove from team"
+                >
+                  ✕
+                </button>
+              {{/if}}
+            </div>
+          </div>
         {{/each}}
       </div>
     </div>
