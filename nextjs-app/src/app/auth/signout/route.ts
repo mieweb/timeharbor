@@ -15,7 +15,24 @@ export async function POST(req: NextRequest) {
   }
 
   revalidatePath('/', 'layout')
-  return NextResponse.redirect(new URL('/login', req.url), {
+
+  // Determine the correct base URL for redirect
+  // This handles cases where the app is behind a proxy and req.url is localhost
+  const origin = req.headers.get('origin')
+  const referer = req.headers.get('referer')
+  let baseUrl = req.nextUrl.origin
+
+  if (origin) {
+    baseUrl = origin
+  } else if (referer) {
+    try {
+      baseUrl = new URL(referer).origin
+    } catch (e) {
+      // Invalid referer, stick to default
+    }
+  }
+
+  return NextResponse.redirect(`${baseUrl}/login`, {
     status: 302,
   })
 }
