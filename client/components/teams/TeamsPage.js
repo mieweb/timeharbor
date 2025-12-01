@@ -1,5 +1,6 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { Teams } from '../../../collections.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
@@ -72,16 +73,73 @@ Template.teams.helpers({
     // Admins can remove any member except the team leader
     return isAdmin && !isLeader;
   },
+  isMemberAdmin(memberId) {
+    const instance = Template.instance();
+    const teamId = instance.selectedTeamId.get();
+    if (!teamId || !memberId) return false;
+
+    const team = Teams.findOne(teamId);
+    if (!team) return false;
+
+    return Array.isArray(team.admins) && team.admins.includes(memberId);
+  },
+  canPromoteToAdmin(memberId) {
+    const instance = Template.instance();
+    const teamId = instance.selectedTeamId.get();
+    if (!teamId || !memberId) return false;
+
+    const team = Teams.findOne(teamId);
+    const userId = Meteor.userId();
+    if (!team || !userId) return false;
+
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(userId);
+    const isAlreadyAdmin = Array.isArray(team.admins) && team.admins.includes(memberId);
+    const isLeader = team.leader === memberId;
+
+    // Admins can promote any member who is not already an admin (leader is effectively always admin)
+    return isAdmin && !isAlreadyAdmin && !isLeader;
+  },
+  canDemoteFromAdmin(memberId) {
+    const instance = Template.instance();
+    const teamId = instance.selectedTeamId.get();
+    if (!teamId || !memberId) return false;
+
+    const team = Teams.findOne(teamId);
+    const userId = Meteor.userId();
+    if (!team || !userId) return false;
+
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(userId);
+    const isMemberAdmin = Array.isArray(team.admins) && team.admins.includes(memberId);
+    const isLeader = team.leader === memberId;
+
+    // Admins can demote other admins, but not the leader
+    return isAdmin && isMemberAdmin && !isLeader;
+  },
+  canViewMemberDashboard(memberId) {
+    const instance = Template.instance();
+    const teamId = instance.selectedTeamId.get();
+    if (!teamId || !memberId) return false;
+
+    const team = Teams.findOne(teamId);
+    const userId = Meteor.userId();
+    if (!team || !userId) return false;
+
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(userId);
+    const isLeader = team.leader === userId;
+
+    // Admins and leaders can view any team member's dashboard
+    return isAdmin || isLeader;
+  },
 });
 
 Template.teams.events({
   'click #showCreateTeamForm'(e, t) {
     t.showCreateTeam.set(true);
-    t.showJoinTeam && t.showJoinTeam.set(false);
+    t.showJoinTeam.set(false);
   },
   'click #showJoinTeamForm'(e, t) {
     t.showJoinTeam.set(true);
-    t.showCreateTeam && t.showCreateTeam.set(false);
+    t.showCreateTeam.set(false);
   },
   'click #cancelCreateTeam'(e, t) {
     t.showCreateTeam.set(false);
@@ -165,6 +223,46 @@ Template.teams.events({
       }
     });
   },
+  'click .promote-admin-btn'(e, t) {
+    e.preventDefault();
+    const memberId = e.currentTarget.dataset.memberId;
+    const teamId = t.selectedTeamId.get();
+    if (!teamId || !memberId) return;
+
+    const users = t.selectedTeamUsers.get() || [];
+    const user = users.find(u => u.id === memberId);
+    const displayName = user?.name || user?.email || 'this member';
+
+    if (!confirm(`Make ${displayName} a co-admin? They will have all admin rights.`)) {
+      return;
+    }
+
+    Meteor.call('promoteToAdmin', teamId, memberId, (err) => {
+      if (err) {
+        alert('Error promoting to admin: ' + (err.reason || err.message));
+      }
+    });
+  },
+  'click .demote-admin-btn'(e, t) {
+    e.preventDefault();
+    const memberId = e.currentTarget.dataset.memberId;
+    const teamId = t.selectedTeamId.get();
+    if (!teamId || !memberId) return;
+
+    const users = t.selectedTeamUsers.get() || [];
+    const user = users.find(u => u.id === memberId);
+    const displayName = user?.name || user?.email || 'this member';
+
+    if (!confirm(`Remove admin rights from ${displayName}? They will remain a team member.`)) {
+      return;
+    }
+
+    Meteor.call('demoteFromAdmin', teamId, memberId, (err) => {
+      if (err) {
+        alert('Error removing admin rights: ' + (err.reason || err.message));
+      }
+    });
+  },
   'click .edit-team-btn'(e, t) {
     e.preventDefault();
     const teamId = e.currentTarget.dataset.id;
@@ -190,6 +288,13 @@ Template.teams.events({
           alert('Error deleting team: ' + (err.reason || err.message));
         }
       });
+    }
+  },
+  'click .view-dashboard-btn'(e, t) {
+    e.preventDefault();
+    const memberId = e.currentTarget.dataset.memberId;
+    if (memberId) {
+      FlowRouter.go(`/timesheet/${memberId}`);
     }
   },
 });

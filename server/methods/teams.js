@@ -113,6 +113,62 @@ export const teamMethods = {
 
     await Teams.updateAsync(teamId, update);
   },
+  async promoteToAdmin(teamId, memberId) {
+    check(teamId, String);
+    check(memberId, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isAdmin) {
+      throw new Meteor.Error('forbidden', 'Only admins can promote members to admin');
+    }
+
+    if (!Array.isArray(team.members) || !team.members.includes(memberId)) {
+      throw new Meteor.Error('bad-request', 'User is not a member of this team');
+    }
+
+    if (Array.isArray(team.admins) && team.admins.includes(memberId)) {
+      throw new Meteor.Error('bad-request', 'User is already an admin');
+    }
+
+    // Add to admins array
+    await Teams.updateAsync(teamId, { $push: { admins: memberId } });
+  },
+  async demoteFromAdmin(teamId, memberId) {
+    check(teamId, String);
+    check(memberId, String);
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isAdmin) {
+      throw new Meteor.Error('forbidden', 'Only admins can demote other admins');
+    }
+
+    if (team.leader === memberId) {
+      throw new Meteor.Error('forbidden', 'You cannot demote the team leader');
+    }
+
+    if (!Array.isArray(team.admins) || !team.admins.includes(memberId)) {
+      throw new Meteor.Error('bad-request', 'User is not an admin');
+    }
+
+    // Remove from admins array (but keep as member)
+    await Teams.updateAsync(teamId, { $pull: { admins: memberId } });
+  },
   async deleteTeam(teamId) {
     check(teamId, String);
     if (!this.userId) {
