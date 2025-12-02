@@ -85,42 +85,85 @@ export async function getTeamDashboardData(startDate: string, endDate: string) {
         authUsers.forEach(u => emailMap.set(u.id, u.email))
     }
 
-    // 7. Combine Data
+    // 7. Combine and Aggregate Data
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+    const aggregatedData = new Map<string, any>()
 
-    const dashboardData = events.map(event => {
-      const profile = profileMap.get(event.user_id)
-      const email = emailMap.get(event.user_id)
+    // Sort events by start_timestamp ascending first to help with min/max logic if needed, 
+    // though we can just compare.
+    events.sort((a, b) => new Date(a.start_timestamp).getTime() - new Date(b.start_timestamp).getTime())
+
+    events.forEach(event => {
+      const date = new Date(event.start_timestamp)
+      const dateStr = date.toISOString().split('T')[0] // YYYY-MM-DD
+      const key = `${event.user_id}_${dateStr}`
       
-      // Extract tickets
-      const tickets = event.clock_event_tickets?.map((cet: any) => cet.tickets).filter(Boolean) || []
-      const ticketTitles = tickets.map((t: any) => t.title).join(', ') || 'No tickets'
+      if (!aggregatedData.has(key)) {
+        // Initialize
+        const profile = profileMap.get(event.user_id)
+        const email = emailMap.get(event.user_id)
+        
+        let displayName = profile?.full_name
+        if (!displayName && email) {
+            const namePart = email.split('@')[0]
+            displayName = namePart
+              .split(/[._-]/)
+              .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+              .join(' ')
+        }
 
-      // Fallback for name: Profile Name -> Email Name -> Email -> 'Unknown'
-      let displayName = profile?.full_name
-      if (!displayName && email) {
-          // Try to make a name from email (e.g. john.doe@gmail.com -> John Doe)
-          const namePart = email.split('@')[0]
-          displayName = namePart
-            .split(/[._-]/)
-            .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
-            .join(' ')
+        aggregatedData.set(key, {
+          id: key, // Use composite key as ID
+          userId: event.user_id,
+          date: event.start_timestamp, // Use the first event's timestamp as the date reference
+          member: displayName || 'Unknown',
+          email: email || 'N/A',
+          hours: 0,
+          clockIn: event.start_timestamp, // First event start
+          clockOut: event.end_timestamp, // First event end (temp)
+          status: 'Completed',
+          tickets: new Set(),
+          isActive: false
+        })
       }
-
-      return {
-        id: event.id,
-        userId: event.user_id, // Added userId
-        date: event.start_timestamp,
-        member: displayName || 'Unknown',
-        email: email || 'N/A',
-        hours: event.accumulated_time || 0, // This is in seconds usually? Or minutes? Schema said integer. Usually seconds.
-        clockIn: event.start_timestamp,
-        clockOut: event.end_timestamp,
-        status: event.end_timestamp ? 'Completed' : 'Active',
-        tickets: ticketTitles,
-        isActive: !event.end_timestamp
+      
+      const entry = aggregatedData.get(key)
+      
+      // Update Hours
+      entry.hours += (event.accumulated_time || 0)
+      
+      // Update Clock In (Earliest)
+      if (new Date(event.start_timestamp) < new Date(entry.clockIn)) {
+          entry.clockIn = event.start_timestamp
       }
+      
+      // Update Clock Out (Latest)
+      // Logic: If ANY event is active, the day is Active.
+      // If the day is not active, Clock Out is the latest end_timestamp.
+      if (!event.end_timestamp) {
+          entry.isActive = true
+          entry.status = 'Active'
+          entry.clockOut = null
+      } else if (!entry.isActive) {
+          // Only update clockOut if we are not already marked as active
+          // (If we are active, clockOut should remain null or reflect the active state)
+          if (!entry.clockOut || new Date(event.end_timestamp) > new Date(entry.clockOut)) {
+              entry.clockOut = event.end_timestamp
+          }
+      }
+      
+      // Aggregate Tickets
+      const eventTickets = event.clock_event_tickets?.map((cet: any) => cet.tickets?.title).filter(Boolean) || []
+      eventTickets.forEach((t: string) => entry.tickets.add(t))
     })
+
+    const dashboardData = Array.from(aggregatedData.values()).map(item => ({
+      ...item,
+      tickets: Array.from(item.tickets).join(', ') || 'No tickets'
+    }))
+
+    // Sort by date desc
+    dashboardData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     return { data: dashboardData, error: null }
 
