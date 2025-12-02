@@ -32,6 +32,18 @@ export default function TeamDetails({ team, userId }: { team: Team, userId: stri
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const getDisplayName = (profile: Profile) => {
+    if (profile?.full_name) return profile.full_name
+    if (profile?.email) {
+      const namePart = profile.email.split('@')[0]
+      return namePart
+        .split(/[._-]/)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ')
+    }
+    return 'Unknown'
+  }
+
   return (
     <div className="p-6">
       <div className="card bg-base-100 shadow p-6 mb-6">
@@ -48,15 +60,18 @@ export default function TeamDetails({ team, userId }: { team: Team, userId: stri
 
         <h5 className="font-semibold mb-4 text-lg">Collaborators:</h5>
         <div className="flex flex-wrap gap-2">
-          {team.team_members.map(member => (
+          {team.team_members.map(member => {
+            const displayName = getDisplayName(member.profiles)
+            return (
             <div key={member.id} className="badge badge-lg badge-neutral gap-2 p-4">
               <div className="w-6 h-6 rounded-full bg-base-100 text-base-content flex items-center justify-center text-xs">
-                {member.profiles?.full_name?.[0] || member.profiles?.email?.[0] || '?'}
+                {displayName[0] || '?'}
               </div>
-              {member.profiles?.full_name || member.profiles?.email || 'Unknown'}
+              {displayName}
               {member.role !== 'member' && <span className="text-xs opacity-70">({member.role})</span>}
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

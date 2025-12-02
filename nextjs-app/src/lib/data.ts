@@ -71,12 +71,29 @@ export async function getDashboardStats() {
     .order('start_timestamp', { ascending: false })
     .limit(5)
 
-  // Check if user is a leader or admin of any team
-  const { count: leaderCount } = await supabase
+  // Check if user is a leader or admin of any team AND that team has other members
+  const { data: leaderTeams } = await supabase
     .from('team_members')
-    .select('*', { count: 'exact', head: true })
+    .select('team_id')
     .eq('user_id', user.id)
     .in('role', ['leader', 'admin'])
+
+  let isTeamLeaderWithMembers = false
+  
+  if (leaderTeams && leaderTeams.length > 0) {
+      const teamIds = leaderTeams.map(t => t.team_id)
+      
+      // Check if any of these teams have members OTHER than the current user
+      const { count: otherMembersCount } = await supabase
+        .from('team_members')
+        .select('*', { count: 'exact', head: true })
+        .in('team_id', teamIds)
+        .neq('user_id', user.id)
+        
+      if (otherMembersCount && otherMembersCount > 0) {
+          isTeamLeaderWithMembers = true
+      }
+  }
 
   return {
     todayHours: formatDuration(todaySeconds),
@@ -84,7 +101,7 @@ export async function getDashboardStats() {
     activeSessionsCount: activeSessionsCount || 0,
     totalTeams: totalTeams || 0,
     recentActivity: recentActivity || [],
-    isTeamLeader: (leaderCount || 0) > 0
+    isTeamLeader: isTeamLeaderWithMembers
   }
 }
 

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import TeamsList from '@/components/teams/TeamsList'
 import TeamDetails from '@/components/teams/TeamDetails'
@@ -29,7 +30,37 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
       return <div className="alert alert-error">You are not a member of this team</div>
     }
 
-    return <TeamDetails team={team} userId={user.id} />
+    // Fetch emails for members using Admin Client to display names correctly
+    const adminSupabase = createAdminClient()
+    const { data: { users: authUsers } } = await adminSupabase.auth.admin.listUsers({
+        perPage: 1000
+    })
+    
+    const emailMap = new Map()
+    if (authUsers) {
+        authUsers.forEach(u => emailMap.set(u.id, u.email))
+    }
+
+    // Enrich team members with email
+    const enrichedMembers = team.team_members.map((member: any) => {
+        const email = emailMap.get(member.user_id)
+        // Ensure profiles object exists
+        const profiles = member.profiles || {}
+        return {
+            ...member,
+            profiles: {
+                ...profiles,
+                email: email || null
+            }
+        }
+    })
+    
+    const enrichedTeam = {
+        ...team,
+        team_members: enrichedMembers
+    }
+
+    return <TeamDetails team={enrichedTeam} userId={user.id} />
   } else {
     // List View
     const { data: teamMembers } = await supabase
