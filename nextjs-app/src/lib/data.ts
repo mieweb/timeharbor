@@ -88,8 +88,8 @@ export async function getDashboardStats() {
   }
 }
 
-function formatDuration(seconds: number) {
+export function formatDuration(seconds: number) {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
-  return `${h}h ${m}m`
+  return `${h}:${m.toString().padStart(2, '0')}`
 }

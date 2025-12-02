@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { getDashboardStats } from '@/lib/data'
+import { getDashboardStats, formatDuration } from '@/lib/data'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { format } from 'date-fns'
+import LocalTimeDisplay from '@/components/LocalTimeDisplay'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -19,7 +19,7 @@ export default async function Home() {
   const isFirstTimeUser = stats.totalTeams === 0
 
   return (
-    <div className="py-6">
+    <div className="py-6 px-8">
       {/* Welcome Header */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-base-content mb-4">Welcome to TimeHarbor</h2>
@@ -71,11 +71,13 @@ export default async function Home() {
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold">Your Personal Dashboard</h3>
           <div className="flex gap-2">
-            <Link href="/timesheet" className="btn btn-sm btn-outline btn-primary">
-              📊 View My Timesheet
+            <Link href="/timesheet" className="btn btn-sm btn-outline btn-primary gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>
+                View My Timesheet
             </Link>
-            <button className="btn btn-sm btn-outline btn-secondary">
-              🐛 Report an Issue
+            <button className="btn btn-sm btn-outline btn-error gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                Report an Issue
             </button>
           </div>
         </div>
@@ -114,35 +116,47 @@ export default async function Home() {
           
           {stats.recentActivity.length > 0 ? (
             <div className="space-y-4">
-              {stats.recentActivity.map((event: any) => (
-                <div key={event.id} className="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">
-                      {event.end_timestamp ? '✅' : '🟢'}
+              {stats.recentActivity.map((event: any) => {
+                let duration = event.accumulated_time || 0
+                if (!event.end_timestamp && event.start_timestamp) {
+                    // For running events, we can't easily calculate duration on server since "now" is server time
+                    // But we can approximate or just show "Running"
+                    // For now, let's just use the accumulated time + time since start (using server time for now)
+                    const startTime = new Date(event.start_timestamp).getTime()
+                    duration += Math.floor((Date.now() - startTime) / 1000)
+                }
+
+                return (
+                    <div key={event.id} className="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded flex items-center justify-center ${event.end_timestamp ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                            {event.end_timestamp ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            )}
+                        </div>
+                        <div>
+                        <div className="font-semibold">{event.teams?.name || 'Unknown Team'}</div>
+                        <div className="text-sm text-base-content opacity-70">
+                            <LocalTimeDisplay date={event.start_timestamp} />
+                            {' - '}
+                            {event.end_timestamp ? (
+                                <LocalTimeDisplay date={event.end_timestamp} />
+                            ) : (
+                                'Now'
+                            )}
+                        </div>
+                        </div>
                     </div>
-                    <div>
-                      <div className="font-semibold">{event.teams?.name || 'Unknown Team'}</div>
-                      <div className="text-sm text-base-content opacity-70">
-                        {event.end_timestamp ? (
-                          `${format(new Date(event.start_timestamp), 'HH:mm')} - ${format(new Date(event.end_timestamp), 'HH:mm')}`
-                        ) : (
-                          `Started ${format(new Date(event.start_timestamp), 'HH:mm')} (Active)`
-                        )}
-                      </div>
+                    <div className="text-right">
+                        <div className={`badge badge-lg ${event.end_timestamp ? 'badge-primary' : 'badge-secondary'}`}>
+                        {formatDuration(duration)}
+                        </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    {/* We'll need a helper for total time including active time */}
-                    <div className="badge badge-primary">
-                      {/* Placeholder for duration calculation */}
-                      {event.accumulated_time ? `${Math.floor(event.accumulated_time / 60)}m` : '0m'}
                     </div>
-                    {!event.end_timestamp && (
-                      <div className="text-xs text-success mt-1">Running</div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="text-center py-8">
