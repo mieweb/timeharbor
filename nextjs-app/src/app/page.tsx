@@ -112,47 +112,58 @@ export default async function Home() {
 
         {/* Recent Activity */}
         <div className="card bg-base-100 shadow p-6">
-          <h4 className="text-lg font-semibold mb-4">Recent Activity</h4>
+          <h4 className="text-lg font-bold mb-4">Recent Activity</h4>
           
           {stats.recentActivity.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {stats.recentActivity.map((event: any) => {
                 let duration = event.accumulated_time || 0
-                if (!event.end_timestamp && event.start_timestamp) {
-                    // For running events, we can't easily calculate duration on server since "now" is server time
-                    // But we can approximate or just show "Running"
-                    // For now, let's just use the accumulated time + time since start (using server time for now)
+                const isActive = !event.end_timestamp && event.start_timestamp
+                
+                if (isActive) {
                     const startTime = new Date(event.start_timestamp).getTime()
                     duration += Math.floor((Date.now() - startTime) / 1000)
                 }
 
                 return (
-                    <div key={event.id} className="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded flex items-center justify-center ${event.end_timestamp ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
-                            {event.end_timestamp ? (
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    <div key={event.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-4">
+                        {/* Icon */}
+                        <div className="shrink-0">
+                            {isActive ? (
+                                <div className="w-6 h-6 rounded-full bg-green-500 shadow-sm border-2 border-white"></div>
                             ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <div className="w-6 h-6 rounded bg-green-500 flex items-center justify-center text-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
                             )}
                         </div>
+                        
+                        {/* Text Info */}
                         <div>
-                        <div className="font-semibold">{event.teams?.name || 'Unknown Team'}</div>
-                        <div className="text-sm text-base-content opacity-70">
-                            <LocalTimeDisplay date={event.start_timestamp} />
-                            {' - '}
-                            {event.end_timestamp ? (
-                                <LocalTimeDisplay date={event.end_timestamp} />
-                            ) : (
-                                'Now'
-                            )}
-                        </div>
+                            <div className="font-bold text-base-content">{event.teams?.name || 'Unknown Team'}</div>
+                            <div className="text-sm text-gray-500 mt-0.5">
+                                {isActive ? (
+                                    <span>Started <LocalTimeDisplay date={event.start_timestamp} /> (Active)</span>
+                                ) : (
+                                    <>
+                                        <LocalTimeDisplay date={event.start_timestamp} />
+                                        {' - '}
+                                        <LocalTimeDisplay date={event.end_timestamp} />
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
+                    
+                    {/* Duration Badge */}
                     <div className="text-right">
-                        <div className={`badge badge-lg ${event.end_timestamp ? 'badge-primary' : 'badge-secondary'}`}>
-                        {formatDuration(duration)}
+                        <div className="bg-indigo-600 text-white text-sm font-bold px-3 py-1 rounded-md inline-block min-w-[60px] text-center">
+                            {formatDuration(duration)}
                         </div>
+                        {isActive && (
+                            <div className="text-xs text-green-500 font-medium mt-1">Running</div>
+                        )}
                     </div>
                     </div>
                 )

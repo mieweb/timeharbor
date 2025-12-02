@@ -97,10 +97,21 @@ async function applyPolicies() {
       
       -- Tickets policies
       ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
+      
+      -- Drop ALL potential existing policies on tickets to ensure clean slate
       DROP POLICY IF EXISTS "Users can view tickets" ON tickets;
-      CREATE POLICY "Users can view tickets"
+      DROP POLICY IF EXISTS "Users can view their own tickets or team tickets if leader" ON tickets;
+      DROP POLICY IF EXISTS "Users can view only their own tickets" ON tickets;
+      DROP POLICY IF EXISTS "Team members can view tickets" ON tickets;
+      DROP POLICY IF EXISTS "Team members can view tickets." ON tickets; -- Check for trailing dot or variations
+      DROP POLICY IF EXISTS "Authenticated users can view tickets" ON tickets;
+      
+      -- Create the STRICT policy
+      CREATE POLICY "Users can view only their own tickets"
       ON tickets FOR SELECT
-      USING (auth.role() = 'authenticated'); 
+      USING (
+        created_by = auth.uid()
+      );
     `
     
     await client.query(sql)
