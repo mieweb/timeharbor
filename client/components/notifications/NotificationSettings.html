@@ -10,7 +10,12 @@
         {{#if notificationEnabled}}
           <div class="alert alert-success">
             <i class="fa-solid fa-check-circle"></i>
-            <span>Notifications are enabled! You'll receive alerts when team members clock in/out.</span>
+            <span>
+              Notifications are enabled! You'll receive alerts when team members clock in/out.
+              {{#if isMobile}}
+                <br><small>(Mobile device registered)</small>
+              {{/if}}
+            </span>
           </div>
           <button id="disableNotifications" class="btn btn-outline btn-error">
             <i class="fa-solid fa-bell-slash"></i>
@@ -19,17 +24,35 @@
         {{else}}
           <div class="alert alert-info">
             <i class="fa-solid fa-info-circle"></i>
-            <span>Enable push notifications to get notified when your team members clock in or clock out.</span>
+            <span>
+              Enable push notifications to get notified when your team members clock in or clock out.
+              {{#if isMobile}}
+                <br><small><strong>Step 1:</strong> Make sure "Show notifications" is turned ON in Android Settings → Apps → TimeHarbor → Notifications.</small>
+                <br><small><strong>Step 2:</strong> Close and reopen the app. Notifications will register automatically.</small>
+              {{/if}}
+            </span>
           </div>
           <button id="enableNotifications" class="btn btn-primary">
             <i class="fa-solid fa-bell"></i>
-            Enable Notifications
+            {{#if isMobile}}
+              Check Notification Status
+            {{else}}
+              Enable Notifications
+            {{/if}}
           </button>
         {{/if}}
       {{else}}
         <div class="alert alert-warning">
           <i class="fa-solid fa-exclamation-triangle"></i>
-          <span>Push notifications are not supported in your browser. Try using Chrome, Firefox, or Edge.</span>
+          <span>
+            {{#if isMobile}}
+              Push notifications are initializing... Please wait a moment and refresh the page.
+              <br><small><strong>Important:</strong> Make sure "Show notifications" is turned ON in Android Settings → Apps → TimeHarbor → Notifications. Then close and reopen the app.</small>
+            {{else}}
+              Push notifications are not supported in your browser. Try using Chrome, Firefox, or Edge.
+              <br><small>If you're on a mobile device, make sure you're using the installed app, not the web browser.</small>
+            {{/if}}
+          </span>
         </div>
       {{/if}}
       

@@ -1,0 +1,84 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.gms:google-services:4.4.2'
+    }
+}
+
+ext.postBuildExtras = {
+    def googleServicesFile = file('google-services.json')
+    if (!googleServicesFile.exists()) {
+        // Using SENDER_ID only
+    }
+}
+
+afterEvaluate {
+    if (!project.hasProperty('android')) {
+        return
+    }
+    
+    android.applicationVariants.all { variant ->
+        def variantName = variant.name.capitalize()
+        
+        def fixManifestTask = tasks.create(name: "fix${variantName}ManifestBeforeMerge") {
+            doLast {
+                def sourceManifestFile = file("src/main/AndroidManifest.xml")
+                
+                if (sourceManifestFile.exists()) {
+                    def content = sourceManifestFile.getText('UTF-8')
+                    def updatedContent = content
+                    
+                    def fcmMatches = (content =~ /<service[^>]*android:name="com\.adobe\.phonegap\.push\.FCMService"/)
+                    def instanceIdMatches = (content =~ /<service[^>]*android:name="com\.adobe\.phonegap\.push\.PushInstanceIDListenerService"/)
+                    def fcmCount = fcmMatches.count
+                    def instanceIdCount = instanceIdMatches.count
+                    
+                    if (fcmCount > 1 || instanceIdCount > 1) {
+                        updatedContent = updatedContent.replaceAll(
+                            /(?s)<service[^>]*android:name="com\.adobe\.phonegap\.push\.FCMService"[^>]*>.*?<\/service>/,
+                            ''
+                        )
+                        updatedContent = updatedContent.replaceAll(
+                            /(?s)<service[^>]*android:name="com\.adobe\.phonegap\.push\.PushInstanceIDListenerService"[^>]*>.*?<\/service>/,
+                            ''
+                        )
+                        
+                        def newServices = '''
+        <service android:exported="false" android:name="com.adobe.phonegap.push.FCMService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <service android:exported="false" android:name="com.adobe.phonegap.push.PushInstanceIDListenerService">
+            <intent-filter>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
+            </intent-filter>
+        </service>'''
+                        
+                        if (!updatedContent.contains('com.adobe.phonegap.push.FCMService')) {
+                            if (updatedContent.contains('PushDismissedHandler')) {
+                                updatedContent = updatedContent.replaceFirst(
+                                    /(<receiver android:name="com\.adobe\.phonegap\.push\.PushDismissedHandler" \/>)/,
+                                    '$1' + newServices
+                                )
+                            } else {
+                                updatedContent = updatedContent.replace('</application>', newServices + '\n    </application>')
+                            }
+                        }
+                        
+                        updatedContent = updatedContent.replaceAll(/\n\s*\n\s*\n+/, '\n\n')
+                        sourceManifestFile.write(updatedContent, 'UTF-8')
+                    }
+                }
+            }
+        }
+        
+        def processManifestTask = tasks.findByName("process${variantName}MainManifest")
+        if (processManifestTask) {
+            processManifestTask.dependsOn fixManifestTask
+        }
+    }
+}

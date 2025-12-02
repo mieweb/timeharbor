@@ -61,17 +61,101 @@ export const notificationMethods = {
   },
 
   /**
-   * Check if user has push notifications enabled
+   * Register mobile device token for push notifications
+   * Works for both Android and iOS
+   */
+  async 'registerMobileDeviceToken'(deviceToken, platform) {
+    check(deviceToken, String);
+    check(platform, Match.OneOf('android', 'ios'));
+
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in');
+    }
+
+    try {
+      const user = await Meteor.users.findOneAsync(this.userId);
+      const existingDevices = user.profile?.mobileDevices || [];
+      
+      // Check if token already exists
+      const existingDevice = existingDevices.find(d => d.token === deviceToken);
+      
+      if (existingDevice) {
+        // Update existing device
+        await Meteor.users.updateAsync(
+          { _id: this.userId, 'profile.mobileDevices.token': deviceToken },
+          {
+            $set: {
+              'profile.mobileDevices.$.platform': platform,
+              'profile.mobileDevices.$.updatedAt': new Date()
+            }
+          }
+        );
+      } else {
+        // Add new device
+        await Meteor.users.updateAsync(this.userId, {
+          $push: {
+            'profile.mobileDevices': {
+              token: deviceToken,
+              platform: platform,
+              registeredAt: new Date(),
+              updatedAt: new Date()
+            }
+          }
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error registering mobile device token:', error);
+      throw new Meteor.Error('registration-failed', 'Failed to register device token');
+    }
+  },
+
+  /**
+   * Unregister mobile device token
+   */
+  async 'unregisterMobileDeviceToken'(deviceToken) {
+    check(deviceToken, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in');
+    }
+
+    try {
+      await Meteor.users.updateAsync(this.userId, {
+        $pull: {
+          'profile.mobileDevices': { token: deviceToken }
+        }
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error unregistering mobile device token:', error);
+      throw new Meteor.Error('unregistration-failed', 'Failed to unregister device token');
+    }
+  },
+
+  /**
+   * Check if user has push notifications enabled (web or mobile)
    */
   'checkPushNotificationStatus'() {
     if (!this.userId) return { enabled: false };
 
     const user = Meteor.users.findOne(this.userId, {
-      fields: { 'profile.pushSubscription': 1 }
+      fields: { 
+        'profile.pushSubscription': 1,
+        'profile.mobileDevices': 1
+      }
     });
 
+    const hasWebPush = !!(user?.profile?.pushSubscription);
+    const hasMobileDevices = !!(user?.profile?.mobileDevices?.length > 0);
+
     return {
-      enabled: !!(user?.profile?.pushSubscription)
+      enabled: hasWebPush || hasMobileDevices,
+      webPush: hasWebPush,
+      mobileDevices: hasMobileDevices,
+      deviceCount: user?.profile?.mobileDevices?.length || 0
     };
   },
 
@@ -105,6 +189,7 @@ export const notificationMethods = {
       console.error('Error sending auto-clock-out notification to user:', error);
       throw new Meteor.Error('notification-failed', 'Failed to send notification');
     }
-  }
+  },
+
 };
 

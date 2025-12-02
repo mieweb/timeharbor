@@ -28,3 +28,8 @@ import './routes.js';
 
 // Import utilities
 import './utils/DateUtils.js';
+
+// Import mobile push notifications (only loads on mobile devices)
+if (typeof cordova !== 'undefined') {
+  import './utils/MobilePushNotifications.js';
+}
