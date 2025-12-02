@@ -17,10 +17,15 @@ async function applyPolicies() {
 
       -- Drop existing policies to avoid errors
       DROP POLICY IF EXISTS "Users can view their own clock events" ON clock_events;
+      DROP POLICY IF EXISTS "Team members can view clock events" ON clock_events;
+      DROP POLICY IF EXISTS "Team leaders can view team clock events" ON clock_events;
+      DROP POLICY IF EXISTS "Team leaders can view all member clock events" ON clock_events;
       DROP POLICY IF EXISTS "Users can insert their own clock events" ON clock_events;
       DROP POLICY IF EXISTS "Users can update their own clock events" ON clock_events;
+      DROP POLICY IF EXISTS "Team leaders can update member clock events" ON clock_events;
       
       DROP POLICY IF EXISTS "Users can view their own clock event tickets" ON clock_event_tickets;
+      DROP POLICY IF EXISTS "Users can view clock event tickets if they can view the event" ON clock_event_tickets;
       DROP POLICY IF EXISTS "Users can insert their own clock event tickets" ON clock_event_tickets;
       DROP POLICY IF EXISTS "Users can update their own clock event tickets" ON clock_event_tickets;
 
@@ -28,6 +33,18 @@ async function applyPolicies() {
       CREATE POLICY "Users can view their own clock events"
       ON clock_events FOR SELECT
       USING (auth.uid() = user_id);
+      
+      CREATE POLICY "Team leaders can view all member clock events"
+      ON clock_events FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM team_members tm_leader
+          JOIN team_members tm_member ON tm_leader.team_id = tm_member.team_id
+          WHERE tm_leader.user_id = auth.uid()
+          AND tm_leader.role IN ('leader', 'admin')
+          AND tm_member.user_id = clock_events.user_id
+        )
+      );
 
       CREATE POLICY "Users can insert their own clock events"
       ON clock_events FOR INSERT
@@ -37,14 +54,25 @@ async function applyPolicies() {
       ON clock_events FOR UPDATE
       USING (auth.uid() = user_id);
 
+      CREATE POLICY "Team leaders can update member clock events"
+      ON clock_events FOR UPDATE
+      USING (
+        EXISTS (
+          SELECT 1 FROM team_members tm_leader
+          JOIN team_members tm_member ON tm_leader.team_id = tm_member.team_id
+          WHERE tm_leader.user_id = auth.uid()
+          AND tm_leader.role IN ('leader', 'admin')
+          AND tm_member.user_id = clock_events.user_id
+        )
+      );
+
       -- clock_event_tickets policies
-      CREATE POLICY "Users can view their own clock event tickets"
+      CREATE POLICY "Users can view clock event tickets if they can view the event"
       ON clock_event_tickets FOR SELECT
       USING (
         EXISTS (
           SELECT 1 FROM clock_events
           WHERE clock_events.id = clock_event_tickets.clock_event_id
-          AND clock_events.user_id = auth.uid()
         )
       );
 

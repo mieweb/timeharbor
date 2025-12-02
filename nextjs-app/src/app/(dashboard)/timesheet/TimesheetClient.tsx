@@ -8,6 +8,8 @@ import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfM
 interface TimesheetClientProps {
   initialUserName: string
   initialUserEmail: string
+  targetUserId?: string
+  isEditable?: boolean
 }
 
 interface Ticket {
@@ -31,7 +33,7 @@ interface ClockEvent {
   clock_event_tickets: ClockEventTicket[]
 }
 
-export default function TimesheetClient({ initialUserName, initialUserEmail }: TimesheetClientProps) {
+export default function TimesheetClient({ initialUserName, initialUserEmail, targetUserId, isEditable = false }: TimesheetClientProps) {
   const [startDate, setStartDate] = useState(format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'))
   const [endDate, setEndDate] = useState(format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'))
   const [selectedPreset, setSelectedPreset] = useState('thisweek')
@@ -47,7 +49,7 @@ export default function TimesheetClient({ initialUserName, initialUserEmail }: T
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await getTimesheetData(startDate, endDate)
+      const { data, error } = await getTimesheetData(startDate, endDate, targetUserId)
 
       if (error) {
         throw new Error(error)
@@ -232,7 +234,7 @@ export default function TimesheetClient({ initialUserName, initialUserEmail }: T
             <button className="btn btn-square btn-sm btn-ghost border border-base-300" title="Refresh" onClick={fetchData}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
             </button>
-            <button className="btn btn-sm btn-disabled opacity-50">Edit</button>
+            <button className={`btn btn-sm ${isEditable ? 'btn-outline' : 'btn-disabled opacity-50'}`}>Edit</button>
           </div>
         </div>
         

@@ -6,8 +6,11 @@ import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, parseISO
 import { getTeamDashboardData } from '@/lib/actions/dashboard'
 import { Filter, X } from 'lucide-react'
 
+import Link from 'next/link'
+
 type DashboardEvent = {
   id: string
+  userId: string // Added userId
   date: string
   member: string
   email: string
@@ -319,7 +322,11 @@ export default function TeamDashboard() {
                 filteredData.map((row) => (
                   <tr key={row.id}>
                     <td>{formatDate(row.date)}</td>
-                    <td className="font-medium text-primary">{row.member}</td>
+                    <td className="font-medium text-primary">
+                      <Link href={`/timesheet/${row.userId}`} className="hover:underline">
+                        {row.member}
+                      </Link>
+                    </td>
                     <td className="text-gray-500">{row.email}</td>
                     <td>{formatDuration(row.hours)}</td>
                     <td>{formatTime(row.clockIn)}</td>

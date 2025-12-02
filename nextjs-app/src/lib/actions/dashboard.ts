@@ -109,6 +109,7 @@ export async function getTeamDashboardData(startDate: string, endDate: string) {
 
       return {
         id: event.id,
+        userId: event.user_id, // Added userId
         date: event.start_timestamp,
         member: displayName || 'Unknown',
         email: email || 'N/A',
