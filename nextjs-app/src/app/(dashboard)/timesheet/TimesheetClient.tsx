@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { getTimesheetData } from '@/lib/actions/timesheet'
+import { getTimesheetData, updateClockEvent } from '@/lib/actions/timesheet'
 import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO } from 'date-fns'
 
 interface TimesheetClientProps {
@@ -45,6 +45,11 @@ export default function TimesheetClient({ initialUserName, initialUserEmail, tar
     averageSessionHours: "0.0",
     workingDays: 0
   })
+  
+  // Edit Mode State
+  const [isEditing, setIsEditing] = useState(false)
+  const [edits, setEdits] = useState<Record<string, { start: string, end: string | null }>>({})
+  const [saving, setSaving] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -150,6 +155,76 @@ export default function TimesheetClient({ initialUserName, initialUserEmail, tar
   const formatDate = (isoString: string) => {
     return format(new Date(isoString), 'M/d/yyyy')
   }
+  
+  // Helper to convert ISO string to datetime-local input value
+  const toDateTimeLocal = (isoString: string | null) => {
+    if (!isoString) return ''
+    const date = new Date(isoString)
+    // Adjust for timezone offset to show local time in input
+    const offset = date.getTimezoneOffset() * 60000
+    const localISOTime = (new Date(date.getTime() - offset)).toISOString().slice(0, 16)
+    return localISOTime
+  }
+
+  // Helper to convert datetime-local input value to ISO string
+  const fromDateTimeLocal = (localString: string) => {
+      if (!localString) return null
+      return new Date(localString).toISOString()
+  }
+
+  const handleEditChange = (id: string, field: 'start' | 'end', value: string) => {
+      setEdits(prev => ({
+          ...prev,
+          [id]: {
+              ...prev[id],
+              [field]: value
+          }
+      }))
+  }
+
+  const handleSave = async () => {
+      setSaving(true)
+      try {
+          const promises = Object.entries(edits).map(async ([id, changes]) => {
+              const original = clockIns.find(c => c.id === id)
+              if (!original) return
+
+              const newStart = changes.start ? fromDateTimeLocal(changes.start) : original.start_timestamp
+              const newEnd = changes.end ? fromDateTimeLocal(changes.end) : original.end_timestamp
+              
+              if (newStart) {
+                  await updateClockEvent(id, newStart, newEnd)
+              }
+          })
+          
+          await Promise.all(promises)
+          setEdits({})
+          setIsEditing(false)
+          await fetchData()
+      } catch (err) {
+          console.error("Failed to save edits", err)
+          alert("Failed to save changes")
+      } finally {
+          setSaving(false)
+      }
+  }
+  
+  const toggleEdit = () => {
+      if (isEditing) {
+          handleSave()
+      } else {
+          // Initialize edits with current values
+          const initialEdits: Record<string, { start: string, end: string | null }> = {}
+          clockIns.forEach(c => {
+              initialEdits[c.id] = {
+                  start: toDateTimeLocal(c.start_timestamp),
+                  end: toDateTimeLocal(c.end_timestamp)
+              }
+          })
+          setEdits(initialEdits)
+          setIsEditing(true)
+      }
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -234,7 +309,15 @@ export default function TimesheetClient({ initialUserName, initialUserEmail, tar
             <button className="btn btn-square btn-sm btn-ghost border border-base-300" title="Refresh" onClick={fetchData}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
             </button>
-            <button className={`btn btn-sm ${isEditable ? 'btn-outline' : 'btn-disabled opacity-50'}`}>Edit</button>
+            {isEditable && (
+                <button 
+                    className={`btn btn-sm ${isEditing ? 'btn-success text-white' : 'btn-outline'}`}
+                    onClick={toggleEdit}
+                    disabled={saving}
+                >
+                    {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Edit'}
+                </button>
+            )}
           </div>
         </div>
         
@@ -270,6 +353,7 @@ export default function TimesheetClient({ initialUserName, initialUserEmail, tar
                   const isActive = !entry.end_timestamp;
                   const tickets = entry.clock_event_tickets?.map(t => t.tickets?.title).filter(Boolean) || [];
                   const ticketDisplay = tickets.length > 0 ? tickets.join(', ') : 'No activity';
+                  const editData = edits[entry.id]
 
                   return (
                     <tr key={entry.id} className="hover:bg-base-50 relative group">
@@ -280,8 +364,30 @@ export default function TimesheetClient({ initialUserName, initialUserEmail, tar
                         )}
                         {formatDate(entry.start_timestamp)}
                       </td>
-                      <td>{formatTime(entry.start_timestamp)}</td>
-                      <td>{entry.end_timestamp ? formatTime(entry.end_timestamp) : <span className="opacity-60">Not clocked out</span>}</td>
+                      <td>
+                          {isEditing ? (
+                              <input 
+                                type="datetime-local" 
+                                className="input input-bordered input-xs w-full max-w-[180px]"
+                                value={editData?.start || ''}
+                                onChange={(e) => handleEditChange(entry.id, 'start', e.target.value)}
+                              />
+                          ) : (
+                              formatTime(entry.start_timestamp)
+                          )}
+                      </td>
+                      <td>
+                          {isEditing ? (
+                              <input 
+                                type="datetime-local" 
+                                className="input input-bordered input-xs w-full max-w-[180px]"
+                                value={editData?.end || ''}
+                                onChange={(e) => handleEditChange(entry.id, 'end', e.target.value)}
+                              />
+                          ) : (
+                              entry.end_timestamp ? formatTime(entry.end_timestamp) : <span className="opacity-60">Not clocked out</span>
+                          )}
+                      </td>
                       <td>
                         {isActive ? (
                           <span className="font-medium">Running...</span>

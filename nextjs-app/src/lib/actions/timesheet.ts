@@ -77,3 +77,48 @@ export async function getTimesheetData(startDate: string, endDate: string, targe
     return { data: null, error: error.message }
   }
 }
+
+export async function updateClockEvent(eventId: string, startTimestamp: string, endTimestamp: string | null) {
+  const supabase = await createClient()
+  
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error('Not authenticated')
+    }
+
+    // Calculate accumulated time if endTimestamp is provided
+    let accumulatedTime = 0
+    if (endTimestamp) {
+      const start = new Date(startTimestamp).getTime()
+      const end = new Date(endTimestamp).getTime()
+      accumulatedTime = Math.floor((end - start) / 1000)
+      
+      if (accumulatedTime < 0) {
+        throw new Error('End time cannot be before start time')
+      }
+    }
+
+    // Update the event
+    // RLS policies should handle permission checks (User owns it OR User is Team Leader)
+    const { data, error } = await supabase
+      .from('clock_events')
+      .update({
+        start_timestamp: startTimestamp,
+        end_timestamp: endTimestamp,
+        accumulated_time: accumulatedTime
+      })
+      .eq('id', eventId)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return { data, error: null }
+  } catch (error: any) {
+    console.error('Error in updateClockEvent:', error)
+    return { data: null, error: error.message }
+  }
+}
