@@ -15,6 +15,7 @@ export default function TicketCard({ ticket, activeTicketId, activeEvent, active
   const isActive = activeTicketId === ticket.id
   const [elapsedTime, setElapsedTime] = useState(ticket.accumulated_time || 0)
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -66,20 +67,43 @@ export default function TicketCard({ ticket, activeTicketId, activeEvent, active
     }
   }
 
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete "${ticket.title}"?`)) {
+      return
+    }
+    
+    setIsDeleting(true)
+    try {
+      await deleteTicket(ticket.id)
+    } catch (error: any) {
+      console.error(error)
+      alert('Failed to delete ticket: ' + (error.message || 'Unknown error'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <div className="card bg-base-100 shadow-sm border border-base-200 hover:shadow-md transition-shadow">
       <div className="card-body p-4">
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-semibold text-lg line-clamp-1" title={ticket.title}>{ticket.title}</h3>
           <div className="flex gap-1">
-             <button className="btn btn-ghost btn-xs text-primary">
+             <button className="btn btn-ghost btn-xs text-primary" title="Edit ticket">
                 <i className="fa-solid fa-pencil"></i>
              </button>
-             <form action={deleteTicket.bind(null, ticket.id)}>
-                <button className="btn btn-ghost btn-xs text-error">
-                    <i className="fa-solid fa-trash"></i>
-                </button>
-             </form>
+             <button 
+                onClick={handleDelete}
+                disabled={isDeleting || isActive}
+                className="btn btn-ghost btn-xs text-error"
+                title={isActive ? "Cannot delete active ticket" : "Delete ticket"}
+             >
+                {isDeleting ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  <i className="fa-solid fa-trash"></i>
+                )}
+             </button>
           </div>
         </div>
 

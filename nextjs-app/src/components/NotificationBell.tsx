@@ -54,12 +54,12 @@ export function NotificationBell() {
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="btn btn-ghost btn-circle relative"
+        className="btn btn-ghost btn-circle btn-sm relative"
         aria-label="Notifications"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
+          className="h-5 w-5 md:h-6 md:w-6"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -72,7 +72,7 @@ export function NotificationBell() {
           />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-error text-xs text-white">
+          <span className="absolute top-0 right-0 flex h-4 w-4 md:h-5 md:w-5 items-center justify-center rounded-full bg-error text-xs text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -80,10 +80,10 @@ export function NotificationBell() {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 md:w-96 rounded-lg bg-base-100 shadow-xl border border-base-300 z-50">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-md rounded-lg bg-base-100 shadow-xl border border-base-300 z-50">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-base-300">
-            <h3 className="text-lg font-semibold" style={{ color: 'var(--color-primary)' }}>
+          <div className="flex items-center justify-between p-3 md:p-4 border-b border-base-300">
+            <h3 className="text-base md:text-lg font-semibold text-primary">
               Notifications
             </h3>
             {unreadCount > 0 && (
@@ -91,22 +91,22 @@ export function NotificationBell() {
                 onClick={handleMarkAllAsRead}
                 className="text-xs text-primary hover:underline"
               >
-                Mark all as read
+                Mark all read
               </button>
             )}
           </div>
 
           {/* Notification List */}
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="max-h-[60vh] md:max-h-[400px] overflow-y-auto">
             {loading ? (
               <div className="p-8 text-center">
                 <span className="loading loading-spinner loading-md"></span>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-base-content/60">
+              <div className="p-6 md:p-8 text-center text-base-content/60">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12 mx-auto mb-2 opacity-50"
+                  className="h-10 w-10 md:h-12 md:w-12 mx-auto mb-2 opacity-50"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -118,7 +118,7 @@ export function NotificationBell() {
                     d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                   />
                 </svg>
-                <p>No notifications yet</p>
+                <p className="text-sm md:text-base">No notifications yet</p>
               </div>
             ) : (
               <ul>
@@ -132,12 +132,12 @@ export function NotificationBell() {
                     <Link
                       href={notification.data?.teamId ? `/teams?id=${notification.data.teamId}` : '/teams'}
                       onClick={() => handleNotificationClick(notification)}
-                      className="block p-4 hover:bg-base-200 transition-colors"
+                      className="block p-3 md:p-4 hover:bg-base-200 transition-colors"
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2 md:gap-3">
                         {/* Icon */}
                         <div
-                          className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                          className={`flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center ${
                             notification.type === 'clock-in'
                               ? 'bg-success/20 text-success'
                               : notification.type === 'clock-out'
@@ -148,7 +148,7 @@ export function NotificationBell() {
                           {notification.type === 'clock-in' ? (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5"
+                              className="h-4 w-4 md:h-5 md:w-5"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -163,7 +163,7 @@ export function NotificationBell() {
                           ) : notification.type === 'clock-out' ? (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5"
+                              className="h-4 w-4 md:h-5 md:w-5"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -178,7 +178,7 @@ export function NotificationBell() {
                           ) : (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5"
+                              className="h-4 w-4 md:h-5 md:w-5"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -195,23 +195,23 @@ export function NotificationBell() {
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-base-content">
+                          <p className="text-xs md:text-sm font-semibold text-base-content break-words">
                             {notification.title}
                           </p>
-                          <p className="text-sm text-base-content/70 mt-1">
+                          <p className="text-xs md:text-sm text-base-content/70 mt-1">
                             <span className="font-medium">
                               {notification.data?.memberName || 'Unknown User'}
                             </span>
                             {notification.data?.memberEmail && (
-                              <span className="text-xs"> ({notification.data.memberEmail})</span>
+                              <span className="text-xs block sm:inline"> ({notification.data.memberEmail})</span>
                             )}
                           </p>
                           {notification.data?.teamName && (
-                            <p className="text-xs text-base-content/60 mt-0.5">
+                            <p className="text-xs text-base-content/60 mt-0.5 truncate">
                               Team: {notification.data.teamName}
                             </p>
                           )}
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
                             <span className="text-xs text-base-content/50">
                               {formatTimeAgo(notification.created_at)}
                             </span>
@@ -219,7 +219,7 @@ export function NotificationBell() {
                               <>
                                 <span className="text-xs text-base-content/30">•</span>
                                 <span className="text-xs text-base-content/50">
-                                  Duration: {notification.data.duration}
+                                  {notification.data.duration}
                                 </span>
                               </>
                             )}
@@ -240,10 +240,10 @@ export function NotificationBell() {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="p-3 border-t border-base-300 text-center">
+            <div className="p-2 md:p-3 border-t border-base-300 text-center">
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-sm text-primary hover:underline"
+                className="text-xs md:text-sm text-primary hover:underline"
               >
                 Close
               </button>

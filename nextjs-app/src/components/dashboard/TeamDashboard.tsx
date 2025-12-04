@@ -176,43 +176,45 @@ export default function TeamDashboard() {
   }
 
   return (
-    <div className="mb-12">
+    <div className="mb-8 md:mb-12">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-semibold">Team Dashboard</h3>
+        <h3 className="text-lg md:text-xl font-semibold">Team Dashboard</h3>
       </div>
 
-      <div className="card bg-base-100 shadow-lg p-6">
+      <div className="card bg-base-100 shadow-lg p-4 md:p-6">
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Date Range:</span>
-            <input 
-              type="date" 
-              className="input input-bordered input-sm" 
-              value={startDate}
-              onChange={(e) => {
-                  setStartDate(e.target.value)
-                  setActiveFilter('Custom')
-              }}
-            />
-            <span>to</span>
-            <input 
-              type="date" 
-              className="input input-bordered input-sm" 
-              value={endDate}
-              onChange={(e) => {
-                  setEndDate(e.target.value)
-                  setActiveFilter('Custom')
-              }}
-            />
-            <button className="btn btn-sm btn-outline" onClick={fetchData}>Apply Date Range</button>
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <span className="font-semibold text-sm whitespace-nowrap">Date Range:</span>
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <input 
+                type="date" 
+                className="input input-bordered input-sm flex-1 sm:flex-none min-w-[140px]" 
+                value={startDate}
+                onChange={(e) => {
+                    setStartDate(e.target.value)
+                    setActiveFilter('Custom')
+                }}
+              />
+              <span className="text-sm">to</span>
+              <input 
+                type="date" 
+                className="input input-bordered input-sm flex-1 sm:flex-none min-w-[140px]" 
+                value={endDate}
+                onChange={(e) => {
+                    setEndDate(e.target.value)
+                    setActiveFilter('Custom')
+                }}
+              />
+              <button className="btn btn-sm btn-outline w-full sm:w-auto" onClick={fetchData}>Apply</button>
+            </div>
           </div>
 
-          <div className="join">
+          <div className="flex flex-wrap gap-2">
             {['Today', 'Yesterday', 'Last 7 Days', 'This Week', 'Last 14 Days'].map((f) => (
               <button 
                 key={f}
-                className={`join-item btn btn-sm ${activeFilter === f ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn btn-xs md:btn-sm ${activeFilter === f ? 'btn-primary' : 'btn-outline'}`}
                 onClick={() => handleFilter(f)}
               >
                 {f}
@@ -223,13 +225,13 @@ export default function TeamDashboard() {
 
         {/* Table */}
         <div className="overflow-x-auto min-h-[400px]">
-          <table className="table w-full">
+          <table className="table w-full table-xs md:table-sm">
             <thead>
               <tr>
                 {COLUMNS.map((col) => (
                   <th key={col.key} className="relative group">
                     <div className="flex items-center gap-2">
-                      {col.label}
+                      <span className="text-xs md:text-sm">{col.label}</span>
                       {col.filterable && (
                         <button 
                           onClick={(e) => {
@@ -238,7 +240,7 @@ export default function TeamDashboard() {
                           }}
                           className={`btn btn-ghost btn-xs p-0.5 ${filters[col.key] ? 'text-primary' : 'text-gray-400 opacity-0 group-hover:opacity-100'}`}
                         >
-                          <Filter size={14} />
+                          <Filter size={12} />
                         </button>
                       )}
                     </div>
@@ -247,7 +249,7 @@ export default function TeamDashboard() {
                     {activeFilterColumn === col.key && (
                       <div 
                         ref={filterRef}
-                        className="absolute top-full left-0 mt-2 z-50 bg-base-100 shadow-xl border border-base-200 rounded-lg p-3 w-64"
+                        className="absolute top-full left-0 mt-2 z-50 bg-base-100 shadow-xl border border-base-200 rounded-lg p-3 w-56 md:w-64"
                       >
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center justify-between">
@@ -310,33 +312,35 @@ export default function TeamDashboard() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8">Loading...</td>
+                  <td colSpan={8} className="text-center py-8">
+                    <span className="loading loading-spinner loading-md"></span>
+                  </td>
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8">
+                  <td colSpan={8} className="text-center py-8 text-sm">
                     {data.length === 0 ? 'No activity found for this period.' : 'No records match your filters.'}
                   </td>
                 </tr>
               ) : (
                 filteredData.map((row) => (
                   <tr key={row.id}>
-                    <td>{formatDate(row.date)}</td>
-                    <td className="font-medium text-primary">
+                    <td className="text-xs md:text-sm">{formatDate(row.date)}</td>
+                    <td className="font-medium text-primary text-xs md:text-sm">
                       <Link href={`/timesheet/${row.userId}`} className="hover:underline">
                         {row.member}
                       </Link>
                     </td>
-                    <td className="text-gray-500">{row.email}</td>
-                    <td>{formatDuration(row.hours)}</td>
-                    <td>{formatTime(row.clockIn)}</td>
-                    <td>{formatTime(row.clockOut)}</td>
+                    <td className="text-base-content/60 text-xs md:text-sm hidden md:table-cell">{row.email}</td>
+                    <td className="text-xs md:text-sm">{formatDuration(row.hours)}</td>
+                    <td className="text-xs md:text-sm">{formatTime(row.clockIn)}</td>
+                    <td className="text-xs md:text-sm">{formatTime(row.clockOut)}</td>
                     <td>
-                      <span className={`badge ${row.isActive ? 'badge-success' : 'badge-ghost'}`}>
+                      <span className={`badge badge-xs md:badge-sm ${row.isActive ? 'badge-success' : 'badge-ghost'}`}>
                         {row.status}
                       </span>
                     </td>
-                    <td className="max-w-xs truncate" title={row.tickets}>{row.tickets}</td>
+                    <td className="max-w-[100px] md:max-w-xs truncate text-xs md:text-sm" title={row.tickets}>{row.tickets}</td>
                   </tr>
                 ))
               )}

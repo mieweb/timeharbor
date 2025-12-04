@@ -53,8 +53,8 @@ export default async function TicketsPage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">My Tickets & Activities</h1>
+    <div className="p-4 md:p-6">
+      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">My Tickets & Activities</h1>
       
       <TicketsList 
         tickets={tickets || []} 

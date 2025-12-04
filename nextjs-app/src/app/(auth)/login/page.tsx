@@ -38,48 +38,75 @@ export default function LoginPage() {
   }
 
   return (
-    <form className="flex flex-col gap-4 p-4 max-w-md mx-auto mt-10 border rounded-lg shadow">
-      <h1 className="text-2xl font-bold">TimeHarbor Login</h1>
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          {error}
-        </div>
-      )}
+    <div className="min-h-[80vh] flex items-center justify-center px-4">
+      <form className="card bg-base-100 shadow-xl w-full max-w-md">
+        <div className="card-body">
+          <h1 className="card-title text-2xl md:text-3xl font-bold text-center mb-4">
+            TimeHarbor Login
+          </h1>
+          
+          {error && (
+            <div className="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
 
-      <label htmlFor="email">Email or Username:</label>
-      <input 
-        id="email" 
-        name="email" 
-        type="text" 
-        className="border p-2 rounded" 
-        placeholder="username"
-      />
-      
-      <label htmlFor="password">Password:</label>
-      <input 
-        id="password" 
-        name="password" 
-        type="password" 
-        className="border p-2 rounded" 
-      />
-      
-      <div className="flex gap-2">
-        <button 
-          formAction={handleLogin} 
-          disabled={loading}
-          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50 flex-1"
-        >
-          {loading ? 'Processing...' : 'Log in'}
-        </button>
-        <button 
-          formAction={handleSignup} 
-          disabled={loading}
-          className="bg-green-500 text-white p-2 rounded hover:bg-green-600 disabled:opacity-50 flex-1"
-        >
-          Sign up
-        </button>
-      </div>
-    </form>
+          <div className="form-control">
+            <label className="label" htmlFor="email">
+              <span className="label-text">Email or Username</span>
+            </label>
+            <input 
+              id="email" 
+              name="email" 
+              type="text" 
+              className="input input-bordered w-full" 
+              placeholder="username"
+              required
+            />
+          </div>
+          
+          <div className="form-control">
+            <label className="label" htmlFor="password">
+              <span className="label-text">Password</span>
+            </label>
+            <input 
+              id="password" 
+              name="password" 
+              type="password" 
+              className="input input-bordered w-full" 
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          
+          <div className="card-actions flex-col md:flex-row gap-2 mt-4">
+            <button 
+              formAction={handleLogin} 
+              disabled={loading}
+              className="btn btn-primary flex-1 w-full md:w-auto"
+            >
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Processing...
+                </>
+              ) : (
+                'Log in'
+              )}
+            </button>
+            <button 
+              formAction={handleSignup} 
+              disabled={loading}
+              className="btn btn-secondary flex-1 w-full md:w-auto"
+            >
+              Sign up
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
   )
 }

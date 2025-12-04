@@ -78,17 +78,41 @@ export async function updateTicketStatus(ticketId: string, status: string) {
 }
 
 export async function deleteTicket(ticketId: string) {
+  console.log('deleteTicket action called for ticket:', ticketId)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) throw new Error('Not authenticated')
+  if (!user) {
+    console.error('deleteTicket: User not authenticated')
+    throw new Error('Not authenticated')
+  }
 
+  // First, get the ticket to verify it exists and get team_id for revalidation
+  const { data: ticket, error: fetchError } = await supabase
+    .from('tickets')
+    .select('id, team_id')
+    .eq('id', ticketId)
+    .single()
+
+  if (fetchError) {
+    console.error('deleteTicket: Error fetching ticket', fetchError)
+    throw new Error('Ticket not found')
+  }
+
+  // Delete the ticket - RLS policy will check permissions
+  // CASCADE delete will automatically remove clock_event_tickets entries
   const { error } = await supabase
     .from('tickets')
     .delete()
     .eq('id', ticketId)
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('deleteTicket: Error deleting ticket', error)
+    throw new Error('Failed to delete ticket. You may not have permission or the ticket may be in use.')
+  }
+
+  console.log('deleteTicket: Ticket deleted successfully')
 
   revalidatePath('/tickets')
+  revalidatePath(`/teams?id=${ticket.team_id}`)
 }
