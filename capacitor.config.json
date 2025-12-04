@@ -1,0 +1,9 @@
+{
+  "appId": "com.yourcompany.timeharbor",
+  "appName": "TimeHarbor",
+  "webDir": "../_build/main-prod/programs/web.browser",
+  "server": {
+    "url": "http://localhost:3000",
+    "cleartext": true
+  }
+}
