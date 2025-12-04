@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { sendNotification } from '@/lib/notifications'
+import { sendNotification, notifyTeamLeaders } from '@/lib/notifications'
 
 export async function startClock(teamId: string) {
   const supabase = await createClient()
@@ -31,7 +31,7 @@ export async function startClock(teamId: string) {
 
   if (error) throw new Error(error.message)
 
-  // Notify team admins (simplified: just notify self for demo)
+  // Notify self
   try {
     await sendNotification(user.id, {
       title: 'Clock In',
@@ -40,6 +40,37 @@ export async function startClock(teamId: string) {
     })
   } catch (e) {
     console.error('Failed to send notification', e)
+  }
+
+  // Notify team leaders
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+
+    // Get user email from auth.users
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    const userEmail = authUser?.email || ''
+
+    const userName = profile?.full_name || 'A team member'
+
+    await notifyTeamLeaders(teamId, {
+      type: 'clock-in',
+      title: 'Clock In Notification',
+      message: `${userName} (${userEmail}) has clocked in`,
+      data: {
+        teamId,
+        teamName: '', // Will be filled by notifyTeamLeaders
+        memberId: user.id,
+        memberName: userName,
+        memberEmail: userEmail,
+        clockEventId: data.id
+      }
+    })
+  } catch (e) {
+    console.error('Failed to notify team leaders', e)
   }
 
   revalidatePath('/timesheet')
@@ -107,6 +138,41 @@ export async function stopClock(teamId: string) {
           }).eq('id', ticket.ticket_id)
       }
     }
+  }
+
+  // Notify team leaders about clock out
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+
+    // Get user email from auth.users
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    const userEmail = authUser?.email || ''
+
+    const userName = profile?.full_name || 'A team member'
+    const hours = Math.floor(duration / 3600)
+    const minutes = Math.floor((duration % 3600) / 60)
+    const durationStr = `${hours}h ${minutes}m`
+
+    await notifyTeamLeaders(teamId, {
+      type: 'clock-out',
+      title: 'Clock Out Notification',
+      message: `${userName} (${userEmail}) has clocked out (${durationStr})`,
+      data: {
+        teamId,
+        teamName: '', // Will be filled by notifyTeamLeaders
+        memberId: user.id,
+        memberName: userName,
+        memberEmail: userEmail,
+        clockEventId: activeEvent.id,
+        duration: durationStr
+      }
+    })
+  } catch (e) {
+    console.error('Failed to notify team leaders', e)
   }
 
   revalidatePath('/timesheet')

@@ -69,6 +69,23 @@ create table public.clock_event_tickets (
   accumulated_time integer default 0 -- in seconds
 );
 
+-- Notifications table
+create table public.notifications (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  type text not null check (type in ('clock-in', 'clock-out', 'ticket-assignment', 'team-invite')),
+  title text not null,
+  message text not null,
+  data jsonb, -- Stores teamId, userId, clockEventId, etc.
+  read boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Index for faster queries on notifications
+create index notifications_user_id_idx on public.notifications(user_id);
+create index notifications_read_idx on public.notifications(read);
+create index notifications_created_at_idx on public.notifications(created_at desc);
+
 -- Enable Row Level Security
 alter table public.profiles enable row level security;
 alter table public.teams enable row level security;
@@ -76,6 +93,7 @@ alter table public.team_members enable row level security;
 alter table public.tickets enable row level security;
 alter table public.clock_events enable row level security;
 alter table public.clock_event_tickets enable row level security;
+alter table public.notifications enable row level security;
 
 -- Policies
 
@@ -221,6 +239,19 @@ create policy "Users can manage their own clock event tickets."
     )
   );
 
+-- Notifications
+create policy "Users can view their own notifications."
+  on public.notifications for select
+  using ( auth.uid() = user_id );
+
+create policy "Users can update their own notifications."
+  on public.notifications for update
+  using ( auth.uid() = user_id );
+
+create policy "Users can insert notifications."
+  on public.notifications for insert
+  with check ( true );
+
 -- Functions
 create or replace function public.handle_new_user()
 returns trigger as $$
@@ -234,3 +265,16 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Helper function to get team leaders for notifications
+create or replace function public.get_team_leaders(team_uuid uuid)
+returns table (user_id uuid, full_name text, push_subscription jsonb) as $$
+begin
+  return query
+  select p.id, p.full_name, p.push_subscription
+  from public.team_members tm
+  join public.profiles p on p.id = tm.user_id
+  where tm.team_id = team_uuid
+  and tm.role in ('admin', 'leader');
+end;
+$$ language plpgsql security definer;

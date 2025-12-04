@@ -4,6 +4,7 @@ import "./globals.css";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/LogoutButton";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -38,6 +39,7 @@ export default async function RootLayout({
                 <Link href="/tickets" className="btn btn-ghost hover:bg-primary-focus">Tickets</Link>
                 <Link href="/calendar" className="btn btn-ghost hover:bg-primary-focus">Calendar</Link>
                 <Link href="/admin" className="btn btn-ghost hover:bg-primary-focus">Admin Review</Link>
+                <NotificationBell />
                 <div className="ml-2">
                   <LogoutButton />
                 </div>
