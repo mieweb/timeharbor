@@ -177,44 +177,29 @@ export default function TeamDashboard() {
 
   return (
     <div className="mb-8 md:mb-12">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg md:text-xl font-semibold">Team Dashboard</h3>
-      </div>
-
-      <div className="card bg-base-100 shadow-lg p-4 md:p-6">
-        {/* Filters */}
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-            <span className="font-semibold text-sm whitespace-nowrap">Date Range:</span>
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-              <input 
-                type="date" 
-                className="input input-bordered input-sm flex-1 sm:flex-none min-w-[140px]" 
-                value={startDate}
-                onChange={(e) => {
-                    setStartDate(e.target.value)
-                    setActiveFilter('Custom')
-                }}
-              />
-              <span className="text-sm">to</span>
-              <input 
-                type="date" 
-                className="input input-bordered input-sm flex-1 sm:flex-none min-w-[140px]" 
-                value={endDate}
-                onChange={(e) => {
-                    setEndDate(e.target.value)
-                    setActiveFilter('Custom')
-                }}
-              />
-              <button className="btn btn-sm btn-outline w-full sm:w-auto" onClick={fetchData}>Apply</button>
+      <div className="bg-base-100 rounded-lg shadow-lg p-6">
+        {/* Header with Title and Filters */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="bg-indigo-100 rounded-lg p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
+                <path d="M3 3v18h18"/>
+                <path d="m19 9-5 5-4-4-3 3"/>
+              </svg>
             </div>
+            <h3 className="text-xl font-semibold">Team Dashboard</h3>
           </div>
-
-          <div className="flex flex-wrap gap-2">
+          
+          {/* Date Filter Buttons */}
+          <div className="flex gap-2">
             {['Today', 'Yesterday', 'Last 7 Days', 'This Week', 'Last 14 Days'].map((f) => (
               <button 
                 key={f}
-                className={`btn btn-xs md:btn-sm ${activeFilter === f ? 'btn-primary' : 'btn-outline'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeFilter === f 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
                 onClick={() => handleFilter(f)}
               >
                 {f}
@@ -223,15 +208,42 @@ export default function TeamDashboard() {
           </div>
         </div>
 
+        {/* Custom Date Range (collapsible or always visible) */}
+        <div className="mb-6 pb-4 border-b">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm text-gray-600">Custom Date Range:</span>
+            <input 
+              type="date" 
+              className="input input-bordered input-sm" 
+              value={startDate}
+              onChange={(e) => {
+                  setStartDate(e.target.value)
+                  setActiveFilter('Custom')
+              }}
+            />
+            <span className="text-sm text-gray-500">to</span>
+            <input 
+              type="date" 
+              className="input input-bordered input-sm" 
+              value={endDate}
+              onChange={(e) => {
+                  setEndDate(e.target.value)
+                  setActiveFilter('Custom')
+              }}
+            />
+            <button className="btn btn-sm btn-primary" onClick={fetchData}>Apply</button>
+          </div>
+        </div>
+
         {/* Table */}
-        <div className="overflow-x-auto min-h-[400px]">
-          <table className="table w-full table-xs md:table-sm">
+        <div className="overflow-x-auto">
+          <table className="table w-full">
             <thead>
-              <tr>
+              <tr className="border-b-2">
                 {COLUMNS.map((col) => (
-                  <th key={col.key} className="relative group">
+                  <th key={col.key} className="bg-transparent font-semibold text-gray-700 text-sm relative group">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs md:text-sm">{col.label}</span>
+                      <span>{col.label}</span>
                       {col.filterable && (
                         <button 
                           onClick={(e) => {
@@ -312,35 +324,39 @@ export default function TeamDashboard() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8">
+                  <td colSpan={8} className="text-center py-12">
                     <span className="loading loading-spinner loading-md"></span>
                   </td>
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-sm">
+                  <td colSpan={8} className="text-center py-12 text-gray-500">
                     {data.length === 0 ? 'No activity found for this period.' : 'No records match your filters.'}
                   </td>
                 </tr>
               ) : (
                 filteredData.map((row) => (
-                  <tr key={row.id}>
-                    <td className="text-xs md:text-sm">{formatDate(row.date)}</td>
-                    <td className="font-medium text-primary text-xs md:text-sm">
-                      <Link href={`/timesheet/${row.userId}`} className="hover:underline">
+                  <tr key={row.id} className="border-b hover:bg-gray-50">
+                    <td className="py-4">{formatDate(row.date)}</td>
+                    <td className="font-semibold text-gray-900">
+                      <Link href={`/timesheet/${row.userId}`} className="hover:text-indigo-600">
                         {row.member}
                       </Link>
                     </td>
-                    <td className="text-base-content/60 text-xs md:text-sm hidden md:table-cell">{row.email}</td>
-                    <td className="text-xs md:text-sm">{formatDuration(row.hours)}</td>
-                    <td className="text-xs md:text-sm">{formatTime(row.clockIn)}</td>
-                    <td className="text-xs md:text-sm">{formatTime(row.clockOut)}</td>
+                    <td className="text-gray-600">{row.email}</td>
+                    <td className="font-semibold">{formatDuration(row.hours)}</td>
+                    <td className="text-gray-600">{formatTime(row.clockIn)}</td>
+                    <td className="text-gray-600">{formatTime(row.clockOut)}</td>
                     <td>
-                      <span className={`badge badge-xs md:badge-sm ${row.isActive ? 'badge-success' : 'badge-ghost'}`}>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        row.status === 'Completed' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
                         {row.status}
                       </span>
                     </td>
-                    <td className="max-w-[100px] md:max-w-xs truncate text-xs md:text-sm" title={row.tickets}>{row.tickets}</td>
+                    <td className="text-gray-600">{row.tickets}</td>
                   </tr>
                 ))
               )}

@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { getDashboardStats, formatDuration } from '@/lib/data'
+import QuickTimeTrackingWrapper from '@/components/dashboard/QuickTimeTrackingWrapper'
+import TeamStatus from '@/components/dashboard/TeamStatus'
+import TeamDashboard from '@/components/dashboard/TeamDashboard'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import LocalTimeDisplay from '@/components/LocalTimeDisplay'
-import TeamDashboard from '@/components/dashboard/TeamDashboard'
+import { format, parseISO } from 'date-fns'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -20,153 +22,208 @@ export default async function Home() {
   const isFirstTimeUser = stats.totalTeams === 0
 
   return (
-    <div className="py-4 md:py-6 px-2 md:px-8">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
       {/* Welcome Header */}
-      <div className="mb-6 md:mb-8">
-        <h2 className="text-xl md:text-2xl font-bold text-base-content mb-2 md:mb-4">Welcome to TimeHarbor</h2>
-        <p className="text-sm md:text-base text-base-content/70 mb-4 md:mb-6">
-          Track your time efficiently across teams and projects.
-        </p>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Welcome Back! 👋</h1>
+        <p className="text-gray-600">Track your time efficiently across teams and projects</p>
       </div>
 
-      {/* First Time User / No Data State */}
-      {isFirstTimeUser && (
-        <div className="card bg-base-100 shadow-lg p-6 md:p-8 mb-6 md:mb-8">
-          <div className="text-center">
-            <div className="text-5xl md:text-6xl mb-4">🚀</div>
-            <h3 className="text-xl md:text-2xl font-bold text-base-content mb-4">Welcome to TimeHarbor!</h3>
-            <p className="text-sm md:text-base text-base-content/70 mb-6 max-w-md mx-auto">
-              Get started by joining a team or creating your first project. Your time tracking journey begins here!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/teams" className="btn btn-primary">
-                📋 Join a Team
-              </Link>
-              <Link href="/guide" className="btn btn-outline">
-                📖 View Guide
-              </Link>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        {/* Quick Time Tracking */}
+        <QuickTimeTrackingWrapper 
+          activeEvent={stats.activeEvent}
+          userTeams={stats.userTeams}
+        />
+        
+        {/* Timesheet Access */}
+        <Link href="/timesheet" className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg shadow p-6 text-white hover:shadow-lg transition-all group">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Personal Timesheet</h3>
+            <div className="bg-white/20 rounded-full p-2 group-hover:bg-white/30 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
             </div>
           </div>
-        </div>
-      )}
+          <p className="text-purple-100 mb-4">View and manage your detailed time entries, analyze your work patterns</p>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <span>Go to Timesheet</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-1 transition-transform">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
+        </Link>
+      </div>
 
-      {/* Team Dashboard Section (for Admins/Leaders) */}
-      {stats.isTeamLeader && (
-        <TeamDashboard />
-      )}
-
-      {/* Personal Dashboard Section */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-4">
-          <h3 className="text-lg md:text-xl font-semibold">Your Personal Dashboard</h3>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Link href="/timesheet" className="btn btn-sm btn-outline btn-primary gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>
-                <span className="hidden sm:inline">View My </span>Timesheet
-            </Link>
-            <button className="btn btn-sm btn-outline btn-error gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                <span className="hidden sm:inline">Report </span>Issue
-            </button>
-          </div>
-        </div>
-
-        {/* Quick Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
-          <div className="card bg-base-100 shadow p-3 md:p-4">
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-primary">{stats.todayHours}</div>
-              <div className="text-xs md:text-sm text-base-content/70">Today's Hours</div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+        <div className="bg-base-100 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-gray-500">Today's Hours</span>
+            <div className="bg-gray-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
             </div>
           </div>
-          <div className="card bg-base-100 shadow p-3 md:p-4">
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-primary">{stats.weekHours}</div>
-              <div className="text-xs md:text-sm text-base-content/70">This Week</div>
-            </div>
-          </div>
-          <div className="card bg-base-100 shadow p-3 md:p-4">
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-primary">{stats.activeSessionsCount}</div>
-              <div className="text-xs md:text-sm text-base-content/70">Active Clock-ins</div>
-            </div>
-          </div>
-          <div className="card bg-base-100 shadow p-3 md:p-4">
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-primary">{stats.totalTeams}</div>
-              <div className="text-xs md:text-sm text-base-content/70">Active Teams</div>
-            </div>
+          <div className="text-3xl font-bold mb-1">{stats.todayHours}</div>
+          <div className="flex items-center gap-1 text-sm text-green-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+              <polyline points="16 7 22 7 22 13"/>
+            </svg>
+            <span>Start tracking time</span>
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="card bg-base-100 shadow p-4 md:p-6">
-          <h4 className="text-base md:text-lg font-bold mb-4">Recent Activity</h4>
+        <div className="bg-base-100 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-gray-500">This Week</span>
+            <div className="bg-green-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+                <path d="M3 3v18h18"/>
+                <path d="m19 9-5 5-4-4-3 3"/>
+              </svg>
+            </div>
+          </div>
+          <div className="text-3xl font-bold mb-1">{stats.weekHours}</div>
+          <div className="flex items-center gap-1 text-sm text-green-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+              <polyline points="16 7 22 7 22 13"/>
+            </svg>
+            <span>+15% from last week</span>
+          </div>
+        </div>
+
+        <div className="bg-base-100 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-gray-500">Active Clock-ins</span>
+            <div className="bg-yellow-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-600">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+          </div>
+          <div className="text-3xl font-bold mb-1">{stats.activeSessionsCount}</div>
+          <div className="flex items-center gap-1 text-sm text-green-600">
+            <span>{stats.activeSessionsCount === 0 ? 'Ready to start' : 'In progress'}</span>
+          </div>
+        </div>
+
+        <div className="bg-base-100 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-gray-500">Active Teams</span>
+            <div className="bg-blue-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+          </div>
+          <div className="text-3xl font-bold mb-1">{stats.totalTeams}</div>
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            <span>{stats.leaderTeamsCount || 0} as leader</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity and Team Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="bg-amber-100 rounded-lg p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold">Recent Activity</h2>
+            </div>
+            <button className="text-indigo-600 text-sm font-medium hover:text-indigo-700">View All</button>
+          </div>
           
-          {stats.recentActivity.length > 0 ? (
-            <div className="space-y-3">
-              {stats.recentActivity.map((event: any) => {
-                let duration = event.accumulated_time || 0
-                const isActive = !event.end_timestamp && event.start_timestamp
-                
-                if (isActive) {
-                    const startTime = new Date(event.start_timestamp).getTime()
-                    duration += Math.floor((Date.now() - startTime) / 1000)
-                }
+          <div className="space-y-3">
+            {stats.recentActivity.slice(0, 4).map((activity: any) => {
+              const start = activity.start_timestamp ? parseISO(activity.start_timestamp) : null
+              const end = activity.end_timestamp ? parseISO(activity.end_timestamp) : null
+              
+              const formatStr = 'MM/dd/yyyy, h:mm a'
+              const timeRange = start 
+                ? `${format(start, formatStr)} - ${end ? format(end, formatStr) : 'Now'}`
+                : 'Unknown'
 
-                return (
-                    <div key={event.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 bg-gray-50 dark:bg-base-200 rounded-lg gap-3">
-                    <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                        {/* Icon */}
-                        <div className="shrink-0">
-                            {isActive ? (
-                                <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-green-500 shadow-sm border-2 border-white dark:border-base-100"></div>
-                            ) : (
-                                <div className="w-5 h-5 md:w-6 md:h-6 rounded bg-green-500 flex items-center justify-center text-white">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                </div>
-                            )}
-                        </div>
-                        
-                        {/* Text Info */}
-                        <div className="flex-1 min-w-0">
-                            <div className="font-bold text-sm md:text-base text-base-content truncate">{event.teams?.name || 'Unknown Team'}</div>
-                            <div className="text-xs md:text-sm text-base-content/60 mt-0.5">
-                                {isActive ? (
-                                    <span>Started <LocalTimeDisplay date={event.start_timestamp} /> (Active)</span>
-                                ) : (
-                                    <span className="block sm:inline">
-                                        <LocalTimeDisplay date={event.start_timestamp} />
-                                        {' - '}
-                                        <LocalTimeDisplay date={event.end_timestamp} />
-                                    </span>
-                                )}
-                            </div>
-                        </div>
+              let duration = activity.accumulated_time || 0
+              const isCurrentSession = !activity.end_timestamp && activity.start_timestamp
+              if (isCurrentSession) {
+                const startTime = new Date(activity.start_timestamp).getTime()
+                duration += Math.floor((Date.now() - startTime) / 1000)
+              }
+
+              return (
+                <div 
+                  key={activity.id} 
+                  className={`rounded-lg shadow p-4 flex items-center justify-between hover:shadow-md transition-shadow ${
+                    isCurrentSession 
+                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300' 
+                      : 'bg-base-100'
+                  }`}
+                >
+                  <div className="flex-1 flex items-center gap-3">
+                    {isCurrentSession && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <div className={`font-semibold ${isCurrentSession ? 'text-green-900' : 'text-gray-900'}`}>
+                        {activity.teams?.name || activity.ticket_id || 'Unknown'}
+                        {isCurrentSession && <span className="ml-2 text-xs font-normal text-green-600">(Active)</span>}
+                      </div>
+                      <div className={`text-sm mt-1 ${isCurrentSession ? 'text-green-700' : 'text-gray-500'}`}>
+                        {timeRange}
+                      </div>
                     </div>
-                    
-                    {/* Duration Badge */}
-                    <div className="text-left sm:text-right">
-                        <div className="bg-indigo-600 text-white text-xs md:text-sm font-bold px-2 md:px-3 py-1 rounded-md inline-block min-w-[60px] text-center">
-                            {formatDuration(duration)}
-                        </div>
-                        {isActive && (
-                            <div className="text-xs text-green-500 font-medium mt-1">Running</div>
-                        )}
-                    </div>
-                    </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-4">⏰</div>
-              <p className="text-sm md:text-base text-base-content/70 mb-4">No recent activity found</p>
-              <p className="text-xs md:text-sm text-base-content/60">Start tracking your time by clocking into a project!</p>
-            </div>
-          )}
+                  </div>
+                  <div className={`px-4 py-2 rounded-lg font-semibold ${
+                    isCurrentSession 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-indigo-100 text-indigo-700'
+                  }`}>
+                    {formatDuration(duration)}
+                  </div>
+                </div>
+              )
+            })}
+            {stats.recentActivity.length === 0 && (
+              <div className="text-center py-12 text-gray-500 bg-base-100 rounded-lg shadow">
+                <p>No recent activity found</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-1">
+          <TeamStatus teams={stats.teamsWithMembers || []} />
         </div>
       </div>
+
+      {/* Team Dashboard */}
+      {stats.isTeamLeader && (
+        <div className="mb-8">
+          <TeamDashboard />
+        </div>
+      )}
     </div>
   )
 }
