@@ -9,43 +9,42 @@ import { teamMethods } from './methods/teams.js';
 // Import ticket and clock event methods
 import { ticketMethods } from './methods/tickets.js';
 import { clockEventMethods } from './methods/clockEvents.js';
-// Import calendar methods
-import './methods/calendar.js';
+// Import calendar methods - COMMENTED OUT (Google Calendar integration disabled)
+// import './methods/calendar.js';
 // Import notification methods
 import { notificationMethods } from './methods/notifications.js';
 // Import clock event helpers for auto-clock-out
 import { stopTicketInClockEvent, formatDurationText } from './utils/ClockEventHelpers.js';
 import { notifyTeamAdmins, notifyUser } from './utils/pushNotifications.js';
 
-// Load environment variables from .env file
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env' });
+// Settings are loaded from settings.json file (use: meteor --settings settings.json)
 
 Meteor.startup(async () => {
-  // Configure Google OAuth from environment variables
-  const googleClientId = process.env.GOOGLE_CLIENT_ID;
-  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  
-  if (googleClientId && googleClientSecret) {
-    await ServiceConfiguration.configurations.upsertAsync(
-      { service: 'google' },
-      {
-        $set: {
-          clientId: googleClientId,
-          secret: googleClientSecret,
-          loginStyle: 'popup'
-        }
-      }
-    );
-    console.log('Google OAuth configured successfully from environment variables');
-  } else {
-    console.error('Google OAuth environment variables not found. Please check your .env file.');
-    console.error('Required: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
-  }
+  // Google OAuth Configuration - COMMENTED OUT
+  // // Configure Google OAuth from environment variables
+  // const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  // const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  // 
+  // if (googleClientId && googleClientSecret) {
+  //   await ServiceConfiguration.configurations.upsertAsync(
+  //     { service: 'google' },
+  //     {
+  //       $set: {
+  //         clientId: googleClientId,
+  //         secret: googleClientSecret,
+  //         loginStyle: 'popup'
+  //       }
+  //     }
+  //   );
+  //   console.log('Google OAuth configured successfully from environment variables');
+  // } else {
+  //   console.error('Google OAuth environment variables not found. Please check your .env file.');
+  //   console.error('Required: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
+  // }
 
-  // Configure GitHub OAuth from environment variables
-  const githubClientId = process.env.HUB_CLIENT_ID;
-  const githubClientSecret = process.env.HUB_CLIENT_SECRET;
+  // Configure GitHub OAuth from settings.json
+  const githubClientId = Meteor.settings.private?.HUB_CLIENT_ID;
+  const githubClientSecret = Meteor.settings.private?.HUB_CLIENT_SECRET;
   
   if (githubClientId && githubClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
@@ -58,23 +57,24 @@ Meteor.startup(async () => {
         }
       }
     );
-    console.log('GitHub OAuth configured successfully');
+    console.log('GitHub OAuth configured successfully from settings.json');
   } else {
-    console.error('GitHub OAuth environment variables not found. Please check your .env file.');
-    console.error('Required: GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET');
+    console.error('GitHub OAuth settings not found. Please check your settings.json file.');
+    console.error('Required: HUB_CLIENT_ID and HUB_CLIENT_SECRET in private section');
   }
 
   // Configure additional find user for OAuth providers
   Accounts.setAdditionalFindUserOnExternalLogin(
     ({ serviceName, serviceData }) => {
-      if (serviceName === "google") {
-        // Note: Consider security implications. If someone other than the owner
-        // gains access to the account on the third-party service they could use
-        // the e-mail set there to access the account on your app.
-        // Most often this is not an issue, but as a developer you should be aware
-        // of how bad actors could play.
-        return Accounts.findUserByEmail(serviceData.email);
-      }
+      // Google OAuth - COMMENTED OUT
+      // if (serviceName === "google") {
+      //   // Note: Consider security implications. If someone other than the owner
+      //   // gains access to the account on the third-party service they could use
+      //   // the e-mail set there to access the account on your app.
+      //   // Most often this is not an issue, but as a developer you should be aware
+      //   // of how bad actors could play.
+      //   return Accounts.findUserByEmail(serviceData.email);
+      // }
       
       if (serviceName === "github") {
         // For GitHub, we can use the email from the service data
@@ -166,7 +166,7 @@ Meteor.startup(async () => {
 
               // Get user and team info for logging/notification
               const user = await Meteor.users.findOneAsync(clockEvent.userId);
-              const userName = user?.services?.google?.name || 
+              const userName = // user?.services?.google?.name || 
                                user?.services?.github?.username || 
                                user?.profile?.name || 
                                user?.username || 
@@ -276,7 +276,7 @@ Meteor.publish('teamMembers', async function (teamIds) {
   const userIds = Array.from(new Set(teams.flatMap(team => team.members || [])));
   return Meteor.users.find(
     { _id: { $in: userIds } },
-    { fields: { 'emails.address': 1, 'services.google.name': 1, 'services.github.username': 1, 'profile': 1, 'username': 1 } }
+    { fields: { 'emails.address': 1, /* 'services.google.name': 1, */ 'services.github.username': 1, 'profile': 1, 'username': 1 } }
   );
 });
 
@@ -368,8 +368,8 @@ Meteor.publish('usersByIds', async function (userIds) {
   return Meteor.users.find({ _id: { $in: filteredUserIds } }, { 
     fields: { 
       'emails.address': 1, 
-      'services.google.email': 1, 
-      'services.google.name': 1,
+      // 'services.google.email': 1, 
+      // 'services.google.name': 1,
       'services.github.username': 1,
       'profile': 1,
       'username': 1

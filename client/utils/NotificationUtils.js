@@ -1,6 +1,14 @@
 /**
  * Notification utility functions for managing push notifications
+ * Supports both Web Push API (browsers) and FCM (mobile via Cordova)
  */
+
+import {
+  isCordova,
+  subscribeToMobilePushNotifications,
+  unsubscribeFromMobilePushNotifications,
+  checkMobileNotificationStatus
+} from './MobileNotificationUtils.js';
 
 // Convert VAPID key from base64 to Uint8Array
 function urlBase64ToUint8Array(base64String) {
@@ -22,6 +30,12 @@ function urlBase64ToUint8Array(base64String) {
  * Check if push notifications are supported
  */
 export function isPushNotificationSupported() {
+  // Check for mobile first
+  if (isCordova()) {
+    return true; // Mobile is supported via plugin
+  }
+  
+  // Check for web push
   return 'serviceWorker' in navigator && 'PushManager' in window;
 }
 
@@ -33,14 +47,23 @@ export async function requestNotificationPermission() {
     throw new Error('Push notifications are not supported in this browser');
   }
 
+  // On mobile, permission is handled by the plugin
+  if (isCordova()) {
+    return true;
+  }
+
   const permission = await Notification.requestPermission();
   return permission === 'granted';
 }
 
 /**
- * Register service worker
+ * Register service worker (web only)
  */
 export async function registerServiceWorker() {
+  if (isCordova()) {
+    throw new Error('Service workers not used in Cordova');
+  }
+
   if (!('serviceWorker' in navigator)) {
     throw new Error('Service workers are not supported');
   }
@@ -68,9 +91,15 @@ export async function registerServiceWorker() {
 }
 
 /**
- * Subscribe to push notifications
+ * Subscribe to push notifications (works for both web and mobile)
  */
 export async function subscribeToPushNotifications() {
+  // Use mobile push for Cordova
+  if (isCordova()) {
+    return await subscribeToMobilePushNotifications();
+  }
+
+  // Use Web Push for browsers
   try {
     // Check if notifications are supported
     if (!isPushNotificationSupported()) {
@@ -137,6 +166,12 @@ export async function subscribeToPushNotifications() {
  * Unsubscribe from push notifications
  */
 export async function unsubscribeFromPushNotifications() {
+  // Use mobile push for Cordova
+  if (isCordova()) {
+    return await unsubscribeFromMobilePushNotifications();
+  }
+
+  // Use Web Push for browsers
   try {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
@@ -164,6 +199,17 @@ export async function unsubscribeFromPushNotifications() {
  * Check current subscription status
  */
 export async function checkNotificationStatus() {
+  // Check mobile first
+  if (isCordova()) {
+    const mobileStatus = await checkMobileNotificationStatus();
+    return {
+      supported: mobileStatus.supported,
+      permission: mobileStatus.subscribed ? 'granted' : 'default',
+      subscribed: mobileStatus.subscribed
+    };
+  }
+
+  // Check web push
   if (!isPushNotificationSupported()) {
     return { supported: false, permission: 'denied', subscribed: false };
   }

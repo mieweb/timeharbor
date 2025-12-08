@@ -1,6 +1,5 @@
 accounts-base@3.1.2
 accounts-github@1.5.1
-accounts-google@1.4.1
 accounts-oauth@1.4.6
 accounts-password@3.2.1
 allow-deny@2.1.0
@@ -37,7 +36,6 @@ facts-base@1.0.2
 fetch@0.1.6
 geojson-utils@1.0.12
 github-oauth@1.4.2
-google-oauth@1.4.5
 hot-code-push@1.0.5
 hot-module-replacement@0.5.4
 html-tools@2.0.0

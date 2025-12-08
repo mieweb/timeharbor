@@ -1,0 +1,57 @@
+// build-extras.gradle
+// This file is automatically copied to the Android build directory by Meteor
+// It runs during the Gradle build process to copy google-services.json
+
+// Try multiple possible paths to find the project root
+def findProjectRoot() {
+    // Start from the app directory and go up to find project root
+    def currentDir = projectDir
+    def maxDepth = 10
+    def depth = 0
+    
+    while (depth < maxDepth && currentDir != null) {
+        def privateDir = new File(currentDir, 'private')
+        if (privateDir.exists() && privateDir.isDirectory()) {
+            return currentDir
+        }
+        currentDir = currentDir.parentFile
+        depth++
+    }
+    
+    // Fallback: try going up from cordova-build
+    def cordovaBuildDir = project.rootProject.projectDir.parentFile.parentFile
+    def meteorLocalDir = cordovaBuildDir.parentFile
+    def projectRoot = meteorLocalDir.parentFile
+    return projectRoot
+}
+
+def projectRoot = findProjectRoot()
+def sourceFile = new File(projectRoot, 'private/google-services.json')
+def targetFile = new File(projectDir, 'google-services.json')
+
+// Task to copy google-services.json before processing Google Services
+task copyGoogleServices(type: Copy) {
+    description = 'Copy google-services.json from private folder to app directory'
+    
+    if (sourceFile.exists()) {
+        from sourceFile
+        into projectDir
+        println "✓ Copying google-services.json from ${sourceFile.absolutePath} to ${projectDir.absolutePath}"
+    } else {
+        println "WARNING: google-services.json not found at ${sourceFile.absolutePath}"
+        println "  Searched from project root: ${projectRoot.absolutePath}"
+    }
+}
+
+// Make sure this task runs before Google Services plugin processes the file
+afterEvaluate {
+    tasks.matching { it.name.contains('process') && it.name.contains('GoogleServices') }.all {
+        it.dependsOn copyGoogleServices
+    }
+    
+    // Also run before any build task
+    tasks.matching { it.name.startsWith('assemble') || it.name.startsWith('bundle') }.all {
+        it.dependsOn copyGoogleServices
+    }
+}
+

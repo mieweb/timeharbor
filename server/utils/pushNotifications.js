@@ -1,10 +1,13 @@
 import webpush from 'web-push';
+import { Meteor } from 'meteor/meteor';
+import admin from 'firebase-admin';
 
-// VAPID keys for Web Push (generate new ones using: npx web-push generate-vapid-keys)
-// IMPORTANT: In production, store these in environment variables!
+// VAPID keys for Web Push (loaded from settings.json)
+// IMPORTANT: In production, store these in settings.json!
+// Run Meteor with: meteor --settings settings.json
 const vapidKeys = {
-  publicKey: process.env.VAPID_PUBLIC_KEY,
-  privateKey: process.env.VAPID_PRIVATE_KEY
+  publicKey: Meteor.settings.public?.vapidPublicKey,
+  privateKey: Meteor.settings.private?.VAPID_PRIVATE_KEY
 };
 
 // Configure web-push
@@ -14,12 +17,92 @@ webpush.setVapidDetails(
   vapidKeys.privateKey
 );
 
+// Initialize Firebase Admin SDK for FCM
+let firebaseInitialized = false;
+function initializeFirebase() {
+  if (firebaseInitialized) return;
+
+  try {
+    const serviceAccount = {
+      projectId: Meteor.settings.private?.FCM_PROJECT_ID,
+      privateKey: Meteor.settings.private?.FCM_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      clientEmail: Meteor.settings.private?.FCM_CLIENT_EMAIL
+    };
+
+    if (serviceAccount.projectId && serviceAccount.privateKey && serviceAccount.clientEmail) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      firebaseInitialized = true;
+      console.log('Firebase Admin SDK initialized for FCM');
+    } else {
+      console.warn('Firebase credentials not found in settings.json. FCM notifications will not work.');
+    }
+  } catch (error) {
+    console.error('Error initializing Firebase Admin SDK:', error);
+  }
+}
+
+// Initialize on startup
+Meteor.startup(() => {
+  initializeFirebase();
+});
+
 /**
- * Send a push notification to a specific subscription
+ * Send FCM notification to mobile device
+ */
+async function sendFCMNotification(registrationId, payload) {
+  if (!firebaseInitialized) {
+    throw new Error('Firebase Admin SDK not initialized');
+  }
+
+  try {
+    const message = {
+      token: registrationId,
+      notification: {
+        title: payload.title,
+        body: payload.body
+      },
+      data: {
+        ...payload.data,
+        click_action: payload.data?.url || 'FLUTTER_NOTIFICATION_CLICK'
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          sound: 'default',
+          channelId: 'default'
+        }
+      }
+    };
+
+    const response = await admin.messaging().send(message);
+    return { success: true, messageId: response };
+  } catch (error) {
+    console.error('Error sending FCM notification:', error);
+    if (error.code === 'messaging/registration-token-not-registered') {
+      return { success: false, expired: true };
+    }
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Send a push notification (supports both Web Push and FCM)
  * @param {Object} subscription - The push subscription object
  * @param {Object} payload - The notification payload
  */
 export async function sendPushNotification(subscription, payload) {
+  // Check if it's a mobile FCM subscription
+  if (subscription.type === 'fcm' || subscription.registrationId) {
+    initializeFirebase();
+    return await sendFCMNotification(
+      subscription.registrationId || subscription.token,
+      payload
+    );
+  }
+
+  // Otherwise, use Web Push
   try {
     await webpush.sendNotification(subscription, JSON.stringify(payload));
     return { success: true };
@@ -66,7 +149,7 @@ export async function notifyTeamAdmins(teamId, notificationData) {
         // If subscription expired, remove it
         if (result.expired) {
           await Meteor.users.updateAsync(user._id, {
-            $unset: { 'profile.pushSubscription': '' }
+            $unset: { 'profile.pushSubscription': '', 'profile.pushSubscribedAt': '' }
           });
         }
         
@@ -103,7 +186,7 @@ export async function notifyUser(userId, notificationData) {
     // If subscription expired, remove it
     if (result.expired) {
       await Meteor.users.updateAsync(userId, {
-        $unset: { 'profile.pushSubscription': '' }
+        $unset: { 'profile.pushSubscription': '', 'profile.pushSubscribedAt': '' }
       });
     }
     

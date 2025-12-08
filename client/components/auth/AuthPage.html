@@ -16,6 +16,7 @@
           </svg>
         </button>
 
+        {{!-- Google Login - COMMENTED OUT
         <!-- Google Login -->
         <button type="button" id="at-google" name="google" class="flex-1 bg-white text-gray-700 rounded-lg py-3 px-4 flex items-center justify-center hover:bg-gray-50 transition-colors border border-gray-300 {{#if isLoginLoading}}opacity-50 cursor-not-allowed{{/if}}">
           {{#if isLoginLoading}}
@@ -29,6 +30,7 @@
             </svg>
           {{/if}}
         </button>
+        --}}
 
         <!-- GitHub Login -->
         <button type="button" id="at-github" name="github" class="flex-1 bg-gray-800 text-white rounded-lg py-3 px-4 flex items-center justify-center hover:bg-gray-700 transition-colors {{#if isLoginLoading}}opacity-50 cursor-not-allowed{{/if}}">
@@ -108,7 +110,6 @@
   <div class="form-control w-full">
     <label for="{{id}}" class="label"><span class="label-text">{{label}}</span></label>
     <input type="{{type}}" id="{{id}}" name="{{name}}" placeholder="{{placeholder}}" 
-           class="input input-bordered w-full" required 
-           pattern="{{emailPattern}}" title="{{emailTitle}}" />
+           class="input input-bordered w-full" required />
   </div>
 </template>

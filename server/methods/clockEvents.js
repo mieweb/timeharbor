@@ -11,7 +11,7 @@ export const clockEventMethods = {
     
     // Get user info for notification
     const user = await Meteor.users.findOneAsync(this.userId);
-    const userName = user?.services?.google?.name || 
+    const userName = // user?.services?.google?.name || 
                      user?.services?.github?.username || 
                      user?.profile?.name || 
                      user?.username || 
@@ -67,7 +67,7 @@ export const clockEventMethods = {
     
     // Get user info for notification
     const user = await Meteor.users.findOneAsync(this.userId);
-    const userName = user?.services?.google?.name || 
+    const userName = // user?.services?.google?.name || 
                      user?.services?.github?.username || 
                      user?.profile?.name || 
                      user?.username || 

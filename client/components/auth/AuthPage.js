@@ -27,14 +27,15 @@ Template.authPage.helpers({
   isLoginLoading: () => Template.instance().isLoginLoading.get()
 });
 
-Template.formField.helpers({
-  emailPattern() {
-    return this.type === 'email' ? '[^@]+@[^@]+\\.[^@]+' : '';
-  },
-  emailTitle() {
-    return this.type === 'email' ? 'Please enter a valid email with domain (e.g., user@example.com)' : '';
-  }
-});
+// Email pattern helpers removed - no email format validation
+// Template.formField.helpers({
+//   emailPattern() {
+//     return this.type === 'email' ? '[^@]+@[^@]+\\.[^@]+' : '';
+//   },
+//   emailTitle() {
+//     return this.type === 'email' ? 'Please enter a valid email with domain (e.g., user@example.com)' : '';
+//   }
+// });
 
 Template.authPage.events({
   'click #showSignupBtn': () => authFormType.set('signup'),
@@ -44,21 +45,22 @@ Template.authPage.events({
     authFormType.set(authFormType.get() === 'hidden' ? 'login' : 'hidden');
   },
   
-  'click #at-google'(event, template) {
-    event.preventDefault();
-    template.loginError.set('');
-    template.isLoginLoading.set(true);
-    
-    Meteor.loginWithGoogle({
-      requestPermissions: ['email', 'profile']
-    }, (err) => {
-      template.isLoginLoading.set(false);
-      if (err) {
-        console.error('Google login error:', err);
-        template.loginError.set(err.reason || 'Google login failed. Please try again.');
-      }
-    });
-  },
+  // Google Login - COMMENTED OUT
+  // 'click #at-google'(event, template) {
+  //   event.preventDefault();
+  //   template.loginError.set('');
+  //   template.isLoginLoading.set(true);
+  //   
+  //   Meteor.loginWithGoogle({
+  //     requestPermissions: ['email', 'profile']
+  //   }, (err) => {
+  //     template.isLoginLoading.set(false);
+  //     if (err) {
+  //       console.error('Google login error:', err);
+  //       template.loginError.set(err.reason || 'Google login failed. Please try again.');
+  //     }
+  //   });
+  // },
 
   'click #at-github'(event, template) {
     event.preventDefault();
@@ -80,8 +82,8 @@ Template.authPage.events({
     event.preventDefault();
     const { email, password, confirmPassword } = event.target;
     
+    // Only password match validation - passwords must be the same
     if (password.value !== confirmPassword.value) return alert('Passwords do not match');
-    if (password.value.length < 6) return alert('Password too short');
     
     Accounts.createUser({ 
       email: email.value.trim(), 
