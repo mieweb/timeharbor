@@ -130,9 +130,6 @@ export async function getDashboardStats() {
       .select('id, name')
       .in('id', teamIds)
 
-    console.log('Teams data:', userTeamsData)
-    console.log('Teams error:', teamsError)
-
     if (userTeamsData) {
       // First, get all unique user IDs across all teams
       const allUserIds = new Set<string>()
@@ -151,38 +148,40 @@ export async function getDashboardStats() {
         }
       }
       
-      console.log('All user IDs:', Array.from(allUserIds))
-      
       // Fetch all profiles at once using service role to bypass RLS
       const { data: allProfiles, error: profilesError } = await serviceSupabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name')
         .in('id', Array.from(allUserIds))
-      
-      console.log('All profiles fetched:', allProfiles)
-      console.log('Profiles error:', profilesError)
-      console.log('Service client initialized:', !!serviceSupabase)
       
       // Create a map of profiles for quick lookup
       const profilesMap = new Map()
       if (allProfiles && allProfiles.length > 0) {
         allProfiles.forEach(p => profilesMap.set(p.id, p))
-        console.log('Profiles map size:', profilesMap.size)
-      } else {
-        console.log('No profiles found or empty array!')
+      }
+
+      // Fetch emails from Auth Admin for fallback
+      const adminUsersMap = new Map()
+      try {
+        const userPromises = Array.from(allUserIds).map(id => 
+          serviceSupabase.auth.admin.getUserById(id)
+        )
+        const usersResults = await Promise.all(userPromises)
+        usersResults.forEach(({ data: { user } }) => {
+          if (user) adminUsersMap.set(user.id, user)
+        })
+      } catch (e) {
+        console.error('Error fetching admin users:', e)
       }
       
       // Now build team members with their profiles
       for (const team of userTeamsData) {
-        console.log('Processing team:', team.name)
-        
         const memberIds = teamMembersMap.get(team.id) || []
         const teamMembers = []
         
         for (const userId of memberIds) {
           const profile = profilesMap.get(userId)
-          
-          console.log('User ID:', userId, 'Profile:', profile)
+          const authUser = adminUsersMap.get(userId)
           
           // Check if user has an active clock event
           const { data: activeClock } = await supabase
@@ -192,15 +191,15 @@ export async function getDashboardStats() {
             .is('end_timestamp', null)
             .maybeSingle()
 
+          const displayName = profile?.full_name || authUser?.email?.split('@')[0] || 'User'
+
           teamMembers.push({
             id: userId,
-            name: profile?.full_name || profile?.email?.split('@')[0] || 'User',
-            email: profile?.email || '',
+            name: displayName,
+            email: authUser?.email || '',
             status: activeClock ? 'Active' : 'Offline'
           })
         }
-
-        console.log('Final team members for', team.name, ':', teamMembers)
 
         // Only add teams that have members
         if (teamMembers.length > 0) {
@@ -213,8 +212,6 @@ export async function getDashboardStats() {
       }
     }
   }
-
-  console.log('Final teamsWithMembers:', teamsWithMembers)
 
   return {
     todayHours: formatDuration(todaySeconds),
