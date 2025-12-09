@@ -39,7 +39,7 @@ const COLUMNS: ColumnConfig[] = [
   { key: 'tickets', label: 'Tickets', filterable: false },
 ]
 
-export default function TeamDashboard() {
+export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [data, setData] = useState<DashboardEvent[]>([])
@@ -53,7 +53,7 @@ export default function TeamDashboard() {
 
   useEffect(() => {
     fetchData()
-  }, [startDate, endDate])
+  }, [startDate, endDate, lastUpdate])
 
   // Close filter popup when clicking outside
   useEffect(() => {

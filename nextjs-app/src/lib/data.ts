@@ -98,9 +98,12 @@ export async function getDashboardStats() {
   
   if (leaderTeams && leaderTeams.length > 0) {
       leaderTeamsCount = leaderTeams.length
+      isTeamLeaderWithMembers = true
+      
+      /* 
+      // Previously we only showed dashboard if there were OTHER members
       const teamIds = leaderTeams.map(t => t.team_id)
       
-      // Check if any of these teams have members OTHER than the current user
       const { count: otherMembersCount } = await supabase
         .from('team_members')
         .select('*', { count: 'exact', head: true })
@@ -110,6 +113,7 @@ export async function getDashboardStats() {
       if (otherMembersCount && otherMembersCount > 0) {
           isTeamLeaderWithMembers = true
       }
+      */
   }
 
   // Get team members for Team Status - organized by teams

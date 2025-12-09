@@ -42,8 +42,12 @@ export async function getTeamDashboardData(startDate: string, endDate: string) {
     // Filter out the current user (admin/leader) from the dashboard view
     const memberIds = Array.from(new Set(teamMembers
       .map(m => m.user_id)
-      .filter(id => id !== user.id)
+      // .filter(id => id !== user.id) // Allow leader to see themselves for now
     ))
+
+    if (memberIds.length === 0) {
+      return { data: [], error: null }
+    }
 
     // 4. Fetch Clock Events for these members in range
     const start = startOfDay(parseISO(startDate)).toISOString()
