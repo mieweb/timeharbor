@@ -61,7 +61,7 @@ export default function TeamStatus({ teams = [] }: { teams?: Team[] }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div className="bg-white rounded-xl shadow-[inset_4px_0px_0px_0px_#76ABAE] border border-gray-100 p-6">
       <div className="flex items-center gap-2 mb-4">
         <div className="bg-th-accent/10 rounded-full p-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-th-accent">

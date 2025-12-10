@@ -213,6 +213,14 @@ export async function getDashboardStats() {
     }
   }
 
+  // Open Tickets
+  const { data: openTickets } = await supabase
+    .from('tickets')
+    .select('*, teams(name)')
+    .eq('assignee_id', user.id)
+    .neq('status', 'Closed')
+    .order('due_date', { ascending: true })
+
   return {
     todayHours: formatDuration(todaySeconds),
     weekHours: formatDuration(weekSeconds),
@@ -223,7 +231,8 @@ export async function getDashboardStats() {
     leaderTeamsCount,
     activeEvent: activeEvent || null,
     userTeams: userTeams || [],
-    teamsStatus: teamsWithMembers || []
+    teamsStatus: teamsWithMembers || [],
+    openTickets: openTickets || []
   }
 }
 

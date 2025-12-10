@@ -27,19 +27,33 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
 
   return (
     <div>
-      <div className="tabs tabs-bordered mb-6">
-        <a 
-          className={`tab tab-lg ${activeTab === 'personal' ? 'tab-active border-th-accent text-th-accent font-bold' : 'text-gray-500'}`}
+      <div className="flex border-b border-gray-200 mb-6">
+        <button 
+          className={`pb-3 px-1 mr-8 text-lg font-medium transition-colors relative ${
+            activeTab === 'personal' 
+              ? 'text-th-accent' 
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
           onClick={() => setActiveTab('personal')}
         >
           Personal Dashboard
-        </a>
-        <a 
-          className={`tab tab-lg ${activeTab === 'team' ? 'tab-active border-th-accent text-th-accent font-bold' : 'text-gray-500'}`}
+          {activeTab === 'personal' && (
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-th-accent rounded-t-full"></div>
+          )}
+        </button>
+        <button 
+          className={`pb-3 px-1 mr-8 text-lg font-medium transition-colors relative ${
+            activeTab === 'team' 
+              ? 'text-th-accent' 
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
           onClick={() => setActiveTab('team')}
         >
           Team Dashboard
-        </a>
+          {activeTab === 'team' && (
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-th-accent rounded-t-full"></div>
+          )}
+        </button>
       </div>
 
       {activeTab === 'personal' && (
@@ -58,7 +72,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {openTickets.length > 0 ? (
                 openTickets.map((ticket) => (
-                  <div key={ticket.id} className="card bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                  <div key={ticket.id} className="card bg-white border border-gray-100 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
                     <div className="card-body p-5">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-bold text-th-dark line-clamp-2 h-12" title={ticket.title}>{ticket.title}</h4>
