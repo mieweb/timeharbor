@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
+import StoreInitializer from "@/components/StoreInitializer";
 import MainNav from "@/components/MainNav";
 import { getActiveSession } from "@/lib/data";
 
@@ -27,6 +28,7 @@ export default async function RootLayout({
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </head>
       <body className={`${inter.className} bg-base-100 min-h-screen flex flex-col`}>
+        <StoreInitializer activeEvent={activeEvent} />
         <MainNav user={user} activeEvent={activeEvent} userTeams={userTeams} />
 
         <main className="container mx-auto px-4 pb-20 flex-grow max-w-7xl">

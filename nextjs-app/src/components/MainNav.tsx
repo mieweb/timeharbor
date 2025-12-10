@@ -1,11 +1,13 @@
 'use client'
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import LogoutButton from "./LogoutButton";
 import { NotificationBell } from "./NotificationBell";
 import { startClock, stopClock } from '@/lib/actions/clock';
 import { useRouter } from 'next/navigation';
+import { useUIStore } from '@/store/useUIStore';
+import { useClockStore } from '@/store/useClockStore';
 
 interface MainNavProps {
   user: any;
@@ -14,57 +16,37 @@ interface MainNavProps {
 }
 
 export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [elapsedTime, setElapsedTime] = useState('0:00:00');
+  const { isMenuOpen, toggleMenu, theme, setTheme } = useUIStore();
+  const { elapsedTime, updateElapsedTime } = useClockStore();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Check for saved theme preference or default to light
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    
-    // Also set dark class for Tailwind dark mode
-    if (savedTheme === 'dark') {
+    setMounted(true);
+  }, []);
+
+  // Hydrate theme from store to DOM
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, []);
+  }, [theme]);
 
+  // Timer logic
   useEffect(() => {
-    if (!activeEvent) {
-      setElapsedTime('0:00:00');
-      return;
-    }
-
     const interval = setInterval(() => {
-      const start = new Date(activeEvent.start_timestamp).getTime();
-      const now = new Date().getTime();
-      const diff = Math.floor((now - start) / 1000);
-      
-      const hours = Math.floor(diff / 3600);
-      const minutes = Math.floor((diff % 3600) / 60);
-      const seconds = diff % 60;
-      
-      setElapsedTime(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      updateElapsedTime();
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeEvent]);
+  }, [updateElapsedTime]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   };
 
   const handleClockIn = async () => {
@@ -76,7 +58,6 @@ export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) 
         console.error('Failed to clock in:', error);
       }
     } else {
-        // Maybe redirect to teams page if no team?
         router.push('/teams');
     }
   };
@@ -134,13 +115,13 @@ export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) 
           className="btn btn-ghost btn-circle btn-sm"
           aria-label="Toggle theme"
         >
-          {theme === 'light' ? (
+          {mounted && theme === 'dark' ? (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
           )}
         </button>
@@ -160,7 +141,7 @@ export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) 
             {/* Mobile Menu Button */}
             <button 
               className="btn btn-ghost btn-circle lg:hidden"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={toggleMenu}
               aria-label="Menu"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,35 +161,35 @@ export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) 
             <Link 
               href="/" 
               className="btn btn-ghost justify-start hover:text-th-accent"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={toggleMenu}
             >
               Home
             </Link>
             <Link 
               href="/teams" 
               className="btn btn-ghost justify-start hover:text-th-accent"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={toggleMenu}
             >
               Teams
             </Link>
             <Link 
               href="/tickets" 
               className="btn btn-ghost justify-start hover:text-th-accent"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={toggleMenu}
             >
               Tickets
             </Link>
             <Link 
               href="/calendar" 
               className="btn btn-ghost justify-start hover:text-th-accent"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={toggleMenu}
             >
               Calendar
             </Link>
             <Link 
               href="/admin" 
               className="btn btn-ghost justify-start hover:text-th-accent"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={toggleMenu}
             >
               Admin Review
             </Link>

@@ -22,7 +22,8 @@
     "jquery": "^3.6.0",
     "meteor-node-stubs": "^1.2.1",
     "postcss-load-config": "^6.0.1",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "zustand": "^5.0.9"
   },
   "meteor": {
     "mainModule": {
