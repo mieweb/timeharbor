@@ -74,20 +74,20 @@ export default function ClockControl({ teamId, activeEvent }: ClockControlProps)
         <>
           <button 
             onClick={handleClockOut} 
-            className="btn btn-outline btn-primary"
+            className="btn btn-outline text-th-accent hover:bg-th-accent hover:text-white hover:border-th-accent border-th-accent"
             disabled={isLoading}
           >
             {isLoading ? 'Clocking Out...' : 'Clock Out'}
           </button>
           <div className="flex items-center gap-2">
             <span className="text-2xl">⏱️</span>
-            <span className="font-mono text-2xl font-bold">{formatTime(elapsedTime)}</span>
+            <span className="font-mono text-2xl font-bold text-th-dark">{formatTime(elapsedTime)}</span>
           </div>
         </>
       ) : (
         <button 
           onClick={handleClockIn} 
-          className="btn btn-outline btn-primary"
+          className="btn btn-outline text-th-accent hover:bg-th-accent hover:text-white hover:border-th-accent border-th-accent"
           disabled={isLoading || !teamId}
         >
           {isLoading ? 'Clocking In...' : 'Clock In'}

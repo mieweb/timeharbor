@@ -33,7 +33,7 @@ export default async function Home() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Today's Hours */}
-        <div className="card bg-white shadow-sm border border-gray-100 p-6">
+        <div className="card bg-white border border-gray-100 p-6 shadow-[inset_0px_4px_0px_0px_#76ABAE]">
           <div className="flex justify-between items-start mb-4">
             <span className="text-gray-500 font-medium">Today's Hours</span>
             <div className="p-2 bg-th-accent/10 rounded-lg text-th-accent">
@@ -45,7 +45,7 @@ export default async function Home() {
         </div>
 
         {/* This Week */}
-        <div className="card bg-white shadow-sm border border-gray-100 p-6">
+        <div className="card bg-white border border-gray-100 p-6 shadow-[inset_0px_4px_0px_0px_#76ABAE]">
           <div className="flex justify-between items-start mb-4">
             <span className="text-gray-500 font-medium">This Week</span>
             <div className="p-2 bg-green-50 rounded-lg text-green-500">
@@ -57,7 +57,7 @@ export default async function Home() {
         </div>
 
         {/* Open Tickets */}
-        <div className="card bg-white shadow-sm border border-gray-100 p-6">
+        <div className="card bg-white border border-gray-100 p-6 shadow-[inset_0px_4px_0px_0px_#76ABAE]">
           <div className="flex justify-between items-start mb-4">
             <span className="text-gray-500 font-medium">Open Tickets</span>
             <div className="p-2 bg-yellow-50 rounded-lg text-yellow-500">
@@ -69,7 +69,7 @@ export default async function Home() {
         </div>
 
         {/* Active Teams */}
-        <div className="card bg-white shadow-sm border border-gray-100 p-6">
+        <div className="card bg-white border border-gray-100 p-6 shadow-[inset_0px_4px_0px_0px_#76ABAE]">
           <div className="flex justify-between items-start mb-4">
             <span className="text-gray-500 font-medium">Active Teams</span>
             <div className="p-2 bg-indigo-50 rounded-lg text-indigo-500">

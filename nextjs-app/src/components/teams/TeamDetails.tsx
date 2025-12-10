@@ -46,19 +46,19 @@ export default function TeamDetails({ team, userId }: { team: Team, userId: stri
 
   return (
     <div className="p-4 md:p-6">
-      <div className="card bg-base-100 shadow p-4 md:p-6 mb-4 md:mb-6">
-        <Link href="/teams" className="btn btn-outline btn-sm md:btn-md mb-4 w-fit">&larr; Back to Teams</Link>
+      <div className="card bg-base-100 p-4 md:p-6 mb-4 md:mb-6 shadow-[inset_0px_4px_0px_0px_#76ABAE]">
+        <Link href="/teams" className="btn btn-outline btn-sm md:btn-md mb-4 w-fit text-th-accent hover:bg-th-accent hover:text-white hover:border-th-accent">&larr; Back to Teams</Link>
         
-        <h4 className="text-xl md:text-2xl font-bold mb-2">{team.name}</h4>
+        <h4 className="text-xl md:text-2xl font-bold mb-2 text-th-dark">{team.name}</h4>
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4 md:mb-6">
           <span className="badge badge-neutral p-2 md:p-3 text-xs md:text-sm">Join Code: {team.code}</span>
-          <button onClick={handleCopy} className="btn btn-xs md:btn-sm btn-outline">
+          <button onClick={handleCopy} className="btn btn-xs md:btn-sm btn-outline text-th-accent hover:bg-th-accent hover:text-white hover:border-th-accent">
             {copied ? 'Copied!' : 'Copy Code'}
           </button>
         </div>
 
-        <h5 className="font-semibold mb-3 md:mb-4 text-base md:text-lg">Collaborators:</h5>
+        <h5 className="font-semibold mb-3 md:mb-4 text-base md:text-lg text-th-dark">Collaborators:</h5>
         <div className="flex flex-wrap gap-2">
           {team.team_members.map(member => {
             const displayName = getDisplayName(member.profiles)

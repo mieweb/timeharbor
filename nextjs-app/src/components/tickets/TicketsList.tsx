@@ -68,7 +68,7 @@ export default function TicketsList({
           </select>
           
           <button 
-            className="btn btn-primary btn-sm md:btn-md w-full sm:w-auto"
+            className="btn bg-th-accent hover:bg-opacity-90 text-white border-none btn-sm md:btn-md w-full sm:w-auto"
             onClick={() => setIsCreating(!isCreating)}
           >
             {isCreating ? 'Cancel' : 'Create Ticket'}
@@ -90,7 +90,7 @@ export default function TicketsList({
 
       {/* Create Form */}
       {isCreating && (
-        <div className="card bg-base-100 shadow border border-base-200">
+        <div className="card bg-base-100 border border-base-200 shadow-[inset_0px_4px_0px_0px_#76ABAE]">
           <div className="card-body p-3 md:p-4">
             <form action={handleCreateSubmit} className="flex flex-col gap-3 md:gap-4">
               <input type="hidden" name="team_id" value={selectedTeamId} />
@@ -110,7 +110,7 @@ export default function TicketsList({
               />
               
               <div className="flex flex-col sm:flex-row gap-2">
-                <button type="submit" className="btn btn-primary btn-sm md:btn-md flex-1">Create</button>
+                <button type="submit" className="btn bg-th-accent hover:bg-opacity-90 text-white border-none btn-sm md:btn-md flex-1">Create</button>
                 <button 
                   type="button" 
                   className="btn btn-ghost btn-sm md:btn-md border-base-300 flex-1"

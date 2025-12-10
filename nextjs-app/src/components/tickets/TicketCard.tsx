@@ -84,12 +84,12 @@ export default function TicketCard({ ticket, activeTicketId, activeEvent, active
   }
 
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-200 hover:shadow-md transition-shadow">
+    <div className="card bg-base-100 border border-base-200 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
       <div className="card-body p-4">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="font-semibold text-lg line-clamp-1" title={ticket.title}>{ticket.title}</h3>
+          <h3 className="font-semibold text-lg text-th-dark line-clamp-1" title={ticket.title}>{ticket.title}</h3>
           <div className="flex gap-1">
-             <button className="btn btn-ghost btn-xs text-primary" title="Edit ticket">
+             <button className="btn btn-ghost btn-xs text-th-accent" title="Edit ticket">
                 <i className="fa-solid fa-pencil"></i>
              </button>
              <button 
@@ -112,7 +112,7 @@ export default function TicketCard({ ticket, activeTicketId, activeEvent, active
         </div>
 
         <div className="flex justify-between items-center mt-auto">
-            <a href={ticket.github_url || '#'} target="_blank" rel="noopener noreferrer" className="link link-primary text-sm">
+            <a href={ticket.github_url || '#'} target="_blank" rel="noopener noreferrer" className="link text-sm text-th-accent hover:text-th-accent/80 no-underline hover:underline">
                 Reference
             </a>
             
@@ -127,7 +127,7 @@ export default function TicketCard({ ticket, activeTicketId, activeEvent, active
             ) : (
                 <button 
                     onClick={handleStart}
-                    className="btn btn-sm btn-primary btn-outline min-w-[80px]"
+                    className="btn btn-sm btn-outline min-w-[80px] text-th-accent hover:bg-th-accent hover:text-white hover:border-th-accent border-th-accent"
                     disabled={isLoading}
                 >
                     Start
