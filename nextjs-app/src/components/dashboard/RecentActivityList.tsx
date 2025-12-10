@@ -41,10 +41,10 @@ export default function RecentActivityList({ activities }: { activities: any[] }
         return (
           <div 
             key={activity.id} 
-            className={`rounded-lg shadow p-4 flex items-center justify-between hover:shadow-md transition-shadow ${
+            className={`rounded-lg p-4 flex items-center justify-between transition-shadow border ${
               isCurrentSession 
-                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300' 
-                : 'bg-base-100'
+                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 shadow-sm' 
+                : 'bg-white border-gray-100 hover:shadow-md'
             }`}
           >
             <div className="flex-1 flex items-center gap-3">
@@ -54,7 +54,7 @@ export default function RecentActivityList({ activities }: { activities: any[] }
                 </div>
               )}
               <div className="flex-1">
-                <div className={`font-semibold ${isCurrentSession ? 'text-green-900' : 'text-gray-900'}`}>
+                <div className={`font-bold ${isCurrentSession ? 'text-green-900' : 'text-th-dark'}`}>
                   {activity.teams?.name || activity.ticket_id || 'Unknown'}
                   {isCurrentSession && <span className="ml-2 text-xs font-normal text-green-600">(Active)</span>}
                 </div>
@@ -63,10 +63,10 @@ export default function RecentActivityList({ activities }: { activities: any[] }
                 </div>
               </div>
             </div>
-            <div className={`px-4 py-2 rounded-lg font-semibold ${
+            <div className={`px-4 py-2 rounded-lg font-bold text-sm ${
               isCurrentSession 
                 ? 'bg-green-500 text-white' 
-                : 'bg-indigo-100 text-indigo-700'
+                : 'bg-th-accent/10 text-th-accent'
             }`}>
               {formatDuration(duration)}
             </div>
@@ -74,7 +74,7 @@ export default function RecentActivityList({ activities }: { activities: any[] }
         )
       })}
       {activities.length === 0 && (
-        <div className="text-center py-12 text-gray-500 bg-base-100 rounded-lg shadow">
+        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-gray-100">
           <p>No recent activity found</p>
         </div>
       )}

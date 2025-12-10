@@ -177,28 +177,28 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
 
   return (
     <div className="mb-8 md:mb-12">
-      <div className="bg-base-100 rounded-lg shadow-lg p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         {/* Header with Title and Filters */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-2">
-            <div className="bg-indigo-100 rounded-lg p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
+            <div className="bg-th-accent/10 rounded-lg p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-th-accent">
                 <path d="M3 3v18h18"/>
                 <path d="m19 9-5 5-4-4-3 3"/>
               </svg>
             </div>
-            <h3 className="text-xl font-semibold">Team Dashboard</h3>
+            <h3 className="text-xl font-bold text-th-dark">Team Dashboard</h3>
           </div>
           
           {/* Date Filter Buttons */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {['Today', 'Yesterday', 'Last 7 Days', 'This Week', 'Last 14 Days'].map((f) => (
               <button 
                 key={f}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeFilter === f 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-th-accent text-white shadow-sm' 
+                    : 'bg-th-light text-th-dark hover:bg-gray-200'
                 }`}
                 onClick={() => handleFilter(f)}
               >
@@ -209,12 +209,12 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
         </div>
 
         {/* Custom Date Range (collapsible or always visible) */}
-        <div className="mb-6 pb-4 border-b">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sm text-gray-600">Custom Date Range:</span>
+        <div className="mb-6 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm text-th-dark">Custom Date Range:</span>
             <input 
               type="date" 
-              className="input input-bordered input-sm" 
+              className="input input-bordered input-sm focus:border-th-accent focus:ring-th-accent" 
               value={startDate}
               onChange={(e) => {
                   setStartDate(e.target.value)
@@ -224,14 +224,14 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
             <span className="text-sm text-gray-500">to</span>
             <input 
               type="date" 
-              className="input input-bordered input-sm" 
+              className="input input-bordered input-sm focus:border-th-accent focus:ring-th-accent" 
               value={endDate}
               onChange={(e) => {
                   setEndDate(e.target.value)
                   setActiveFilter('Custom')
               }}
             />
-            <button className="btn btn-sm btn-primary" onClick={fetchData}>Apply</button>
+            <button className="btn btn-sm bg-th-accent hover:bg-th-accent/90 text-white border-none" onClick={fetchData}>Apply</button>
           </div>
         </div>
 
@@ -239,9 +239,9 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
         <div className="overflow-x-auto">
           <table className="table w-full">
             <thead>
-              <tr className="border-b-2">
+              <tr className="border-b border-gray-200">
                 {COLUMNS.map((col) => (
-                  <th key={col.key} className="bg-transparent font-semibold text-gray-700 text-sm relative group">
+                  <th key={col.key} className="bg-transparent font-bold text-th-dark text-sm relative group py-4">
                     <div className="flex items-center gap-2">
                       <span>{col.label}</span>
                       {col.filterable && (
@@ -250,7 +250,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
                             e.stopPropagation()
                             setActiveFilterColumn(activeFilterColumn === col.key ? null : col.key)
                           }}
-                          className={`btn btn-ghost btn-xs p-0.5 ${filters[col.key] ? 'text-primary' : 'text-gray-400 opacity-0 group-hover:opacity-100'}`}
+                          className={`btn btn-ghost btn-xs p-0.5 ${filters[col.key] ? 'text-th-accent' : 'text-gray-400 opacity-0 group-hover:opacity-100'}`}
                         >
                           <Filter size={12} />
                         </button>
@@ -261,11 +261,11 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
                     {activeFilterColumn === col.key && (
                       <div 
                         ref={filterRef}
-                        className="absolute top-full left-0 mt-2 z-50 bg-base-100 shadow-xl border border-base-200 rounded-lg p-3 w-56 md:w-64"
+                        className="absolute top-full left-0 mt-2 z-50 bg-white shadow-xl border border-gray-100 rounded-lg p-3 w-56 md:w-64"
                       >
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold opacity-70">Filter {col.label}</span>
+                            <span className="text-xs font-semibold opacity-70 text-th-dark">Filter {col.label}</span>
                             <button 
                               onClick={() => setActiveFilterColumn(null)} 
                               className="btn btn-ghost btn-xs btn-circle"
@@ -274,14 +274,14 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
                             </button>
                           </div>
                           
-                          <select className="select select-bordered select-xs w-full" disabled>
+                          <select className="select select-bordered select-xs w-full focus:border-th-accent focus:ring-th-accent" disabled>
                             <option>{['date', 'hours', 'clockIn', 'clockOut', 'status'].includes(col.key) ? 'Equals' : 'Contains'}</option>
                           </select>
                           
                           {['date', 'clockIn', 'clockOut'].includes(col.key) ? (
                              <input 
                                 type="date" 
-                                className="input input-bordered input-sm w-full"
+                                className="input input-bordered input-sm w-full focus:border-th-accent focus:ring-th-accent"
                                 autoFocus
                                 value={filters[col.key] || ''}
                                 onChange={(e) => setFilters({ ...filters, [col.key]: e.target.value })}
@@ -290,7 +290,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
                               <input 
                                 type="text" 
                                 placeholder="Filter..." 
-                                className="input input-bordered input-sm w-full"
+                                className="input input-bordered input-sm w-full focus:border-th-accent focus:ring-th-accent"
                                 autoFocus
                                 value={filters[col.key] || ''}
                                 onChange={(e) => setFilters({ ...filters, [col.key]: e.target.value })}
@@ -299,7 +299,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
                           
                           <div className="flex justify-end gap-2 mt-1">
                             <button 
-                              className="btn btn-xs btn-ghost"
+                              className="btn btn-xs btn-ghost text-gray-500"
                               onClick={() => {
                                 clearFilter(col.key)
                                 setActiveFilterColumn(null)
@@ -308,7 +308,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
                               Clear
                             </button>
                             <button 
-                              className="btn btn-xs btn-primary"
+                              className="btn btn-xs bg-th-accent hover:bg-th-accent/90 text-white border-none"
                               onClick={() => setActiveFilterColumn(null)}
                             >
                               Close
@@ -325,7 +325,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
               {loading ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12">
-                    <span className="loading loading-spinner loading-md"></span>
+                    <span className="loading loading-spinner loading-md text-th-accent"></span>
                   </td>
                 </tr>
               ) : filteredData.length === 0 ? (
@@ -336,19 +336,19 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
                 </tr>
               ) : (
                 filteredData.map((row) => (
-                  <tr key={row.id} className="border-b hover:bg-gray-50">
-                    <td className="py-4">{formatDate(row.date)}</td>
-                    <td className="font-semibold text-gray-900">
-                      <Link href={`/timesheet/${row.userId}`} className="hover:text-indigo-600">
+                  <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-4 text-gray-600">{formatDate(row.date)}</td>
+                    <td className="font-semibold text-th-dark">
+                      <Link href={`/timesheet/${row.userId}`} className="hover:text-th-accent transition-colors">
                         {row.member}
                       </Link>
                     </td>
-                    <td className="text-gray-600">{row.email}</td>
-                    <td className="font-semibold">{formatDuration(row.hours)}</td>
+                    <td className="text-gray-500 text-sm">{row.email}</td>
+                    <td className="font-medium text-th-dark">{formatDuration(row.hours)}</td>
                     <td className="text-gray-600">{formatTime(row.clockIn)}</td>
                     <td className="text-gray-600">{formatTime(row.clockOut)}</td>
                     <td>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         row.status === 'Completed' 
                           ? 'bg-green-100 text-green-700' 
                           : 'bg-yellow-100 text-yellow-700'

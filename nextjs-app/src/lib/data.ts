@@ -223,7 +223,7 @@ export async function getDashboardStats() {
     leaderTeamsCount,
     activeEvent: activeEvent || null,
     userTeams: userTeams || [],
-    teamsWithMembers
+    teamsStatus: teamsWithMembers || []
   }
 }
 
@@ -231,4 +231,107 @@ export function formatDuration(seconds: number) {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   return `${h}:${m.toString().padStart(2, '0')}`
+}
+
+export async function getActiveSession() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { activeEvent: null, userTeams: [] }
+
+  const { data: activeEvent } = await supabase
+    .from('clock_events')
+    .select('*')
+    .eq('user_id', user.id)
+    .is('end_timestamp', null)
+    .single()
+
+  const { data: userTeams } = await supabase
+    .from('team_members')
+    .select('team_id')
+    .eq('user_id', user.id)
+
+  return { activeEvent, userTeams: userTeams || [] }
+}
+
+export async function getOpenTickets() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return []
+
+  const { data: tickets } = await supabase
+    .from('tickets')
+    .select('*, teams(name)')
+    .eq('created_by', user.id)
+    .neq('status', 'closed')
+    .limit(4)
+
+  return tickets || []
+}
+
+export async function getOpenTicketsCount() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return 0
+
+  const { count } = await supabase
+    .from('tickets')
+    .select('*', { count: 'exact', head: true })
+    .eq('created_by', user.id)
+    .neq('status', 'closed')
+
+  return count || 0
+}
+
+export async function getTeamsStatus() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data: userTeams } = await supabase
+    .from('team_members')
+    .select('team_id, teams(name)')
+    .eq('user_id', user.id)
+
+  if (!userTeams) return []
+
+  const teamsData = await Promise.all(userTeams.map(async (t) => {
+    const { data: members } = await supabase
+      .from('team_members')
+      .select('user_id')
+      .eq('team_id', t.team_id)
+
+    const memberDetails = await Promise.all((members || []).map(async (m) => {
+      const { data: activeEvent } = await supabase
+        .from('clock_events')
+        .select('id')
+        .eq('user_id', m.user_id)
+        .is('end_timestamp', null)
+        .maybeSingle()
+
+      // Fetch user email/name if possible. 
+      // Using a simple query to auth.users is not possible from client usually, 
+      // but here we are on server. 
+      // However, supabase-js client might not have access to auth.users unless using service role.
+      // Let's try to get it from a public table if exists, or just use ID for now.
+      // Actually, let's try to use a function or just return basic info.
+      
+      return {
+        id: m.user_id,
+        name: 'Member', // Placeholder
+        email: '',
+        status: activeEvent ? 'Active' : 'Offline'
+      }
+    }))
+
+    return {
+      teamId: t.team_id,
+      teamName: t.teams?.name,
+      members: memberDetails
+    }
+  }))
+
+  return teamsData
 }

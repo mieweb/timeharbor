@@ -65,12 +65,13 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
     // List View
     const { data: teamMembers } = await supabase
       .from('team_members')
-      .select('team_id, role, teams(*)')
+      .select('team_id, role, teams(*, team_members(count))')
       .eq('user_id', user.id)
 
     const teams = teamMembers?.map((tm: any) => ({
       ...tm.teams,
-      role: tm.role
+      role: tm.role,
+      memberCount: tm.teams.team_members?.[0]?.count || 0
     })) || []
 
     return <TeamsList teams={teams} userId={user.id} />

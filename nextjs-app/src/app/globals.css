@@ -2,21 +2,26 @@
 @plugin "daisyui";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #EEEEEE;
+  --foreground: #222831;
 }
 
 :root[data-theme="dark"], 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #222831;
+  --foreground: #EEEEEE;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-th-dark: #222831;
+  --color-th-darker: #31363F;
+  --color-th-accent: #76ABAE;
+  --color-th-light: #EEEEEE;
 }
 
 body {
@@ -46,68 +51,3 @@ body {
 .dark .border-gray-200 {
   border-color: #334155;
 }
-
-.dark .bg-blue-50 {
-  background-color: #1E3A5F;
-}
-
-.dark .border-blue-200 {
-  border-color: #3B82F6;
-}
-
-.dark .text-blue-800 {
-  color: #93C5FD;
-}
-
-.dark .text-blue-900 {
-  color: #DBEAFE;
-}
-
-.dark .bg-green-50 {
-  background-color: #14532D;
-}
-
-.dark .border-green-200 {
-  border-color: #22C55E;
-}
-
-.dark .text-green-800 {
-  color: #86EFAC;
-}
-
-.dark .text-green-900 {
-  color: #DCFCE7;
-}
-
-.dark .bg-red-100 {
-  background-color: #7F1D1D;
-}
-
-.dark .border-red-400 {
-  border-color: #F87171;
-}
-
-.dark .text-red-700 {
-  color: #FCA5A5;
-}
-
-.dark .bg-blue-100 {
-  background-color: #1E3A5F;
-}
-
-.dark .text-blue-600 {
-  color: #60A5FA;
-}
-
-.dark .bg-green-100 {
-  background-color: #14532D;
-}
-
-.dark .text-green-600 {
-  color: #4ADE80;
-}
-
-.dark .bg-indigo-600 {
-  background-color: #6366F1;
-}
-

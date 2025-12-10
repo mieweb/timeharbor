@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
 import MainNav from "@/components/MainNav";
+import { getActiveSession } from "@/lib/data";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,6 +19,7 @@ export default async function RootLayout({
 }>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const { activeEvent, userTeams } = await getActiveSession();
 
   return (
     <html lang="en">
@@ -25,7 +27,7 @@ export default async function RootLayout({
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </head>
       <body className={`${inter.className} bg-base-100 min-h-screen flex flex-col`}>
-        <MainNav user={user} />
+        <MainNav user={user} activeEvent={activeEvent} userTeams={userTeams} />
 
         <main className="container mx-auto px-4 pb-20 flex-grow max-w-7xl">
           {children}

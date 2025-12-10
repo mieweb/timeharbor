@@ -1,4 +1,7 @@
-module.exports = {
+import daisyui from "daisyui";
+
+/** @type {import('tailwindcss').Config} */
+export default {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
@@ -6,28 +9,29 @@ module.exports = {
   ],
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        th: {
+          dark:  '#222831',
+          darker: '#31363F',
+          accent: '#76ABAE',
+          light:  '#EEEEEE',
+        },
+      },
+    },
   },
   daisyui: {
     themes: [
       {
         light: {
-          "primary": "#6A5ACD",
-          "primary-focus": "#5A4ABD",
+          "primary": "#76ABAE",
           "primary-content": "#ffffff",
-          "secondary": "#4A5568",
-          "secondary-focus": "#2D3748",
-          "secondary-content": "#ffffff",
-          "accent": "#718096",
-          "accent-focus": "#4A5568",
-          "accent-content": "#ffffff",
-          "neutral": "#2D3748",
-          "neutral-focus": "#1A202C",
-          "neutral-content": "#ffffff",
-          "base-100": "#ffffff",
-          "base-200": "#F7FAFC",
-          "base-300": "#E2E8F0",
-          "base-content": "#1A202C",
+          "secondary": "#31363F",
+          "secondary-content": "#EEEEEE",
+          "accent": "#76ABAE",
+          "neutral": "#222831",
+          "base-100": "#EEEEEE",
+          "base-content": "#222831",
           "info": "#3182CE",
           "success": "#38A169",
           "warning": "#D69E2E",
@@ -36,29 +40,21 @@ module.exports = {
       },
       {
         dark: {
-          "primary": "#8B7DD8",
-          "primary-focus": "#7B6DC8",
+          "primary": "#76ABAE",
           "primary-content": "#ffffff",
-          "secondary": "#64748B",
-          "secondary-focus": "#475569",
-          "secondary-content": "#ffffff",
-          "accent": "#94A3B8",
-          "accent-focus": "#64748B",
-          "accent-content": "#ffffff",
-          "neutral": "#1E293B",
-          "neutral-focus": "#0F172A",
-          "neutral-content": "#E2E8F0",
-          "base-100": "#0F172A",
-          "base-200": "#1E293B",
-          "base-300": "#334155",
-          "base-content": "#E2E8F0",
-          "info": "#60A5FA",
-          "success": "#4ADE80",
-          "warning": "#FBBF24",
-          "error": "#F87171",
+          "secondary": "#31363F",
+          "secondary-content": "#EEEEEE",
+          "accent": "#76ABAE",
+          "neutral": "#EEEEEE",
+          "base-100": "#222831",
+          "base-content": "#EEEEEE",
+          "info": "#3182CE",
+          "success": "#38A169",
+          "warning": "#D69E2E",
+          "error": "#E53E3E",
         },
       },
     ],
   },
-  plugins: [require('daisyui')],
+  plugins: [daisyui],
 };

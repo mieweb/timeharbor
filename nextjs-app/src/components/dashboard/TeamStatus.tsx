@@ -15,7 +15,7 @@ type Team = {
   members: TeamMember[]
 }
 
-export default function TeamStatus({ teams }: { teams: Team[] }) {
+export default function TeamStatus({ teams = [] }: { teams?: Team[] }) {
   const [openTeams, setOpenTeams] = useState<Set<string>>(new Set())
 
   const toggleTeam = (teamId: string) => {
@@ -61,36 +61,36 @@ export default function TeamStatus({ teams }: { teams: Team[] }) {
   }
 
   return (
-    <div className="bg-base-100 rounded-lg shadow p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <div className="bg-blue-100 rounded-full p-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+        <div className="bg-th-accent/10 rounded-full p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-th-accent">
             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
             <circle cx="9" cy="7" r="4"/>
             <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
         </div>
-        <h3 className="text-lg font-semibold">Team Status</h3>
+        <h3 className="text-xl font-bold text-th-dark">Team Status</h3>
       </div>
 
       <div className="space-y-3">
         {teams.map((team) => (
-          <div key={team.teamId} className="border rounded-lg overflow-hidden">
+          <div key={team.teamId} className="border border-gray-200 rounded-lg overflow-hidden">
             {/* Team Header - Clickable */}
             <button
               onClick={() => toggleTeam(team.teamId)}
-              className="w-full flex items-center justify-between p-4 bg-base-200 hover:bg-base-300 transition-colors"
+              className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-th-accent">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
                   <circle cx="9" cy="7" r="4"/>
                   <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
                 <div className="text-left">
-                  <h4 className="font-semibold text-gray-900">{team.teamName}</h4>
+                  <h4 className="font-semibold text-th-dark">{team.teamName}</h4>
                   <span className="text-xs text-gray-500">{team.members.length} {team.members.length === 1 ? 'member' : 'members'}</span>
                 </div>
               </div>
@@ -112,9 +112,9 @@ export default function TeamStatus({ teams }: { teams: Team[] }) {
             
             {/* Team Members Dropdown */}
             {openTeams.has(team.teamId) && (
-              <div className="bg-base-100 border-t">
+              <div className="bg-white border-t border-gray-200">
                 {team.members.map((member, index) => (
-                  <div key={member.id} className="flex items-center justify-between p-3 hover:bg-base-200/50 transition-colors border-b last:border-b-0">
+                  <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0">
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <div className={`w-9 h-9 ${getAvatarColor(index)} rounded-full flex items-center justify-center text-white font-semibold text-xs`}>
@@ -124,7 +124,7 @@ export default function TeamStatus({ teams }: { teams: Team[] }) {
                         <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 ${getStatusColor(member.status)} rounded-full border-2 border-white`}></div>
                       </div>
                       <div>
-                        <div className="font-medium text-sm">{member.name}</div>
+                        <div className="font-medium text-sm text-th-dark">{member.name}</div>
                         {member.email && <div className="text-xs text-gray-500">{member.email}</div>}
                       </div>
                     </div>

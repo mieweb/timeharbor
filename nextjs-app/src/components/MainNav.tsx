@@ -4,14 +4,20 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import LogoutButton from "./LogoutButton";
 import { NotificationBell } from "./NotificationBell";
+import { startClock, stopClock } from '@/lib/actions/clock';
+import { useRouter } from 'next/navigation';
 
 interface MainNavProps {
   user: any;
+  activeEvent?: any;
+  userTeams?: any[];
 }
 
-export default function MainNav({ user }: MainNavProps) {
+export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [elapsedTime, setElapsedTime] = useState('0:00:00');
+  const router = useRouter();
 
   useEffect(() => {
     // Check for saved theme preference or default to light
@@ -27,6 +33,27 @@ export default function MainNav({ user }: MainNavProps) {
     }
   }, []);
 
+  useEffect(() => {
+    if (!activeEvent) {
+      setElapsedTime('0:00:00');
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const start = new Date(activeEvent.start_timestamp).getTime();
+      const now = new Date().getTime();
+      const diff = Math.floor((now - start) / 1000);
+      
+      const hours = Math.floor(diff / 3600);
+      const minutes = Math.floor((diff % 3600) / 60);
+      const seconds = diff % 60;
+      
+      setElapsedTime(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeEvent]);
+
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
@@ -40,28 +67,67 @@ export default function MainNav({ user }: MainNavProps) {
     }
   };
 
+  const handleClockIn = async () => {
+    if (userTeams && userTeams.length > 0) {
+      try {
+        await startClock(userTeams[0].team_id);
+        router.refresh();
+      } catch (error) {
+        console.error('Failed to clock in:', error);
+      }
+    } else {
+        // Maybe redirect to teams page if no team?
+        router.push('/teams');
+    }
+  };
+
+  const handleClockOut = async () => {
+    if (activeEvent) {
+      try {
+        await stopClock(activeEvent.team_id);
+        router.refresh();
+      } catch (error) {
+        console.error('Failed to clock out:', error);
+      }
+    }
+  };
+
   return (
-    <header className="navbar bg-primary text-primary-content shadow mb-4 md:mb-6 sticky top-0 z-50">
-      <div className="navbar-start">
-        <Link href="/" className="text-xl md:text-2xl font-bold px-2 md:px-4">
+    <header className="navbar bg-th-dark text-white shadow mb-6 sticky top-0 z-50 px-6">
+      <div className="flex-1 flex items-center gap-8">
+        <Link href="/" className="text-2xl font-bold tracking-tight">
           TimeHarbor
         </Link>
-      </div>
-
-      {/* Desktop Navigation */}
-      <div className="navbar-center hidden lg:flex">
         {user && (
-          <nav className="flex gap-1">
-            <Link href="/" className="btn btn-ghost btn-sm hover:bg-primary-focus">Home</Link>
-            <Link href="/teams" className="btn btn-ghost btn-sm hover:bg-primary-focus">Teams</Link>
-            <Link href="/tickets" className="btn btn-ghost btn-sm hover:bg-primary-focus">Tickets</Link>
-            <Link href="/calendar" className="btn btn-ghost btn-sm hover:bg-primary-focus">Calendar</Link>
-            <Link href="/admin" className="btn btn-ghost btn-sm hover:bg-primary-focus">Admin</Link>
-          </nav>
+            <nav className="hidden md:flex gap-6 text-sm font-medium">
+                <Link href="/" className="hover:text-th-accent transition-colors">Home</Link>
+                <Link href="/teams" className="hover:text-th-accent transition-colors">Teams</Link>
+                <Link href="/tickets" className="hover:text-th-accent transition-colors">Tickets</Link>
+                <Link href="/calendar" className="hover:text-th-accent transition-colors">Calendar</Link>
+                <Link href="/admin" className="hover:text-th-accent transition-colors">Admin</Link>
+            </nav>
         )}
       </div>
 
-      <div className="navbar-end gap-2">
+      <div className="flex-none flex items-center gap-4">
+        {user && (
+            <>
+                <div className="bg-th-darker px-4 py-2 rounded-md font-mono text-th-accent font-bold hidden sm:block">
+                    {elapsedTime}
+                </div>
+                
+                {activeEvent ? (
+                    <button onClick={handleClockOut} className="btn btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none">
+                    Clock Out
+                    </button>
+                ) : (
+                    <button onClick={handleClockIn} className="btn btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none">
+                    Clock In
+                    </button>
+                )}
+            </>
+        )}
+
         {/* Theme Toggle */}
         <button 
           onClick={toggleTheme} 
@@ -109,50 +175,50 @@ export default function MainNav({ user }: MainNavProps) {
 
       {/* Mobile Dropdown Menu */}
       {isMenuOpen && user && (
-        <div className="absolute top-full left-0 right-0 bg-primary shadow-lg lg:hidden">
+        <div className="absolute top-full left-0 right-0 bg-th-dark shadow-lg lg:hidden">
           <nav className="flex flex-col p-2">
             <Link 
               href="/" 
-              className="btn btn-ghost justify-start hover:bg-primary-focus"
+              className="btn btn-ghost justify-start hover:text-th-accent"
               onClick={() => setIsMenuOpen(false)}
             >
               Home
             </Link>
             <Link 
               href="/teams" 
-              className="btn btn-ghost justify-start hover:bg-primary-focus"
+              className="btn btn-ghost justify-start hover:text-th-accent"
               onClick={() => setIsMenuOpen(false)}
             >
               Teams
             </Link>
             <Link 
               href="/tickets" 
-              className="btn btn-ghost justify-start hover:bg-primary-focus"
+              className="btn btn-ghost justify-start hover:text-th-accent"
               onClick={() => setIsMenuOpen(false)}
             >
               Tickets
             </Link>
             <Link 
               href="/calendar" 
-              className="btn btn-ghost justify-start hover:bg-primary-focus"
+              className="btn btn-ghost justify-start hover:text-th-accent"
               onClick={() => setIsMenuOpen(false)}
             >
               Calendar
             </Link>
             <Link 
               href="/admin" 
-              className="btn btn-ghost justify-start hover:bg-primary-focus"
+              className="btn btn-ghost justify-start hover:text-th-accent"
               onClick={() => setIsMenuOpen(false)}
             >
               Admin Review
             </Link>
             
             {/* Mobile Notification Bell */}
-            <div className="sm:hidden p-2 border-t border-primary-focus mt-2">
+            <div className="sm:hidden p-2 border-t border-gray-700 mt-2">
               <NotificationBell />
             </div>
             
-            <div className="border-t border-primary-focus mt-2 pt-2">
+            <div className="border-t border-gray-700 mt-2 pt-2">
               <LogoutButton />
             </div>
           </nav>

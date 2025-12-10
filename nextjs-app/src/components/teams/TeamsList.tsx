@@ -9,6 +9,7 @@ interface Team {
   name: string
   code: string
   role: string
+  memberCount?: number
 }
 
 export default function TeamsList({ teams, userId }: { teams: Team[], userId: string }) {
@@ -37,72 +38,101 @@ export default function TeamsList({ teams, userId }: { teams: Team[], userId: st
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <h3 className="text-lg md:text-xl font-semibold mb-4">Teams</h3>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Teams</h1>
+        <p className="text-gray-500 dark:text-gray-400">Manage and collaborate with your teams</p>
+      </div>
       
       {error && (
-        <div className="alert alert-error mb-4 text-sm">
+        <div className="alert alert-error mb-6 text-sm">
           <span>{error}</span>
           <button onClick={() => setError(null)} className="btn btn-xs btn-ghost">✕</button>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-2 md:gap-4 mb-4">
+      <div className="flex flex-wrap gap-4 mb-8">
         <button 
           onClick={() => { setShowCreate(true); setShowJoin(false); setError(null) }} 
-          className="btn btn-primary btn-sm md:btn-md w-full sm:w-auto"
+          className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm"
         >
-          Create Team
+          + Create Team
         </button>
         <button 
           onClick={() => { setShowJoin(true); setShowCreate(false); setError(null) }} 
-          className="btn btn-neutral btn-sm md:btn-md w-full sm:w-auto"
+          className="px-6 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium rounded-lg transition-colors"
         >
           Join Team
         </button>
       </div>
 
       {showCreate && (
-        <form action={handleCreate} className="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2 w-full max-w-md">
-          <h4 className="font-bold text-sm md:text-base">Create New Team</h4>
-          <input type="text" name="name" placeholder="Team Name" className="input input-bordered input-sm md:input-md" required />
-          <div className="flex gap-2 mt-2">
-            <button type="submit" className="btn btn-primary btn-sm md:btn-md flex-1">Create</button>
-            <button type="button" onClick={() => setShowCreate(false)} className="btn btn-outline btn-sm md:btn-md flex-1">Cancel</button>
+        <form action={handleCreate} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8 max-w-md">
+          <h4 className="font-bold text-lg mb-4">Create New Team</h4>
+          <div className="flex flex-col gap-4">
+            <input type="text" name="name" placeholder="Team Name" className="input input-bordered w-full" required />
+            <div className="flex gap-3">
+              <button type="submit" className="btn bg-indigo-600 hover:bg-indigo-700 text-white border-none flex-1">Create</button>
+              <button type="button" onClick={() => setShowCreate(false)} className="btn btn-ghost flex-1">Cancel</button>
+            </div>
           </div>
         </form>
       )}
 
       {showJoin && (
-        <form action={handleJoin} className="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2 w-full max-w-md">
-          <h4 className="font-bold text-sm md:text-base">Join Existing Team</h4>
-          <input type="text" name="code" placeholder="Enter Team Code" className="input input-bordered input-sm md:input-md" required />
-          <div className="flex gap-2 mt-2">
-            <button type="submit" className="btn btn-neutral btn-sm md:btn-md flex-1">Join</button>
-            <button type="button" onClick={() => setShowJoin(false)} className="btn btn-outline btn-sm md:btn-md flex-1">Cancel</button>
+        <form action={handleJoin} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8 max-w-md">
+          <h4 className="font-bold text-lg mb-4">Join Existing Team</h4>
+          <div className="flex flex-col gap-4">
+            <input type="text" name="code" placeholder="Enter Team Code" className="input input-bordered w-full" required />
+            <div className="flex gap-3">
+              <button type="submit" className="btn bg-indigo-600 hover:bg-indigo-700 text-white border-none flex-1">Join</button>
+              <button type="button" onClick={() => setShowJoin(false)} className="btn btn-ghost flex-1">Cancel</button>
+            </div>
           </div>
         </form>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {teams.map(team => (
-          <div key={team.id} className="card bg-base-100 shadow hover:shadow-md transition-shadow">
-            <div className="card-body p-3 md:p-4">
-              <div className="flex items-start justify-between gap-2">
-                <Link href={`/teams?id=${team.id}`} className="card-title text-base md:text-lg hover:text-primary">
-                  {team.name}
-                </Link>
-                {['leader', 'admin'].includes(team.role) && (
-                  <div className="badge badge-outline badge-sm">{team.role}</div>
-                )}
-              </div>
-              <p className="text-xs md:text-sm text-base-content/60">Code: {team.code}</p>
+          <div key={team.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 flex flex-col h-full hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white truncate pr-2">{team.name}</h3>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                ['leader', 'admin'].includes(team.role) 
+                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' 
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+              }`}>
+                {team.role === 'leader' || team.role === 'admin' ? 'Leader' : 'Member'}
+              </span>
             </div>
+            
+            <div className="mb-6 flex-grow">
+              <div className="font-mono text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Code: {team.code}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                {team.memberCount || 1} members • 0 hours this week
+              </div>
+            </div>
+
+            <Link 
+              href={`/teams?id=${team.id}`} 
+              className="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 dark:text-indigo-300 font-medium rounded-lg text-center transition-colors"
+            >
+              View Team
+            </Link>
           </div>
         ))}
+        
         {teams.length === 0 && !showCreate && !showJoin && (
-          <div className="col-span-full text-center py-8 text-base-content/60 text-sm md:text-base">
-            You haven't joined any teams yet. Create or join one to get started!
+          <div className="col-span-full text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">You haven't joined any teams yet.</p>
+            <button 
+              onClick={() => setShowCreate(true)} 
+              className="text-indigo-600 hover:text-indigo-700 font-medium"
+            >
+              Create a team to get started
+            </button>
           </div>
         )}
       </div>
