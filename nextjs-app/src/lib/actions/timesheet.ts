@@ -45,8 +45,9 @@ export async function getTimesheetData(startDate: string, endDate: string, targe
       userIdToFetch = targetUserId
     }
 
-    const start = startOfDay(parseISO(startDate)).toISOString()
-    const end = endOfDay(parseISO(endDate)).toISOString()
+    // Check if dates are already ISO strings (contain 'T'), otherwise parse them
+    const start = startDate.includes('T') ? startDate : startOfDay(parseISO(startDate)).toISOString()
+    const end = endDate.includes('T') ? endDate : endOfDay(parseISO(endDate)).toISOString()
 
     const { data, error } = await supabase
       .from('clock_events')

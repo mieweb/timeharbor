@@ -11,6 +11,7 @@ import { useTeamStore } from '@/store/useTeamStore'
 import { startTicket, stopTicket } from '@/lib/actions/clock'
 import { createTeamAndReturn, joinTeamAndReturn } from '@/lib/actions/teams'
 import TicketTimer from './TicketTimer'
+import PersonalTimesheetGrid from '@/components/timesheet/PersonalTimesheetGrid'
 
 interface DashboardTabsProps {
   openTickets: any[]
@@ -27,7 +28,7 @@ interface DashboardTabsProps {
 }
 
 export default function DashboardTabs({ openTickets, isTeamLeader, recentActivity, teamsStatus, stats }: DashboardTabsProps) {
-  const [activeTab, setActiveTab] = useState<'personal' | 'team'>('personal')
+  const [activeTab, setActiveTab] = useState<'personal' | 'team' | 'timesheet'>('personal')
   const [activeTicketId, setActiveTicketId] = useState<string | null>(stats.activeEvent?.ticket_id || null)
   const [loadingTicketId, setLoadingTicketId] = useState<string | null>(null)
   const { setTeams, initializeSubscription, lastUpdate } = useTeamStore()
@@ -175,6 +176,19 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
         >
           Team Dashboard
           {activeTab === 'team' && (
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-th-accent rounded-t-full"></div>
+          )}
+        </button>
+        <button 
+          className={`pb-3 px-1 mr-8 text-lg font-medium transition-colors relative ${
+            activeTab === 'timesheet' 
+              ? 'text-th-accent' 
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+          onClick={() => setActiveTab('timesheet')}
+        >
+          Personal Timesheet
+          {activeTab === 'timesheet' && (
             <div className="absolute bottom-0 left-0 w-full h-1 bg-th-accent rounded-t-full"></div>
           )}
         </button>
@@ -370,6 +384,18 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                     <p className="text-gray-500">You are not a leader of any team.</p>
                 </div>
             )}
+        </div>
+      )}
+
+      {activeTab === 'timesheet' && (
+        <div className="space-y-8">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2">My Timesheet 📊</h1>
+            <p className="text-gray-600">View and manage your time entries</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <PersonalTimesheetGrid />
+          </div>
         </div>
       )}
 
