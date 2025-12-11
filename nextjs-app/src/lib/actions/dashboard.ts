@@ -66,8 +66,8 @@ export async function getTeamDashboardData(startDate: string, endDate: string) {
         )
       `)
       .in('user_id', memberIds)
-      .gte('start_timestamp', start)
       .lte('start_timestamp', end)
+      .or(`end_timestamp.gte.${start},end_timestamp.is.null`)
       .order('start_timestamp', { ascending: false })
 
     if (eventsError) throw new Error(eventsError.message)

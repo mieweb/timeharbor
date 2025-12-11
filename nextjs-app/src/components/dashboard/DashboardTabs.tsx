@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import RecentActivityList from './RecentActivityList'
 import TeamStatus from './TeamStatus'
 import TeamDashboard from './TeamDashboard'
@@ -21,6 +23,32 @@ interface DashboardTabsProps {
 
 export default function DashboardTabs({ openTickets, isTeamLeader, recentActivity, teamsStatus, stats }: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<'personal' | 'team'>('personal')
+  const [lastUpdate, setLastUpdate] = useState(Date.now())
+  const router = useRouter()
+
+  useEffect(() => {
+    const supabase = createClient()
+    
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clock_events'
+        },
+        () => {
+          setLastUpdate(Date.now())
+          router.refresh()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [router])
 
   const getPriorityClass = (priority: string) => {
     switch(priority?.toLowerCase()) {
@@ -199,10 +227,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
             <TeamStatus teams={teamsStatus} />
 
             {isTeamLeader ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h3 className="text-xl font-semibold mb-4">Team Dashboard</h3>
-                    <TeamDashboard />
-                </div>
+                <TeamDashboard lastUpdate={lastUpdate} />
             ) : (
                 <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
                     <p className="text-gray-500">You are not a leader of any team.</p>

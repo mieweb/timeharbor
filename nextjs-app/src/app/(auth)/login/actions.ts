@@ -5,11 +5,12 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
 
-export async function login(prevState: any, formData: FormData) {
+export async function login(prevState: any, formData?: FormData) {
   const supabase = await createClient()
 
-  let email = formData.get('email') as string
-  const password = formData.get('password') as string
+  const form = formData || (prevState as FormData)
+  let email = form.get('email') as string
+  const password = form.get('password') as string
 
   // Allow simple usernames for testing by appending a domain
   if (email && !email.includes('@')) {
@@ -30,11 +31,12 @@ export async function login(prevState: any, formData: FormData) {
   redirect('/')
 }
 
-export async function signup(prevState: any, formData: FormData) {
+export async function signup(prevState: any, formData?: FormData) {
   const supabase = await createClient()
 
-  let email = formData.get('email') as string
-  const password = formData.get('password') as string
+  const form = formData || (prevState as FormData)
+  let email = form.get('email') as string
+  const password = form.get('password') as string
 
   // Allow simple usernames for testing by appending a domain
   if (email && !email.includes('@')) {

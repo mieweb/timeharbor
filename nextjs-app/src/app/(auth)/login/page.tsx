@@ -16,6 +16,9 @@ export default function LoginPage() {
         setError(res.error)
       }
     } catch (e) {
+      if ((e as Error).message === 'NEXT_REDIRECT' || (e as any).digest?.startsWith('NEXT_REDIRECT')) {
+        throw e
+      }
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
@@ -31,15 +34,30 @@ export default function LoginPage() {
         setError(res.error)
       }
     } catch (e) {
+      if ((e as Error).message === 'NEXT_REDIRECT' || (e as any).digest?.startsWith('NEXT_REDIRECT')) {
+        throw e
+      }
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleClientAction = (e: React.MouseEvent<HTMLButtonElement>, action: (formData: FormData) => Promise<void>) => {
+    e.preventDefault()
+    const form = e.currentTarget.closest('form')
+    if (form) {
+      if (form.checkValidity()) {
+        action(new FormData(form))
+      } else {
+        form.reportValidity()
+      }
+    }
+  }
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <form className="card bg-base-100 shadow-xl w-full max-w-md">
+      <form className="card bg-base-100 shadow-xl w-full max-w-md" method="POST">
         <div className="card-body">
           <h1 className="card-title text-2xl md:text-3xl font-bold text-center mb-4">
             TimeHarbor Login
@@ -84,7 +102,8 @@ export default function LoginPage() {
           
           <div className="card-actions flex-col md:flex-row gap-2 mt-4">
             <button 
-              formAction={handleLogin} 
+              formAction={login} 
+              onClick={(e) => handleClientAction(e, handleLogin)}
               disabled={loading}
               className="btn btn-primary flex-1 w-full md:w-auto"
             >
@@ -98,7 +117,8 @@ export default function LoginPage() {
               )}
             </button>
             <button 
-              formAction={handleSignup} 
+              formAction={signup} 
+              onClick={(e) => handleClientAction(e, handleSignup)}
               disabled={loading}
               className="btn btn-secondary flex-1 w-full md:w-auto"
             >

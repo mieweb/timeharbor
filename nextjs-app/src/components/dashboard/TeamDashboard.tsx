@@ -187,7 +187,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
                 <path d="m19 9-5 5-4-4-3 3"/>
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-th-dark">Team Dashboard</h3>
+            <h3 className="text-xl font-bold text-th-dark">Team Activity Report</h3>
           </div>
           
           {/* Date Filter Buttons */}
