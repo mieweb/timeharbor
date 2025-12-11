@@ -133,9 +133,20 @@ export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) 
               <NotificationBell />
             </div>
             
-            {/* Desktop Logout */}
-            <div className="hidden lg:block">
-              <LogoutButton />
+            {/* Profile Dropdown */}
+            <div className="dropdown dropdown-end hidden lg:block">
+              <div tabIndex={0} role="button" className="btn btn-ghost btn-circle btn-sm">
+                <div className="indicator">
+                  <i className="fa-solid fa-user text-lg"></i>
+                </div>
+              </div>
+              <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52 text-base-content">
+                <li>
+                  <form action="/auth/signout" method="post" className="w-full">
+                    <button type="submit" className="w-full text-left">Logout</button>
+                  </form>
+                </li>
+              </ul>
             </div>
 
             {/* Mobile Menu Button */}
