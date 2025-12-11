@@ -71,7 +71,11 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const { data: events, error } = await getTeamDashboardData(startDate, endDate)
+      // Convert local date strings to ISO timestamps (UTC) to respect user's timezone
+      const start = startOfDay(parseISO(startDate)).toISOString()
+      const end = endOfDay(parseISO(endDate)).toISOString()
+
+      const { data: events, error } = await getTeamDashboardData(start, end)
       if (error) {
         console.error(error)
       } else {

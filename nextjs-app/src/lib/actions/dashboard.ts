@@ -50,8 +50,9 @@ export async function getTeamDashboardData(startDate: string, endDate: string) {
     }
 
     // 4. Fetch Clock Events for these members in range
-    const start = startOfDay(parseISO(startDate)).toISOString()
-    const end = endOfDay(parseISO(endDate)).toISOString()
+    // startDate and endDate are passed as ISO strings from the client to handle timezones correctly
+    const start = startDate
+    const end = endDate
 
     const { data: events, error: eventsError } = await adminSupabase
       .from('clock_events')
@@ -97,8 +98,7 @@ export async function getTeamDashboardData(startDate: string, endDate: string) {
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
     const aggregatedData = new Map<string, any>()
 
-    // Sort events by start_timestamp ascending first to help with min/max logic if needed, 
-    // though we can just compare.
+    // Sort events by start_timestamp ascending
     events.sort((a, b) => new Date(a.start_timestamp).getTime() - new Date(b.start_timestamp).getTime())
 
     events.forEach(event => {
@@ -137,24 +137,27 @@ export async function getTeamDashboardData(startDate: string, endDate: string) {
       
       const entry = aggregatedData.get(key)
       
-      // Update Hours
-      entry.hours += (event.accumulated_time || 0)
+      // Calculate duration
+      let duration = event.accumulated_time || 0
       
-      // Update Clock In (Earliest)
-      if (new Date(event.start_timestamp) < new Date(entry.clockIn)) {
-          entry.clockIn = event.start_timestamp
-      }
-      
-      // Update Clock Out (Latest)
-      // Logic: If ANY event is active, the day is Active.
-      // If the day is not active, Clock Out is the latest end_timestamp.
+      // If active, add current duration
       if (!event.end_timestamp) {
+          const now = new Date().getTime()
+          const start = new Date(event.start_timestamp).getTime()
+          const currentDuration = Math.max(0, Math.floor((now - start) / 1000))
+          duration += currentDuration
+          
           entry.isActive = true
           entry.status = 'Active'
           entry.clockOut = null
-      } else if (!entry.isActive) {
+      }
+      
+      // Update Hours
+      entry.hours += duration
+      
+      // Update Clock Out (Latest)
+      if (!entry.isActive && event.end_timestamp) {
           // Only update clockOut if we are not already marked as active
-          // (If we are active, clockOut should remain null or reflect the active state)
           if (!entry.clockOut || new Date(event.end_timestamp) > new Date(entry.clockOut)) {
               entry.clockOut = event.end_timestamp
           }

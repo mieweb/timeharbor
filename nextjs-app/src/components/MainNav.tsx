@@ -8,6 +8,7 @@ import { startClock, stopClock } from '@/lib/actions/clock';
 import { useRouter } from 'next/navigation';
 import { useUIStore } from '@/store/useUIStore';
 import { useClockStore } from '@/store/useClockStore';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface MainNavProps {
   user: any;
@@ -18,6 +19,7 @@ interface MainNavProps {
 export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) {
   const { isMenuOpen, toggleMenu, theme, setTheme } = useUIStore();
   const { elapsedTime, updateElapsedTime } = useClockStore();
+  const { logout } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -142,9 +144,7 @@ export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) 
               </div>
               <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52 text-base-content">
                 <li>
-                  <form action="/auth/signout" method="post" className="w-full">
-                    <button type="submit" className="w-full text-left">Logout</button>
-                  </form>
+                  <button onClick={() => logout()} className="w-full text-left">Logout</button>
                 </li>
               </ul>
             </div>
