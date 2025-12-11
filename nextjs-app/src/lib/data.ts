@@ -272,12 +272,13 @@ export async function getActiveSession() {
 
   const { data: userTeams } = await supabase
     .from('team_members')
-    .select('team_id, role, teams(name)')
+    .select('team_id, role, teams(name, code)')
     .eq('user_id', user.id)
 
   const formattedTeams = userTeams?.map(t => ({
     teamId: t.team_id,
     teamName: Array.isArray(t.teams) ? t.teams[0]?.name : (t.teams as any)?.name,
+    teamCode: Array.isArray(t.teams) ? t.teams[0]?.code : (t.teams as any)?.code,
     role: t.role
   })) || []
 
