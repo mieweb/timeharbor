@@ -221,6 +221,21 @@ export async function getDashboardStats() {
     .neq('status', 'Closed')
     .order('due_date', { ascending: true })
 
+  // Get active ticket details if any
+  let activeTicket = null
+  if (activeEvent) {
+    const { data: ticketEntry } = await supabase
+      .from('clock_event_tickets')
+      .select('*')
+      .eq('clock_event_id', activeEvent.id)
+      .not('start_timestamp', 'is', null)
+      .maybeSingle()
+    
+    if (ticketEntry) {
+      activeTicket = ticketEntry
+    }
+  }
+
   return {
     todayHours: formatDuration(todaySeconds),
     weekHours: formatDuration(weekSeconds),
@@ -229,7 +244,7 @@ export async function getDashboardStats() {
     recentActivity: recentActivity || [],
     isTeamLeader: isTeamLeaderWithMembers,
     leaderTeamsCount,
-    activeEvent: activeEvent || null,
+    activeEvent: activeEvent ? { ...activeEvent, activeTicket } : null,
     userTeams: userTeams || [],
     teamsStatus: teamsWithMembers || [],
     openTickets: openTickets || []

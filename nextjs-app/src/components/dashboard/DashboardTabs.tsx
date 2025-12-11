@@ -7,6 +7,8 @@ import RecentActivityList from './RecentActivityList'
 import TeamStatus from './TeamStatus'
 import TeamDashboard from './TeamDashboard'
 import { useTeamStore } from '@/store/useTeamStore'
+import { startTicket, stopTicket } from '@/lib/actions/clock'
+import TicketTimer from './TicketTimer'
 
 interface DashboardTabsProps {
   openTickets: any[]
@@ -18,11 +20,14 @@ interface DashboardTabsProps {
     weekHours: string
     totalTeams: number
     leaderTeamsCount: number
+    activeEvent?: any
   }
 }
 
 export default function DashboardTabs({ openTickets, isTeamLeader, recentActivity, teamsStatus, stats }: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<'personal' | 'team'>('personal')
+  const [activeTicketId, setActiveTicketId] = useState<string | null>(stats.activeEvent?.ticket_id || null)
+  const [loadingTicketId, setLoadingTicketId] = useState<string | null>(null)
   const { setTeams, initializeSubscription, lastUpdate } = useTeamStore()
   const router = useRouter()
 
@@ -41,6 +46,37 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
   useEffect(() => {
     router.refresh()
   }, [lastUpdate, router])
+
+  // Sync active ticket from server stats
+  useEffect(() => {
+    setActiveTicketId(stats.activeEvent?.activeTicket?.ticket_id || null)
+  }, [stats.activeEvent])
+
+  const handleStartTimer = async (ticketId: string, teamId: string) => {
+    setLoadingTicketId(ticketId)
+    try {
+      await startTicket(ticketId, teamId)
+      setActiveTicketId(ticketId)
+      router.refresh()
+    } catch (error) {
+      console.error('Failed to start timer', error)
+    } finally {
+      setLoadingTicketId(null)
+    }
+  }
+
+  const handleStopTimer = async (ticketId: string, teamId: string) => {
+    setLoadingTicketId(ticketId)
+    try {
+      await stopTicket(ticketId, teamId)
+      setActiveTicketId(null)
+      router.refresh()
+    } catch (error) {
+      console.error('Failed to stop timer', error)
+    } finally {
+      setLoadingTicketId(null)
+    }
+  }
 
   const getPriorityClass = (priority: string) => {
     switch(priority?.toLowerCase()) {
@@ -161,7 +197,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
           </div>
 
           {/* Open Tickets Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-th-accent p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-th-dark">My Open Tickets</h3>
               <div className="join">
@@ -175,7 +211,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                   <div key={ticket.id} className="card bg-white border border-gray-100 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
                     <div className="card-body p-5">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-th-dark line-clamp-2 h-12" title={ticket.title}>{ticket.title}</h4>
+                        <h4 className="text-lg font-bold text-th-dark line-clamp-2 h-12" title={ticket.title}>{ticket.title}</h4>
                         <span className={`badge ${getPriorityClass(ticket.priority)} badge-sm`}>{ticket.priority}</span>
                       </div>
                       <div className="text-xs text-gray-400 mb-3">#TKT-{ticket.id.substring(0, 8)}</div>
@@ -190,8 +226,34 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                         <span className="ml-auto">Due: Dec 12</span>
                       </div>
 
+                      {activeTicketId === ticket.id && stats.activeEvent?.activeTicket && (
+                         <div className="mb-4 flex items-center gap-2 justify-center bg-gray-50 p-2 rounded">
+                            <span className="text-xs font-semibold text-gray-500">Running:</span>
+                            <TicketTimer 
+                                startTime={stats.activeEvent.activeTicket.start_timestamp} 
+                                accumulatedTime={ticket.accumulated_time || 0} 
+                            />
+                         </div>
+                      )}
+
                       <div className="flex gap-2 mt-auto">
-                        <Link href="/tickets" className="btn btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none flex-1">Start Timer</Link>
+                        {activeTicketId === ticket.id ? (
+                          <button 
+                            onClick={() => handleStopTimer(ticket.id, ticket.team_id)}
+                            disabled={loadingTicketId === ticket.id}
+                            className="btn btn-sm btn-error text-white border-none flex-1"
+                          >
+                            {loadingTicketId === ticket.id ? 'Stopping...' : 'Stop Timer'}
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleStartTimer(ticket.id, ticket.team_id)}
+                            disabled={loadingTicketId === ticket.id}
+                            className="btn btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none flex-1"
+                          >
+                            {loadingTicketId === ticket.id ? 'Starting...' : 'Start Timer'}
+                          </button>
+                        )}
                         <Link href={`/tickets/${ticket.id}`} className="btn btn-sm btn-outline flex-1">View Details</Link>
                       </div>
                     </div>
@@ -206,7 +268,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
           </div>
 
           {/* Recent Activity Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-th-accent p-6">
             <h3 className="text-xl font-bold text-th-dark mb-4">Recent Activity</h3>
             <RecentActivityList activities={recentActivity} />
           </div>
