@@ -92,7 +92,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 shadow-[inset_4px_0px_0px_0px_#76ABAE] p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-500">Today's Hours</span>
                 <div className="bg-th-accent/80 rounded-lg p-2 text-white">
@@ -108,7 +108,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 shadow-[inset_4px_0px_0px_0px_#76ABAE] p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-500">This Week</span>
                 <div className="bg-th-accent/80 rounded-lg p-2 text-white">
@@ -124,7 +124,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 shadow-[inset_4px_0px_0px_0px_#76ABAE] p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-500">Open Tickets</span>
                 <div className="bg-th-accent/80 rounded-lg p-2 text-white">
@@ -141,7 +141,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 shadow-[inset_4px_0px_0px_0px_#76ABAE] p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-500">Active Teams</span>
                 <div className="bg-th-accent/80 rounded-lg p-2 text-white">
