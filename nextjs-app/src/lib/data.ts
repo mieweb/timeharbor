@@ -272,10 +272,16 @@ export async function getActiveSession() {
 
   const { data: userTeams } = await supabase
     .from('team_members')
-    .select('team_id')
+    .select('team_id, role, teams(name)')
     .eq('user_id', user.id)
 
-  return { activeEvent, userTeams: userTeams || [] }
+  const formattedTeams = userTeams?.map(t => ({
+    teamId: t.team_id,
+    teamName: Array.isArray(t.teams) ? t.teams[0]?.name : (t.teams as any)?.name,
+    role: t.role
+  })) || []
+
+  return { activeEvent, userTeams: formattedTeams }
 }
 
 export async function getOpenTickets() {
@@ -352,7 +358,7 @@ export async function getTeamsStatus() {
 
     return {
       teamId: t.team_id,
-      teamName: t.teams?.name,
+      teamName: Array.isArray(t.teams) ? t.teams[0]?.name : (t.teams as any)?.name,
       members: memberDetails
     }
   }))

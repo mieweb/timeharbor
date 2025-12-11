@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { startOfDay, endOfDay, parseISO } from 'date-fns'
 
-export async function getTeamDashboardData(startDate: string, endDate: string, timezone?: string) {
+export async function getTeamDashboardData(startDate: string, endDate: string, timezone?: string, teamId?: string) {
   const supabase = await createClient()
   const adminSupabase = createAdminClient()
   
@@ -17,11 +17,17 @@ export async function getTeamDashboardData(startDate: string, endDate: string, t
     }
 
     // 2. Get Teams where user is Leader/Admin
-    const { data: leaderTeams, error: teamError } = await supabase
+    let query = supabase
       .from('team_members')
       .select('team_id')
       .eq('user_id', user.id)
       .in('role', ['admin', 'leader'])
+
+    if (teamId) {
+      query = query.eq('team_id', teamId)
+    }
+
+    const { data: leaderTeams, error: teamError } = await query
 
     if (teamError) throw new Error(teamError.message)
     

@@ -6,6 +6,7 @@ import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, parseISO
 import { getTeamDashboardData } from '@/lib/actions/dashboard'
 import { Filter, X } from 'lucide-react'
 import Link from 'next/link'
+import { useTeamStore } from '@/store/useTeamStore'
 
 import { createClient } from '@/lib/supabase/client'
 
@@ -46,6 +47,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
   const [data, setData] = useState<DashboardEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState('Today')
+  const { selectedTeamId } = useTeamStore()
   
   // Filter State
   const [filters, setFilters] = useState<Record<string, string>>({})
@@ -54,7 +56,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
 
   useEffect(() => {
     fetchData()
-  }, [startDate, endDate, lastUpdate])
+  }, [startDate, endDate, lastUpdate, selectedTeamId])
 
   // Close filter popup when clicking outside
   useEffect(() => {
@@ -77,7 +79,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
       const end = endOfDay(parseISO(endDate)).toISOString()
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-      const { data: events, error } = await getTeamDashboardData(start, end, timezone)
+      const { data: events, error } = await getTeamDashboardData(start, end, timezone, selectedTeamId || undefined)
       if (error) {
         console.error(error)
       } else {

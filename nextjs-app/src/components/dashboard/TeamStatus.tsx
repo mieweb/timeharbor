@@ -5,7 +5,11 @@ import { useTeamStore } from '@/store/useTeamStore'
 
 export default function TeamStatus() {
   const [openTeams, setOpenTeams] = useState<Set<string>>(new Set())
-  const { teams } = useTeamStore()
+  const { teams, selectedTeamId } = useTeamStore()
+
+  const displayedTeams = selectedTeamId 
+    ? teams.filter(t => t.teamId === selectedTeamId)
+    : teams
 
   const toggleTeam = (teamId: string) => {
     const newOpenTeams = new Set(openTeams)
@@ -64,7 +68,7 @@ export default function TeamStatus() {
       </div>
 
       <div className="space-y-3">
-        {teams.map((team) => (
+        {displayedTeams.map((team) => (
           <div key={team.teamId} className="border border-gray-200 rounded-lg overflow-hidden">
             {/* Team Header - Clickable */}
             <button

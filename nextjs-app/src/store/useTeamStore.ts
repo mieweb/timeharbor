@@ -16,8 +16,10 @@ export type Team = {
 
 interface TeamStore {
   teams: Team[]
+  selectedTeamId: string | null
   lastUpdate: number
   setTeams: (teams: Team[]) => void
+  setSelectedTeamId: (id: string | null) => void
   updateMemberStatus: (userId: string, status: 'Active' | 'Offline') => void
   triggerUpdate: () => void
   initializeSubscription: () => () => void
@@ -25,8 +27,10 @@ interface TeamStore {
 
 export const useTeamStore = create<TeamStore>((set, get) => ({
   teams: [],
+  selectedTeamId: null,
   lastUpdate: Date.now(),
   setTeams: (teams) => set({ teams }),
+  setSelectedTeamId: (id) => set({ selectedTeamId: id }),
   updateMemberStatus: (userId, status) => {
     set((state) => ({
       teams: state.teams.map((team) => ({

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import LogoutButton from "./LogoutButton";
 import { NotificationBell } from "./NotificationBell";
+import TeamSelector from "./TeamSelector";
 import { startClock, stopClock } from '@/lib/actions/clock';
 import { useRouter } from 'next/navigation';
 import { useUIStore } from '@/store/useUIStore';
@@ -54,7 +55,9 @@ export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) 
   const handleClockIn = async () => {
     if (userTeams && userTeams.length > 0) {
       try {
-        await startClock(userTeams[0].team_id);
+        // Support both team_id (legacy) and teamId (new format)
+        const teamId = userTeams[0].teamId || userTeams[0].team_id;
+        await startClock(teamId);
         router.refresh();
       } catch (error) {
         console.error('Failed to clock in:', error);
@@ -133,6 +136,11 @@ export default function MainNav({ user, activeEvent, userTeams }: MainNavProps) 
             {/* Notification Bell - hidden on very small screens */}
             <div className="hidden sm:block">
               <NotificationBell />
+            </div>
+
+            {/* Team Selector */}
+            <div className="hidden sm:block mr-2">
+              <TeamSelector userTeams={userTeams || []} />
             </div>
             
             {/* Profile Dropdown */}
