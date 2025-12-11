@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { startOfDay, endOfDay, parseISO } from 'date-fns'
 
-export async function getTeamDashboardData(startDate: string, endDate: string) {
+export async function getTeamDashboardData(startDate: string, endDate: string, timezone?: string) {
   const supabase = await createClient()
   const adminSupabase = createAdminClient()
   
@@ -102,8 +102,16 @@ export async function getTeamDashboardData(startDate: string, endDate: string) {
     events.sort((a, b) => new Date(a.start_timestamp).getTime() - new Date(b.start_timestamp).getTime())
 
     events.forEach(event => {
-      const date = new Date(event.start_timestamp)
-      const dateStr = date.toISOString().split('T')[0] // YYYY-MM-DD
+      let dateStr;
+      if (timezone) {
+          // Use provided timezone to determine the date bucket
+          dateStr = new Date(event.start_timestamp).toLocaleDateString('en-CA', { timeZone: timezone });
+      } else {
+          // Fallback to UTC date if no timezone provided
+          const date = new Date(event.start_timestamp)
+          dateStr = date.toISOString().split('T')[0] // YYYY-MM-DD
+      }
+      
       const key = `${event.user_id}_${dateStr}`
       
       if (!aggregatedData.has(key)) {

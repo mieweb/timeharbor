@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import RecentActivityList from './RecentActivityList'
 import TeamStatus from './TeamStatus'
 import TeamDashboard from './TeamDashboard'
+import { useTeamStore } from '@/store/useTeamStore'
 
 interface DashboardTabsProps {
   openTickets: any[]
@@ -23,32 +23,24 @@ interface DashboardTabsProps {
 
 export default function DashboardTabs({ openTickets, isTeamLeader, recentActivity, teamsStatus, stats }: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<'personal' | 'team'>('personal')
-  const [lastUpdate, setLastUpdate] = useState(Date.now())
+  const { setTeams, initializeSubscription, lastUpdate } = useTeamStore()
   const router = useRouter()
 
+  // Initialize store with server data
   useEffect(() => {
-    const supabase = createClient()
-    
-    const channel = supabase
-      .channel('dashboard-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'clock_events'
-        },
-        () => {
-          setLastUpdate(Date.now())
-          router.refresh()
-        }
-      )
-      .subscribe()
+    setTeams(teamsStatus)
+  }, [teamsStatus, setTeams])
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [router])
+  // Initialize realtime subscription
+  useEffect(() => {
+    const cleanup = initializeSubscription()
+    return cleanup
+  }, [initializeSubscription])
+
+  // Refresh server components when data changes
+  useEffect(() => {
+    router.refresh()
+  }, [lastUpdate, router])
 
   const getPriorityClass = (priority: string) => {
     switch(priority?.toLowerCase()) {
@@ -224,7 +216,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
       {activeTab === 'team' && (
         <div className="space-y-8">
             {/* Team Status Section */}
-            <TeamStatus teams={teamsStatus} />
+            <TeamStatus />
 
             {isTeamLeader ? (
                 <TeamDashboard lastUpdate={lastUpdate} />

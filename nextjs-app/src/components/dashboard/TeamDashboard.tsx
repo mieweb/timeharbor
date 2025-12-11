@@ -5,8 +5,9 @@ import { useState, useEffect, useRef } from 'react'
 import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, parseISO } from 'date-fns'
 import { getTeamDashboardData } from '@/lib/actions/dashboard'
 import { Filter, X } from 'lucide-react'
-
 import Link from 'next/link'
+
+import { createClient } from '@/lib/supabase/client'
 
 type DashboardEvent = {
   id: string
@@ -74,8 +75,9 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
       // Convert local date strings to ISO timestamps (UTC) to respect user's timezone
       const start = startOfDay(parseISO(startDate)).toISOString()
       const end = endOfDay(parseISO(endDate)).toISOString()
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-      const { data: events, error } = await getTeamDashboardData(start, end)
+      const { data: events, error } = await getTeamDashboardData(start, end, timezone)
       if (error) {
         console.error(error)
       } else {

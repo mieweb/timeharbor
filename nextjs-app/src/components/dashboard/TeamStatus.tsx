@@ -1,22 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useTeamStore } from '@/store/useTeamStore'
 
-type TeamMember = {
-  id: string
-  name: string
-  email: string
-  status: 'Active' | 'Offline'
-}
-
-type Team = {
-  teamId: string
-  teamName: string
-  members: TeamMember[]
-}
-
-export default function TeamStatus({ teams = [] }: { teams?: Team[] }) {
+export default function TeamStatus() {
   const [openTeams, setOpenTeams] = useState<Set<string>>(new Set())
+  const { teams } = useTeamStore()
 
   const toggleTeam = (teamId: string) => {
     const newOpenTeams = new Set(openTeams)
