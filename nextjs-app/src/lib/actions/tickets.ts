@@ -77,6 +77,33 @@ export async function updateTicketStatus(ticketId: string, status: string) {
   revalidatePath('/tickets')
 }
 
+export async function updateTicket(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Not authenticated')
+
+  const ticketId = formData.get('ticket_id') as string
+  const title = formData.get('title') as string
+  const githubUrl = formData.get('github_url') as string
+
+  if (!ticketId) throw new Error('Ticket ID is required')
+
+  const { error } = await supabase
+    .from('tickets')
+    .update({ 
+      title, 
+      github_url: githubUrl,
+      updated_at: new Date().toISOString(), 
+      updated_by: user.id 
+    })
+    .eq('id', ticketId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/tickets')
+}
+
 export async function deleteTicket(ticketId: string) {
   console.log('deleteTicket action called for ticket:', ticketId)
   const supabase = await createClient()

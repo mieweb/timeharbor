@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, LogIn, X, Check, Copy, Loader2 } from 'lucide-react'
+import { Plus, LogIn, X, Check, Copy, Loader2, Pencil, Trash2 } from 'lucide-react'
 import RecentActivityList from './RecentActivityList'
 import TeamStatus from './TeamStatus'
 import TeamDashboard from './TeamDashboard'
 import { useTeamStore } from '@/store/useTeamStore'
 import { startTicket, stopTicket } from '@/lib/actions/clock'
+import { createTicket, updateTicket, deleteTicket } from '@/lib/actions/tickets'
 import { createTeamAndReturn, joinTeamAndReturn } from '@/lib/actions/teams'
 import TicketTimer from './TicketTimer'
 import PersonalTimesheetGrid from '@/components/timesheet/PersonalTimesheetGrid'
@@ -31,7 +32,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
   const [activeTab, setActiveTab] = useState<'personal' | 'team' | 'timesheet'>('personal')
   const [activeTicketId, setActiveTicketId] = useState<string | null>(stats.activeEvent?.ticket_id || null)
   const [loadingTicketId, setLoadingTicketId] = useState<string | null>(null)
-  const { setTeams, initializeSubscription, lastUpdate, selectedTeamId } = useTeamStore()
+  const { setTeams, initializeSubscription, lastUpdate, selectedTeamId, teams } = useTeamStore()
   const router = useRouter()
 
   const filteredTickets = selectedTeamId 
@@ -53,6 +54,15 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
   const [createdTeamCode, setCreatedTeamCode] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  // Create Ticket Modal State
+  const [showCreateTicketModal, setShowCreateTicketModal] = useState(false)
+  const [createTicketError, setCreateTicketError] = useState<string | null>(null)
+
+  // Edit Ticket Modal State
+  const [showEditTicketModal, setShowEditTicketModal] = useState(false)
+  const [editingTicket, setEditingTicket] = useState<any>(null)
+  const [editTicketError, setEditTicketError] = useState<string | null>(null)
+
   // Initialize store with server data
   useEffect(() => {
     setTeams(teamsStatus)
@@ -73,6 +83,43 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
   useEffect(() => {
     setActiveTicketId(stats.activeEvent?.activeTicket?.ticket_id || null)
   }, [stats.activeEvent])
+
+  const handleCreateTicketSubmit = async (formData: FormData) => {
+    setCreateTicketError(null)
+    try {
+      await createTicket(formData)
+      setShowCreateTicketModal(false)
+      router.refresh()
+    } catch (error: any) {
+      console.error(error)
+      setCreateTicketError(error.message)
+    }
+  }
+
+  const handleEditTicketSubmit = async (formData: FormData) => {
+    setEditTicketError(null)
+    try {
+      await updateTicket(formData)
+      setShowEditTicketModal(false)
+      setEditingTicket(null)
+      router.refresh()
+    } catch (error: any) {
+      console.error(error)
+      setEditTicketError(error.message)
+    }
+  }
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) return
+    
+    try {
+      await deleteTicket(ticketId)
+      router.refresh()
+    } catch (error: any) {
+      console.error(error)
+      alert('Failed to delete ticket: ' + error.message)
+    }
+  }
 
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -305,9 +352,13 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-th-accent p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-th-dark">My Open Tickets</h3>
-              <div className="join">
-                
-              </div>
+              <button 
+                onClick={() => setShowCreateTicketModal(true)}
+                className="btn btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create Ticket
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -317,7 +368,26 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                     <div className="card-body p-5">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="text-lg font-bold text-th-dark line-clamp-2 h-12" title={ticket.title}>{ticket.title}</h4>
-                        <span className={`badge ${getPriorityClass(ticket.priority)} badge-sm`}>{ticket.priority}</span>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => {
+                              setEditingTicket(ticket)
+                              setShowEditTicketModal(true)
+                            }}
+                            className="text-gray-400 hover:text-th-accent transition-colors"
+                            title="Edit Ticket"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteTicket(ticket.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors"
+                            title="Delete Ticket"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          <span className={`badge ${getPriorityClass(ticket.priority)} badge-sm`}>{ticket.priority}</span>
+                        </div>
                       </div>
                       <div className="text-xs text-gray-400 mb-3">#TKT-{ticket.id.substring(0, 8)}</div>
                       
@@ -582,6 +652,185 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                       'Join Team'
                     )}
                   </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Ticket Modal */}
+      {showCreateTicketModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setShowCreateTicketModal(false)}
+          />
+          
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">
+                  Create New Ticket
+                </h3>
+                <button 
+                  onClick={() => setShowCreateTicketModal(false)} 
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {createTicketError && (
+                <div className="alert alert-error text-sm py-2 mb-4">
+                    <span>{createTicketError}</span>
+                </div>
+              )}
+
+              <form action={handleCreateTicketSubmit} className="space-y-6">
+                {selectedTeamId ? (
+                    <input type="hidden" name="team_id" value={selectedTeamId} />
+                ) : (
+                    <div className="form-control">
+                        <label className="label">
+                            <span className="label-text font-medium text-gray-700">Select Team</span>
+                        </label>
+                        <select name="team_id" className="select select-bordered w-full bg-white text-gray-900" required defaultValue="">
+                            <option value="" disabled>Select a team</option>
+                            {teams.map(team => (
+                                <option key={team.teamId} value={team.teamId}>{team.teamName}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                <div className="form-control">
+                    <label className="label">
+                        <span className="label-text font-medium text-gray-700">Ticket Title</span>
+                    </label>
+                    <input 
+                        name="title" 
+                        type="text" 
+                        placeholder="e.g. Fix login page bug" 
+                        className="input input-bordered w-full bg-white text-gray-900" 
+                        required 
+                    />
+                </div>
+
+                <div className="form-control">
+                    <label className="label">
+                        <span className="label-text font-medium text-gray-700">GitHub URL (Optional)</span>
+                    </label>
+                    <input 
+                        name="github_url" 
+                        type="url" 
+                        placeholder="https://github.com/..." 
+                        className="input input-bordered w-full bg-white text-gray-900" 
+                    />
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                    <button 
+                        type="button" 
+                        onClick={() => setShowCreateTicketModal(false)}
+                        className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit" 
+                        className="flex-1 py-3 bg-th-accent text-white rounded-xl font-bold hover:bg-opacity-90 transition-all"
+                    >
+                        Create Ticket
+                    </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Ticket Modal */}
+      {showEditTicketModal && editingTicket && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => {
+              setShowEditTicketModal(false)
+              setEditingTicket(null)
+            }}
+          />
+          
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">
+                  Edit Ticket
+                </h3>
+                <button 
+                  onClick={() => {
+                    setShowEditTicketModal(false)
+                    setEditingTicket(null)
+                  }} 
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {editTicketError && (
+                <div className="alert alert-error text-sm py-2 mb-4">
+                    <span>{editTicketError}</span>
+                </div>
+              )}
+
+              <form action={handleEditTicketSubmit} className="space-y-6">
+                <input type="hidden" name="ticket_id" value={editingTicket.id} />
+                
+                <div className="form-control">
+                    <label className="label">
+                        <span className="label-text font-medium text-gray-700">Ticket Title</span>
+                    </label>
+                    <input 
+                        name="title" 
+                        type="text" 
+                        defaultValue={editingTicket.title}
+                        placeholder="e.g. Fix login page bug" 
+                        className="input input-bordered w-full bg-white text-gray-900" 
+                        required 
+                    />
+                </div>
+
+                <div className="form-control">
+                    <label className="label">
+                        <span className="label-text font-medium text-gray-700">GitHub URL (Optional)</span>
+                    </label>
+                    <input 
+                        name="github_url" 
+                        type="url" 
+                        defaultValue={editingTicket.github_url}
+                        placeholder="https://github.com/..." 
+                        className="input input-bordered w-full bg-white text-gray-900" 
+                    />
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                    <button 
+                        type="button" 
+                        onClick={() => {
+                          setShowEditTicketModal(false)
+                          setEditingTicket(null)
+                        }}
+                        className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit" 
+                        className="flex-1 py-3 bg-th-accent text-white rounded-xl font-bold hover:bg-opacity-90 transition-all"
+                    >
+                        Save Changes
+                    </button>
                 </div>
               </form>
             </div>
