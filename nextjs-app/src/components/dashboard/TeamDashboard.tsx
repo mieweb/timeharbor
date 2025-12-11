@@ -225,9 +225,9 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
       setIsEditModalOpen(false)
       setEditingEvent(null)
       fetchData() 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update event:', error)
-      alert('Failed to update event')
+      alert(error.message || 'Failed to update event')
     }
   }
 

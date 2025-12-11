@@ -41,16 +41,18 @@ export async function getTeamDashboardData(startDate: string, endDate: string, t
     // 3. Get all members of these teams
     const { data: teamMembers, error: membersError } = await adminSupabase
       .from('team_members')
-      .select('user_id, team_id')
+      .select('user_id, team_id, role')
       .in('team_id', teamIds)
 
     if (membersError) throw new Error(membersError.message)
 
-    // Filter out the current user (admin/leader) from the dashboard view
-    const memberIds = Array.from(new Set(teamMembers
-      .map(m => m.user_id)
-      .filter(id => id !== user.id) // Allow leader to see themselves for now
-    ))
+    // Create a map of user roles per team
+    const roleMap = new Map<string, string>()
+    teamMembers.forEach(m => {
+      roleMap.set(`${m.team_id}:${m.user_id}`, m.role)
+    })
+
+    const memberIds = Array.from(new Set(teamMembers.map(m => m.user_id)))
 
     if (memberIds.length === 0) {
       return { data: [], error: null }
@@ -61,7 +63,7 @@ export async function getTeamDashboardData(startDate: string, endDate: string, t
     const start = startDate
     const end = endDate
 
-    const { data: events, error: eventsError } = await adminSupabase
+    const { data: rawEvents, error: eventsError } = await adminSupabase
       .from('clock_events')
       .select(`
         *,
@@ -74,11 +76,18 @@ export async function getTeamDashboardData(startDate: string, endDate: string, t
         )
       `)
       .in('user_id', memberIds)
+      .in('team_id', teamIds)
       .lte('start_timestamp', end)
       .or(`end_timestamp.gte.${start},end_timestamp.is.null`)
       .order('start_timestamp', { ascending: false })
 
     if (eventsError) throw new Error(eventsError.message)
+
+    // Filter events based on role (exclude admin/leader activity)
+    const events = rawEvents.filter(e => {
+      const role = roleMap.get(`${e.team_id}:${e.user_id}`)
+      return role !== 'admin' && role !== 'leader'
+    })
 
     // 5. Fetch Profiles for Names
     const { data: profiles, error: profilesError } = await adminSupabase
@@ -136,7 +145,7 @@ export async function getTeamDashboardData(startDate: string, endDate: string, t
         }
 
         aggregatedData.set(key, {
-          id: key, // Use composite key as ID
+          id: event.id, // Use the first event's ID
           userId: event.user_id,
           date: event.start_timestamp, // Use the first event's timestamp as the date reference
           member: displayName || 'Unknown',
@@ -201,8 +210,34 @@ export async function getTeamDashboardData(startDate: string, endDate: string, t
 
 export async function updateClockEvent(eventId: string, startTimestamp: string, endTimestamp: string | null) {
   const supabase = await createClient()
+  const adminSupabase = createAdminClient()
   
-  const { error } = await supabase
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // 1. Get the event to find the team_id
+  const { data: event, error: fetchError } = await adminSupabase
+    .from('clock_events')
+    .select('team_id')
+    .eq('id', eventId)
+    .single()
+    
+  if (fetchError || !event) throw new Error('Event not found')
+
+  // 2. Check if current user is admin/leader of that team
+  const { data: membership, error: memberError } = await adminSupabase
+    .from('team_members')
+    .select('role')
+    .eq('team_id', event.team_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (memberError || !membership || !['admin', 'leader'].includes(membership.role)) {
+    throw new Error('Unauthorized to edit this event')
+  }
+
+  // 3. Update using admin client
+  const { error } = await adminSupabase
     .from('clock_events')
     .update({
       start_timestamp: startTimestamp,
