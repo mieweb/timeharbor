@@ -183,7 +183,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
 
   return (
     <div className="mb-8 md:mb-12">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-th-accent p-6">
         {/* Header with Title and Filters */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-2">
