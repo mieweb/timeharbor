@@ -31,8 +31,16 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
   const [activeTab, setActiveTab] = useState<'personal' | 'team' | 'timesheet'>('personal')
   const [activeTicketId, setActiveTicketId] = useState<string | null>(stats.activeEvent?.ticket_id || null)
   const [loadingTicketId, setLoadingTicketId] = useState<string | null>(null)
-  const { setTeams, initializeSubscription, lastUpdate } = useTeamStore()
+  const { setTeams, initializeSubscription, lastUpdate, selectedTeamId } = useTeamStore()
   const router = useRouter()
+
+  const filteredTickets = selectedTeamId 
+    ? openTickets.filter(ticket => ticket.team_id === selectedTeamId)
+    : openTickets
+
+  const filteredActivity = selectedTeamId
+    ? recentActivity.filter(activity => activity.team_id === selectedTeamId)
+    : recentActivity
 
   // Modal States
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -303,8 +311,8 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {openTickets.length > 0 ? (
-                openTickets.map((ticket) => (
+              {filteredTickets.length > 0 ? (
+                filteredTickets.map((ticket) => (
                   <div key={ticket.id} className="card bg-white border border-gray-100 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
                     <div className="card-body p-5">
                       <div className="flex justify-between items-start mb-2">
@@ -367,7 +375,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
           {/* Recent Activity Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-th-accent p-6">
             <h3 className="text-xl font-bold text-th-dark mb-4">Recent Activity</h3>
-            <RecentActivityList activities={recentActivity} />
+            <RecentActivityList activities={filteredActivity} />
           </div>
         </div>
       )}

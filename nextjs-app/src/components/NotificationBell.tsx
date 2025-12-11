@@ -83,13 +83,13 @@ export function NotificationBell() {
         <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-md rounded-lg bg-base-100 shadow-xl border border-base-300 z-50">
           {/* Header */}
           <div className="flex items-center justify-between p-3 md:p-4 border-b border-base-300">
-            <h3 className="text-base md:text-lg font-semibold text-primary">
+            <h3 className="text-base md:text-lg font-semibold text-th-accent">
               Notifications
             </h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-xs text-primary hover:underline"
+                className="text-xs text-th-accent hover:underline"
               >
                 Mark all read
               </button>
@@ -228,7 +228,7 @@ export function NotificationBell() {
 
                         {/* Unread indicator */}
                         {!notification.read && (
-                          <div className="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-2"></div>
+                          <div className="flex-shrink-0 w-2 h-2 rounded-full bg-th-accent mt-2"></div>
                         )}
                       </div>
                     </Link>
@@ -243,7 +243,7 @@ export function NotificationBell() {
             <div className="p-2 md:p-3 border-t border-base-300 text-center">
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-xs md:text-sm text-primary hover:underline"
+                className="text-xs md:text-sm text-th-accent hover:underline"
               >
                 Close
               </button>
