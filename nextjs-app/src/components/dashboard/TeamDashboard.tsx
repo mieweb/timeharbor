@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { format, subDays, startOfWeek, endOfWeek, startOfDay, endOfDay, parseISO } from 'date-fns'
-import { getTeamDashboardData } from '@/lib/actions/dashboard'
-import { Filter, X } from 'lucide-react'
+import { getTeamDashboardData, updateClockEvent } from '@/lib/actions/dashboard'
+import { Filter, X, Edit2 } from 'lucide-react'
 import Link from 'next/link'
 import { useTeamStore } from '@/store/useTeamStore'
 
@@ -39,6 +39,7 @@ const COLUMNS: ColumnConfig[] = [
   { key: 'clockOut', label: 'Clock-out', filterable: true },
   { key: 'status', label: 'Status', filterable: true },
   { key: 'tickets', label: 'Tickets', filterable: false },
+  { key: 'actions', label: 'Actions', filterable: false },
 ]
 
 export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
@@ -53,6 +54,11 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
   const [filters, setFilters] = useState<Record<string, string>>({})
   const [activeFilterColumn, setActiveFilterColumn] = useState<string | null>(null)
   const filterRef = useRef<HTMLDivElement>(null)
+
+  // Edit State
+  const [editingEvent, setEditingEvent] = useState<DashboardEvent | null>(null)
+  const [editForm, setEditForm] = useState({ clockIn: '', clockOut: '' })
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -181,6 +187,48 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
     const newFilters = { ...filters }
     delete newFilters[key]
     setFilters(newFilters)
+  }
+
+  const handleEditClick = (event: DashboardEvent) => {
+    setEditingEvent(event)
+    // Convert ISO strings to local datetime-local input format
+    const formatForInput = (isoString: string | null) => {
+      if (!isoString) return ''
+      const date = new Date(isoString)
+      const offset = date.getTimezoneOffset() * 60000
+      const localISOTime = (new Date(date.getTime() - offset)).toISOString().slice(0, 16)
+      return localISOTime
+    }
+
+    setEditForm({
+      clockIn: formatForInput(event.clockIn),
+      clockOut: formatForInput(event.clockOut)
+    })
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingEvent) return
+
+    try {
+      const toISO = (localString: string) => {
+        if (!localString) return null
+        return new Date(localString).toISOString()
+      }
+
+      await updateClockEvent(
+        editingEvent.id,
+        toISO(editForm.clockIn)!, 
+        toISO(editForm.clockOut)
+      )
+      
+      setIsEditModalOpen(false)
+      setEditingEvent(null)
+      fetchData() 
+    } catch (error) {
+      console.error('Failed to update event:', error)
+      alert('Failed to update event')
+    }
   }
 
   return (
@@ -365,6 +413,14 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
                       </span>
                     </td>
                     <td className="text-gray-600">{row.tickets}</td>
+                    <td>
+                      <button 
+                        onClick={() => handleEditClick(row)}
+                        className="btn btn-ghost btn-xs text-th-accent hover:bg-th-accent/10"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -372,6 +428,54 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-bold mb-4">Edit Time Entry</h3>
+            
+            <div className="form-control w-full mb-4">
+              <label className="label">
+                <span className="label-text">Clock In</span>
+              </label>
+              <input 
+                type="datetime-local" 
+                className="input input-bordered w-full" 
+                value={editForm.clockIn}
+                onChange={(e) => setEditForm({...editForm, clockIn: e.target.value})}
+              />
+            </div>
+
+            <div className="form-control w-full mb-6">
+              <label className="label">
+                <span className="label-text">Clock Out</span>
+              </label>
+              <input 
+                type="datetime-local" 
+                className="input input-bordered w-full" 
+                value={editForm.clockOut}
+                onChange={(e) => setEditForm({...editForm, clockOut: e.target.value})}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button 
+                className="btn btn-ghost"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn bg-th-accent hover:bg-th-accent/90 text-white border-none"
+                onClick={handleSaveEdit}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
