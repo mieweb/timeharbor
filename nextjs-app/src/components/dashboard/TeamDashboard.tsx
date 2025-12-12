@@ -292,7 +292,7 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="table w-full">
             <thead>
               <tr className="border-b border-gray-200">
@@ -426,6 +426,77 @@ export default function TeamDashboard({ lastUpdate }: { lastUpdate?: number }) {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-4 mt-4">
+          {loading ? (
+            <div className="text-center py-12">
+              <span className="loading loading-spinner loading-md text-th-accent"></span>
+            </div>
+          ) : filteredData.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              {data.length === 0 ? 'No activity found for this period.' : 'No records match your filters.'}
+            </div>
+          ) : (
+            filteredData.map((row) => (
+              <div key={row.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <div className="font-semibold text-th-dark">
+                      <Link href={`/timesheet/${row.userId}`} className="hover:text-th-accent transition-colors">
+                        {row.member}
+                      </Link>
+                    </div>
+                    <div className="text-xs text-gray-500">{row.email}</div>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    row.status === 'Completed' 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {row.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm mb-3">
+                  <div>
+                    <span className="text-gray-500 block text-xs uppercase tracking-wider">Date</span>
+                    <span className="text-th-dark font-medium">{formatDate(row.date)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block text-xs uppercase tracking-wider">Hours</span>
+                    <span className="text-th-dark font-medium">{formatDuration(row.hours)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block text-xs uppercase tracking-wider">Clock In</span>
+                    <span className="text-gray-600">{formatTime(row.clockIn)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block text-xs uppercase tracking-wider">Clock Out</span>
+                    <span className="text-gray-600">{formatTime(row.clockOut)}</span>
+                  </div>
+                </div>
+                
+                {row.tickets && (
+                    <div className="text-sm mb-3">
+                        <span className="text-gray-500 block text-xs uppercase tracking-wider">Tickets</span>
+                        <span className="text-gray-600 break-words">{row.tickets}</span>
+                    </div>
+                )}
+
+                <div className="flex justify-end pt-2 border-t border-gray-200">
+                    <button 
+                      onClick={() => handleEditClick(row)}
+                      className="btn btn-sm btn-ghost text-th-accent hover:bg-th-accent/10 gap-2 w-full sm:w-auto"
+                    >
+                      <Edit2 size={14} />
+                      Edit Entry
+                    </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

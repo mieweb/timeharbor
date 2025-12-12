@@ -260,7 +260,7 @@ export default function PersonalTimesheetGrid() {
       </div>
 
       {/* Grid Section */}
-      <div className="w-full h-[600px]">
+      <div className="hidden md:block w-full h-[600px]">
         <Grid
           rowData={rowData}
           columnDefs={columnDefs}
@@ -272,6 +272,73 @@ export default function PersonalTimesheetGrid() {
           overlayLoadingTemplate={'<span class="ag-overlay-loading-center">Loading...</span>'}
           overlayNoRowsTemplate={'<span class="ag-overlay-loading-center">No records found</span>'}
         />
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {loading ? (
+          <div className="text-center py-12">
+            <span className="loading loading-spinner loading-md text-th-accent"></span>
+          </div>
+        ) : rowData.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            No records found
+          </div>
+        ) : (
+          rowData.map((row) => {
+            const isActive = !row.end_timestamp;
+            const tickets = row.clock_event_tickets?.map((t) => t.tickets?.title).filter(Boolean) || [];
+            const ticketText = tickets.length > 0 ? tickets.join(', ') : 'No activity';
+            
+            return (
+              <div key={row.id} className="bg-base-100 p-3 rounded-lg border border-base-200 shadow-sm">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="font-semibold text-base-content text-sm">
+                      {format(new Date(row.start_timestamp), 'MMM d, yyyy')}
+                    </div>
+                    <div className="text-[10px] text-base-content/60">
+                      {row.teams?.name || 'No team'}
+                    </div>
+                  </div>
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                    isActive 
+                      ? 'bg-success/10 text-success' 
+                      : 'bg-base-200 text-base-content/70'
+                  }`}>
+                    {isActive ? 'Active' : 'Closed'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                  <div>
+                    <span className="text-base-content/60 block text-[10px] uppercase tracking-wider">In</span>
+                    <span className="text-base-content font-medium">
+                      {format(new Date(row.start_timestamp), 'h:mm a')}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-base-content/60 block text-[10px] uppercase tracking-wider">Out</span>
+                    <span className="text-base-content font-medium">
+                      {row.end_timestamp ? format(new Date(row.end_timestamp), 'h:mm a') : '-'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-base-content/60 block text-[10px] uppercase tracking-wider">Time</span>
+                    <span className={`font-medium ${isActive ? 'text-th-accent' : 'text-base-content'}`}>
+                      {isActive ? 'Running...' : formatDuration(row.accumulated_time || 0)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="pt-2 border-t border-base-200 flex gap-2 items-start">
+                  <span className="text-base-content/60 text-[10px] uppercase tracking-wider mt-0.5 whitespace-nowrap">Ticket:</span>
+                  <span className="text-base-content text-xs break-words leading-tight">{ticketText}</span>
+                </div>
+              </div>
+            )
+          })
+        )}
       </div>
     </div>
   )

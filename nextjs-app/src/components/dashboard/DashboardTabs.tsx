@@ -392,11 +392,11 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
             >
               {filteredTickets.length > 0 ? (
                 filteredTickets.map((ticket) => (
-                  <div key={ticket.id} className="min-w-[300px] max-w-[300px] flex-none snap-start card bg-white border border-gray-100 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
-                    <div className="card-body p-5">
+                  <div key={ticket.id} className="min-w-[260px] max-w-[260px] md:min-w-[300px] md:max-w-[300px] flex-none snap-start card bg-white border border-gray-100 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
+                    <div className="card-body p-3 md:p-5">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-lg font-bold text-th-dark line-clamp-2 h-12" title={ticket.title}>{ticket.title}</h4>
-                        <div className="flex items-center gap-2">
+                        <h4 className="text-base md:text-lg font-bold text-th-dark line-clamp-1 md:line-clamp-2 h-auto md:h-12" title={ticket.title}>{ticket.title}</h4>
+                        <div className="flex items-center gap-1 md:gap-2 shrink-0">
                           <button 
                             onClick={() => {
                               setEditingTicket(ticket)
@@ -405,33 +405,33 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                             className="text-gray-400 hover:text-th-accent transition-colors"
                             title="Edit Ticket"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3 h-3 md:w-4 md:h-4" />
                           </button>
                           <button 
                             onClick={() => handleDeleteTicket(ticket.id)}
                             className="text-gray-400 hover:text-red-500 transition-colors"
                             title="Delete Ticket"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                           </button>
-                          <span className={`badge ${getPriorityClass(ticket.priority)} badge-sm`}>{ticket.priority}</span>
+                          <span className={`badge ${getPriorityClass(ticket.priority)} badge-xs md:badge-sm`}>{ticket.priority}</span>
                         </div>
                       </div>
-                      <div className="text-xs text-gray-400 mb-3">#TKT-{ticket.id.substring(0, 8)}</div>
+                      <div className="hidden md:block text-xs text-gray-400 mb-3">#TKT-{ticket.id.substring(0, 8)}</div>
                       
-                      <p className="text-sm text-gray-500 mb-4 line-clamp-3">
+                      <p className="hidden md:block text-sm text-gray-500 mb-4 line-clamp-3">
                         {ticket.description || 'No description provided for this ticket.'}
                       </p>
                       
-                      <div className="flex items-center gap-2 mb-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-2 mb-2 md:mb-4 text-xs text-gray-500">
                         <i className="fa-solid fa-user"></i>
-                        <span>{ticket.teams?.name || 'Unknown Team'}</span>
-                        <span className="ml-auto">Due: Dec 12</span>
+                        <span className="truncate max-w-[150px]">{ticket.teams?.name || 'Unknown Team'}</span>
+                        <span className="ml-auto hidden md:block">Due: Dec 12</span>
                       </div>
 
                       {activeTicketId === ticket.id && stats.activeEvent?.activeTicket && (
-                         <div className="mb-4 flex items-center gap-2 justify-center bg-gray-50 p-2 rounded">
-                            <span className="text-xs font-semibold text-gray-500">Running:</span>
+                         <div className="mb-2 md:mb-4 flex items-center gap-2 justify-center bg-gray-50 p-1 md:p-2 rounded">
+                            <span className="text-[10px] md:text-xs font-semibold text-gray-500">Running:</span>
                             <TicketTimer 
                                 startTime={stats.activeEvent.activeTicket.start_timestamp} 
                                 accumulatedTime={ticket.accumulated_time || 0} 
@@ -444,7 +444,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                           <button 
                             onClick={() => handleStopTimer(ticket.id, ticket.team_id)}
                             disabled={loadingTicketId === ticket.id}
-                            className="btn btn-sm btn-error text-white border-none flex-1"
+                            className="btn btn-xs md:btn-sm btn-error text-white border-none flex-1"
                           >
                             {loadingTicketId === ticket.id ? 'Stopping...' : 'Stop Timer'}
                           </button>
@@ -452,12 +452,12 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                           <button 
                             onClick={() => handleStartTimer(ticket.id, ticket.team_id)}
                             disabled={loadingTicketId === ticket.id}
-                            className="btn btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none flex-1"
+                            className="btn btn-xs md:btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none flex-1"
                           >
                             {loadingTicketId === ticket.id ? 'Starting...' : 'Start Timer'}
                           </button>
                         )}
-                        <Link href={`/tickets/${ticket.id}`} className="btn btn-sm btn-outline flex-1">View Details</Link>
+                        <Link href={`/tickets/${ticket.id}`} className="btn btn-xs md:btn-sm btn-outline flex-1">View</Link>
                       </div>
                     </div>
                   </div>
