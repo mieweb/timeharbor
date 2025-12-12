@@ -207,7 +207,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
 
   return (
     <div>
-      <div className="sticky top-16 z-40 backdrop-blur-xl pt-4 flex border-b border-gray-200 mb-6">
+      <div className="sticky top-16 z-40 backdrop-blur-xl pt-4 flex border-b border-gray-200 mb-4">
         <button 
           className={`pb-3 px-1 mr-8 text-lg font-medium transition-colors relative ${
             activeTab === 'personal' 
