@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, LogIn, X, Check, Copy, Loader2, Pencil, Trash2 } from 'lucide-react'
+import { Plus, LogIn, X, Check, Copy, Loader2, Pencil, Trash2, ChevronRight } from 'lucide-react'
 import RecentActivityList from './RecentActivityList'
 import TeamStatus from './TeamStatus'
 import TeamDashboard from './TeamDashboard'
@@ -57,6 +57,19 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
   // Create Ticket Modal State
   const [showCreateTicketModal, setShowCreateTicketModal] = useState(false)
   const [createTicketError, setCreateTicketError] = useState<string | null>(null)
+
+  // Scroll ref for tickets
+  const ticketsScrollRef = useRef<HTMLDivElement>(null)
+
+  const scrollTickets = (direction: 'left' | 'right') => {
+    if (ticketsScrollRef.current) {
+      const scrollAmount = 320 // card width + gap
+      ticketsScrollRef.current.scrollBy({
+        left: direction === 'right' ? scrollAmount : -scrollAmount,
+        behavior: 'smooth'
+      })
+    }
+  }
 
   // Edit Ticket Modal State
   const [showEditTicketModal, setShowEditTicketModal] = useState(false)
@@ -207,9 +220,9 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
 
   return (
     <div>
-      <div className="sticky top-16 z-40 backdrop-blur-xl pt-4 flex border-b border-gray-200 mb-4">
+      <div className="sticky top-16 z-40 backdrop-blur-xl pt-4 flex border-b border-gray-200 mb-4 overflow-x-auto scrollbar-hide">
         <button 
-          className={`pb-3 px-1 mr-8 text-lg font-medium transition-colors relative ${
+          className={`pb-2 md:pb-3 px-1 mr-4 md:mr-8 text-sm md:text-lg font-medium transition-colors relative whitespace-nowrap ${
             activeTab === 'personal' 
               ? 'text-th-accent' 
               : 'text-gray-500 hover:text-gray-700'
@@ -222,7 +235,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
           )}
         </button>
         <button 
-          className={`pb-3 px-1 mr-8 text-lg font-medium transition-colors relative ${
+          className={`pb-2 md:pb-3 px-1 mr-4 md:mr-8 text-sm md:text-lg font-medium transition-colors relative whitespace-nowrap ${
             activeTab === 'team' 
               ? 'text-th-accent' 
               : 'text-gray-500 hover:text-gray-700'
@@ -235,7 +248,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
           )}
         </button>
         <button 
-          className={`pb-3 px-1 mr-8 text-lg font-medium transition-colors relative ${
+          className={`pb-2 md:pb-3 px-1 mr-4 md:mr-8 text-sm md:text-lg font-medium transition-colors relative whitespace-nowrap ${
             activeTab === 'timesheet' 
               ? 'text-th-accent' 
               : 'text-gray-500 hover:text-gray-700'
@@ -251,100 +264,102 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
 
       {activeTab === 'personal' && (
         <div className="space-y-8">
-          {/* Welcome Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-2">Welcome Back! 👋</h1>
-            <p className="text-gray-600">Here's what's happening with your work today</p>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-500">Today's Hours</span>
-                <div className="bg-th-accent/80 rounded-lg p-2 text-white">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                </div>
-              </div>
-              <div className="text-3xl font-bold mb-1 text-th-dark">{stats.todayHours}</div>
-              <div className="flex items-center gap-1 text-sm text-green-600">
-                <span>Start tracking</span>
-              </div>
+          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-6 mb-4 md:mb-8">
+            {/* Welcome Header */}
+            <div className="shrink-0">
+              <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2">Welcome Back! 👋</h1>
+              <p className="text-xs md:text-base text-gray-600">Here's what's happening with your work today</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-500">This Week</span>
-                <div className="bg-th-accent/80 rounded-lg p-2 text-white">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 3v18h18"/>
-                    <path d="m19 9-5 5-4-4-3 3"/>
-                  </svg>
-                </div>
-              </div>
-              <div className="text-3xl font-bold mb-1 text-th-dark">{stats.weekHours}</div>
-              <div className="flex items-center gap-1 text-sm text-green-600">
-                <span>+15% last week</span>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-500">Open Tickets</span>
-                <div className="bg-th-accent/80 rounded-lg p-2 text-white">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect width="18" height="13" x="3" y="8" rx="2" ry="2"/>
-                    <path d="M12 8V4H8"/>
-                    <path d="M16 4h-4"/>
-                  </svg>
-                </div>
-              </div>
-              <div className="text-3xl font-bold mb-1 text-th-dark">{openTickets.length}</div>
-              <div className="flex items-center gap-1 text-sm text-green-600">
-                <span>3 high priority</span>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-500">Active Teams</span>
-                <div className="bg-th-accent/80 rounded-lg p-2 text-white">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                  </svg>
-                </div>
-              </div>
-              {stats.totalTeams === 0 ? (
-                <div className="flex flex-col gap-2 mt-2">
-                  <button 
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 text-sm font-bold text-th-accent hover:text-th-accent/80 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create Team
-                  </button>
-                  <button 
-                    onClick={() => setShowJoinModal(true)}
-                    className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-th-accent transition-colors"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Join Team
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="text-3xl font-bold mb-1 text-th-dark">{stats.totalTeams}</div>
-                  <div className="flex items-center gap-1 text-sm text-green-600">
-                    <span>{stats.leaderTeamsCount || 0} as leader</span>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 w-full xl:w-auto">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-2 md:p-4">
+                <div className="flex items-center justify-between mb-0 md:mb-1">
+                  <span className="text-[10px] md:text-xs text-gray-500 font-medium uppercase tracking-wider">Today's Hours</span>
+                  <div className="bg-th-accent/80 rounded p-1 md:p-1.5 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 md:w-4 md:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
                   </div>
-                </>
-              )}
+                </div>
+                <div className="text-lg md:text-2xl font-bold text-th-dark">{stats.todayHours}</div>
+                <div className="hidden md:flex items-center gap-1 text-[10px] md:text-xs text-green-600">
+                  <span>Start tracking</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-2 md:p-4">
+                <div className="flex items-center justify-between mb-0 md:mb-1">
+                  <span className="text-[10px] md:text-xs text-gray-500 font-medium uppercase tracking-wider">This Week</span>
+                  <div className="bg-th-accent/80 rounded p-1 md:p-1.5 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 md:w-4 md:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 3v18h18"/>
+                      <path d="m19 9-5 5-4-4-3 3"/>
+                    </svg>
+                  </div>
+                </div>
+                <div className="text-lg md:text-2xl font-bold text-th-dark">{stats.weekHours}</div>
+                <div className="hidden md:flex items-center gap-1 text-[10px] md:text-xs text-green-600">
+                  <span>+15% last week</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-2 md:p-4">
+                <div className="flex items-center justify-between mb-0 md:mb-1">
+                  <span className="text-[10px] md:text-xs text-gray-500 font-medium uppercase tracking-wider">Open Tickets</span>
+                  <div className="bg-th-accent/80 rounded p-1 md:p-1.5 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 md:w-4 md:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="18" height="13" x="3" y="8" rx="2" ry="2"/>
+                      <path d="M12 8V4H8"/>
+                      <path d="M16 4h-4"/>
+                    </svg>
+                  </div>
+                </div>
+                <div className="text-lg md:text-2xl font-bold text-th-dark">{openTickets.length}</div>
+                <div className="hidden md:flex items-center gap-1 text-[10px] md:text-xs text-green-600">
+                  <span>3 high priority</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 border-t-4 border-t-th-accent p-2 md:p-4">
+                <div className="flex items-center justify-between mb-0 md:mb-1">
+                  <span className="text-[10px] md:text-xs text-gray-500 font-medium uppercase tracking-wider">Active Teams</span>
+                  <div className="bg-th-accent/80 rounded p-1 md:p-1.5 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 md:w-4 md:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                  </div>
+                </div>
+                {stats.totalTeams === 0 ? (
+                  <div className="flex flex-col gap-1 mt-1">
+                    <button 
+                      onClick={() => setShowCreateModal(true)}
+                      className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-th-accent hover:text-th-accent/80 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Create Team
+                    </button>
+                    <button 
+                      onClick={() => setShowJoinModal(true)}
+                      className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-gray-600 hover:text-th-accent transition-colors"
+                    >
+                      <LogIn className="w-3 h-3" />
+                      Join Team
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-lg md:text-2xl font-bold text-th-dark">{stats.totalTeams}</div>
+                    <div className="hidden md:flex items-center gap-1 text-[10px] md:text-xs text-green-600">
+                      <span>{stats.leaderTeamsCount || 0} as leader</span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -352,19 +367,32 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-th-accent p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-th-dark">My Open Tickets</h3>
-              <button 
-                onClick={() => setShowCreateTicketModal(true)}
-                className="btn btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Create Ticket
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => scrollTickets('right')}
+                  className="btn btn-sm btn-ghost btn-circle" 
+                  title="Scroll Right"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => setShowCreateTicketModal(true)}
+                  className="btn btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Ticket
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div 
+              ref={ticketsScrollRef}
+              className="flex overflow-x-auto gap-6 pb-4 snap-x scrollbar-hide"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
               {filteredTickets.length > 0 ? (
                 filteredTickets.map((ticket) => (
-                  <div key={ticket.id} className="card bg-white border border-gray-100 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
+                  <div key={ticket.id} className="min-w-[300px] max-w-[300px] flex-none snap-start card bg-white border border-gray-100 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
                     <div className="card-body p-5">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="text-lg font-bold text-th-dark line-clamp-2 h-12" title={ticket.title}>{ticket.title}</h4>

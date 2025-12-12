@@ -296,7 +296,7 @@ export async function getOpenTickets() {
     .select('*, teams(name)')
     .eq('created_by', user.id)
     .neq('status', 'closed')
-    .limit(4)
+    .limit(50)
 
   return tickets || []
 }
