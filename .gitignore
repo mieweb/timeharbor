@@ -11,6 +11,9 @@ node_modules/
 # Google OAuth credentials (SECURITY CRITICAL)
 settings.json
 
+# Firebase configuration (project-specific, should be downloaded from Firebase Console)
+google-services.json
+
 # Logs
 *.log
 npm-debug.log*

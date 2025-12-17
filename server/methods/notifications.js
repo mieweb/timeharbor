@@ -1,5 +1,5 @@
 import { Meteor } from 'meteor/meteor';
-import { check, Match } from 'meteor/check';
+import { check } from 'meteor/check';
 import { getVapidPublicKey, notifyUser } from '../utils/pushNotifications.js';
 
 export const notificationMethods = {
@@ -11,7 +11,14 @@ export const notificationMethods = {
   },
 
   /**
-   * Subscribe a user to push notifications
+   * Get FCM Sender ID
+   */
+  'getFcmSenderId'() {
+    return Meteor.settings.public?.fcmSenderId || '991518210130';
+  },
+
+  /**
+   * Subscribe a user to push notifications (supports both Web Push and FCM)
    */
   async 'subscribeToPushNotifications'(subscription) {
     // Validate subscription object - allow any additional fields
@@ -22,13 +29,33 @@ export const notificationMethods = {
     }
 
     try {
-      // Store the subscription in the user's profile
-      await Meteor.users.updateAsync(this.userId, {
-        $set: {
-          'profile.pushSubscription': subscription,
-          'profile.pushSubscribedAt': new Date()
-        }
-      });
+      // Determine subscription type
+      const subscriptionType = subscription.type || 'webpush';
+      
+      if (subscriptionType === 'fcm') {
+        // Store FCM token
+        await Meteor.users.updateAsync(this.userId, {
+          $set: {
+            'profile.pushSubscription': {
+              type: 'fcm',
+              token: subscription.token,
+              platform: subscription.platform || 'android'
+            },
+            'profile.pushSubscribedAt': new Date()
+          }
+        });
+      } else {
+        // Store Web Push subscription
+        await Meteor.users.updateAsync(this.userId, {
+          $set: {
+            'profile.pushSubscription': {
+              type: 'webpush',
+              ...subscription
+            },
+            'profile.pushSubscribedAt': new Date()
+          }
+        });
+      }
 
       return { success: true };
     } catch (error) {

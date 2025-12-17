@@ -28,12 +28,7 @@ Template.authPage.helpers({
 });
 
 Template.formField.helpers({
-  emailPattern() {
-    return this.type === 'email' ? '[^@]+@[^@]+\\.[^@]+' : '';
-  },
-  emailTitle() {
-    return this.type === 'email' ? 'Please enter a valid email with domain (e.g., user@example.com)' : '';
-  }
+  // No patterns needed
 });
 
 Template.authPage.events({
@@ -79,9 +74,6 @@ Template.authPage.events({
   'submit #signupForm'(event) {
     event.preventDefault();
     const { email, password, confirmPassword } = event.target;
-    
-    if (password.value !== confirmPassword.value) return alert('Passwords do not match');
-    if (password.value.length < 6) return alert('Password too short');
     
     Accounts.createUser({ 
       email: email.value.trim(), 

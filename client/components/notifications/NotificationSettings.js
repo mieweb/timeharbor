@@ -48,9 +48,16 @@ Template.notificationSettings.events({
       let errorMessage = '❌ Failed to enable notifications. ';
       
       if (error.message.includes('permission denied')) {
-        errorMessage += 'Please allow notifications in your browser settings.';
+        errorMessage += 'Please allow notifications in your device settings.';
       } else if (error.message.includes('not supported')) {
-        errorMessage += 'Your browser does not support push notifications.';
+        // Check if it's Cordova
+        const isCordova = typeof window !== 'undefined' && 
+                         (window.cordova || window.PhoneGap || window.phonegap);
+        if (isCordova) {
+          errorMessage += 'Push notification plugin may not be installed. Please rebuild the app.';
+        } else {
+          errorMessage += 'Your browser does not support push notifications.';
+        }
       } else {
         errorMessage += 'Error: ' + error.message;
       }
