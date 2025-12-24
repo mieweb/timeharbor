@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, LogIn, X, Check, Copy, Loader2, Pencil, Trash2, ChevronRight } from 'lucide-react'
+import { Plus, LogIn, X, Check, Copy, Loader2, Pencil, Trash2, ChevronRight, Github } from 'lucide-react'
 import RecentActivityList from './RecentActivityList'
 import TeamStatus from './TeamStatus'
 import TeamDashboard from './TeamDashboard'
@@ -35,9 +35,9 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
   const { setTeams, initializeSubscription, lastUpdate, selectedTeamId, teams } = useTeamStore()
   const router = useRouter()
 
-  const filteredTickets = selectedTeamId 
+  const filteredTickets = (selectedTeamId 
     ? openTickets.filter(ticket => ticket.team_id === selectedTeamId)
-    : openTickets
+    : [...openTickets]).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   const filteredActivity = selectedTeamId
     ? recentActivity.filter(activity => activity.team_id === selectedTeamId)
@@ -370,7 +370,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => scrollTickets('right')}
-                  className="btn btn-sm btn-ghost btn-circle" 
+                  className="hidden md:inline-flex btn btn-sm btn-ghost btn-circle" 
                   title="Scroll Right"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -387,16 +387,26 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
 
             <div 
               ref={ticketsScrollRef}
-              className="flex overflow-x-auto gap-6 pb-4 snap-x scrollbar-hide"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              className="flex flex-col md:flex-row overflow-y-auto md:overflow-y-hidden md:overflow-x-auto gap-4 md:gap-6 pb-4 md:snap-x max-h-[500px] md:max-h-none"
             >
               {filteredTickets.length > 0 ? (
                 filteredTickets.map((ticket) => (
-                  <div key={ticket.id} className="min-w-[260px] max-w-[260px] md:min-w-[300px] md:max-w-[300px] flex-none snap-start card bg-white border border-gray-100 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
+                  <div key={ticket.id} className="w-full md:w-auto md:min-w-[300px] md:max-w-[300px] flex-none md:snap-start card bg-white border border-gray-100 hover:shadow-md transition-shadow shadow-[inset_0px_4px_0px_0px_#76ABAE]">
                     <div className="card-body p-3 md:p-5">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-base md:text-lg font-bold text-th-dark line-clamp-1 md:line-clamp-2 h-auto md:h-12" title={ticket.title}>{ticket.title}</h4>
+                        <h4 className="text-lg md:text-xl font-bold text-th-dark line-clamp-1 md:line-clamp-2 h-auto md:h-12" title={ticket.title}>{ticket.title}</h4>
                         <div className="flex items-center gap-1 md:gap-2 shrink-0">
+                          {ticket.github_url && (
+                            <a 
+                              href={ticket.github_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-gray-400 hover:text-th-accent transition-colors"
+                              title="Open GitHub Issue"
+                            >
+                              <Github className="w-5 h-5 md:w-4 md:h-4" />
+                            </a>
+                          )}
                           <button 
                             onClick={() => {
                               setEditingTicket(ticket)
@@ -405,19 +415,18 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                             className="text-gray-400 hover:text-th-accent transition-colors"
                             title="Edit Ticket"
                           >
-                            <Pencil className="w-3 h-3 md:w-4 md:h-4" />
+                            <Pencil className="w-5 h-5 md:w-4 md:h-4" />
                           </button>
                           <button 
                             onClick={() => handleDeleteTicket(ticket.id)}
                             className="text-gray-400 hover:text-red-500 transition-colors"
                             title="Delete Ticket"
                           >
-                            <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
+                            <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                           </button>
                           <span className={`badge ${getPriorityClass(ticket.priority)} badge-xs md:badge-sm`}>{ticket.priority}</span>
                         </div>
                       </div>
-                      <div className="hidden md:block text-xs text-gray-400 mb-3">#TKT-{ticket.id.substring(0, 8)}</div>
                       
                       <p className="hidden md:block text-sm text-gray-500 mb-4 line-clamp-3">
                         {ticket.description || 'No description provided for this ticket.'}
@@ -444,20 +453,21 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                           <button 
                             onClick={() => handleStopTimer(ticket.id, ticket.team_id)}
                             disabled={loadingTicketId === ticket.id}
-                            className="btn btn-xs md:btn-sm btn-error text-white border-none flex-1"
+                            className="btn btn-sm md:btn-sm btn-error text-white border-none flex-1 text-sm"
                           >
                             {loadingTicketId === ticket.id ? 'Stopping...' : 'Stop Timer'}
                           </button>
                         ) : (
                           <button 
                             onClick={() => handleStartTimer(ticket.id, ticket.team_id)}
-                            disabled={loadingTicketId === ticket.id}
-                            className="btn btn-xs md:btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none flex-1"
+                            disabled={loadingTicketId === ticket.id || !stats.activeEvent}
+                            className="btn btn-sm md:btn-sm bg-th-accent hover:bg-opacity-90 text-white border-none flex-1 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none text-sm"
+                            title={!stats.activeEvent ? "Please clock in first to start working on tickets" : "Start Timer"}
                           >
                             {loadingTicketId === ticket.id ? 'Starting...' : 'Start Timer'}
                           </button>
                         )}
-                        <Link href={`/tickets/${ticket.id}`} className="btn btn-xs md:btn-sm btn-outline flex-1">View</Link>
+                        <Link href={`/tickets/${ticket.id}`} className="btn btn-sm md:btn-sm btn-outline flex-1 text-sm">View</Link>
                       </div>
                     </div>
                   </div>
@@ -747,6 +757,17 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
 
                 <div className="form-control">
                     <label className="label">
+                        <span className="label-text font-medium text-gray-700">Description</span>
+                    </label>
+                    <textarea 
+                        name="description" 
+                        placeholder="Describe the task..." 
+                        className="textarea textarea-bordered w-full bg-white text-gray-900 h-24" 
+                    />
+                </div>
+
+                <div className="form-control">
+                    <label className="label">
                         <span className="label-text font-medium text-gray-700">GitHub URL (Optional)</span>
                     </label>
                     <input 
@@ -820,6 +841,7 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
                         <span className="label-text font-medium text-gray-700">Ticket Title</span>
                     </label>
                     <input 
+                        key={`title-${editingTicket.id}`}
                         name="title" 
                         type="text" 
                         defaultValue={editingTicket.title}
@@ -831,9 +853,23 @@ export default function DashboardTabs({ openTickets, isTeamLeader, recentActivit
 
                 <div className="form-control">
                     <label className="label">
+                        <span className="label-text font-medium text-gray-700">Description</span>
+                    </label>
+                    <textarea 
+                        key={`desc-${editingTicket.id}`}
+                        name="description" 
+                        defaultValue={editingTicket.description}
+                        placeholder="Describe the task..." 
+                        className="textarea textarea-bordered w-full bg-white text-gray-900 h-24" 
+                    />
+                </div>
+
+                <div className="form-control">
+                    <label className="label">
                         <span className="label-text font-medium text-gray-700">GitHub URL (Optional)</span>
                     </label>
                     <input 
+                        key={`github-${editingTicket.id}`}
                         name="github_url" 
                         type="url" 
                         defaultValue={editingTicket.github_url}

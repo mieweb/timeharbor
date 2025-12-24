@@ -15,10 +15,11 @@ export async function createTicket(formData: FormData) {
   }
 
   const title = formData.get('title') as string
+  const description = formData.get('description') as string
   const githubUrl = formData.get('github_url') as string
   const teamId = formData.get('team_id') as string
 
-  console.log('createTicket payload:', { title, githubUrl, teamId, userId: user.id })
+  console.log('createTicket payload:', { title, description, githubUrl, teamId, userId: user.id })
 
   if (!teamId) throw new Error('Team ID is required')
 
@@ -43,6 +44,7 @@ export async function createTicket(formData: FormData) {
     .from('tickets')
     .insert({
       title,
+      description,
       github_url: githubUrl,
       team_id: teamId,
       created_by: user.id,
@@ -85,6 +87,7 @@ export async function updateTicket(formData: FormData) {
 
   const ticketId = formData.get('ticket_id') as string
   const title = formData.get('title') as string
+  const description = formData.get('description') as string
   const githubUrl = formData.get('github_url') as string
 
   if (!ticketId) throw new Error('Ticket ID is required')
@@ -93,6 +96,7 @@ export async function updateTicket(formData: FormData) {
     .from('tickets')
     .update({ 
       title, 
+      description,
       github_url: githubUrl,
       updated_at: new Date().toISOString(), 
       updated_by: user.id 

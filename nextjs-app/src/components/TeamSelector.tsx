@@ -104,18 +104,18 @@ export default function TeamSelector({ userTeams }: TeamSelectorProps) {
       {/* Trigger Button */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors group"
+        className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2 rounded-lg hover:bg-white/10 transition-colors group"
       >
-        <div className="text-right hidden md:block">
-          <div className="text-sm font-bold text-white group-hover:text-th-accent transition-colors">
+        <div className="text-right block">
+          <div className="text-xs md:text-sm font-bold text-white group-hover:text-th-accent transition-colors max-w-[100px] md:max-w-none truncate">
             {selectedTeam?.teamName || 'Select Team'}
           </div>
-          <div className="text-xs text-gray-400 capitalize">
+          <div className="text-[10px] md:text-xs text-gray-400 capitalize hidden md:block">
             {selectedTeam?.role || 'Member'}
           </div>
         </div>
-        <div className="w-10 h-10 rounded-full bg-th-accent/20 flex items-center justify-center text-th-accent border border-th-accent/30">
-          <Users className="w-5 h-5" />
+        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-th-accent/20 flex items-center justify-center text-th-accent border border-th-accent/30 shrink-0">
+          <Users className="w-4 h-4 md:w-5 md:h-5" />
         </div>
       </button>
 
@@ -129,7 +129,7 @@ export default function TeamSelector({ userTeams }: TeamSelectorProps) {
           />
 
           {/* Panel */}
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+          <div className="relative w-full max-w-md bg-white h-[100dvh] shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
             {/* Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-900">Your Teams</h2>

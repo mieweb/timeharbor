@@ -4,6 +4,7 @@ import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
 import StoreInitializer from "@/components/StoreInitializer";
 import MainNav from "@/components/MainNav";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { getActiveSession } from "@/lib/data";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -30,6 +31,7 @@ export default async function RootLayout({
       <body className={`${inter.className} bg-base-100 min-h-screen flex flex-col`}>
         <StoreInitializer activeEvent={activeEvent} />
         <MainNav user={user} activeEvent={activeEvent} userTeams={userTeams} />
+        <MobileBottomNav user={user} activeEvent={activeEvent} userTeams={userTeams} />
 
         <main className="container mx-auto px-4 pb-20 flex-grow max-w-7xl">
           {children}

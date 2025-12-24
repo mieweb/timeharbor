@@ -127,8 +127,9 @@ export default function TicketCard({ ticket, activeTicketId, activeEvent, active
             ) : (
                 <button 
                     onClick={handleStart}
-                    className="btn btn-sm btn-outline min-w-[80px] text-th-accent hover:bg-th-accent hover:text-white hover:border-th-accent border-th-accent"
-                    disabled={isLoading}
+                    className="btn btn-sm btn-outline min-w-[80px] text-th-accent hover:bg-th-accent hover:text-white hover:border-th-accent border-th-accent disabled:bg-gray-300 disabled:text-gray-500 disabled:border-gray-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none"
+                    disabled={isLoading || !activeEvent}
+                    title={!activeEvent ? "Please clock in first to start working on tickets" : "Start Timer"}
                 >
                     Start
                 </button>
