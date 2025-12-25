@@ -30,3 +30,9 @@ coverage/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Meteor Modern-Tools build context directories
+_build
+*/build-assets
+*/build-chunks
+.rsdoctor
