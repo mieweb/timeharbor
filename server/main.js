@@ -30,6 +30,8 @@ Meteor.startup(async () => {
    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   
+
+  
   if (googleClientId && googleClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
       { service: 'google' },
@@ -110,9 +112,14 @@ Meteor.startup(async () => {
     if (!emailToUse) continue;
 
     if (!existingEmail) {
-      await Meteor.users.updateAsync(user._id, {
-        $set: { emails: [{ address: emailToUse, verified: true }] },
-      });
+      const emailOwner = await Accounts.findUserByEmail(emailToUse);
+      if (!emailOwner || emailOwner._id === user._id) {
+        await Meteor.users.updateAsync(user._id, {
+          $set: { emails: [{ address: emailToUse, verified: true }] },
+        });
+      } else {
+        continue;
+      }
     }
 
     const defaultPassword = emailToUse.slice(0, 6);
