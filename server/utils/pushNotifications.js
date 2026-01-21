@@ -4,9 +4,8 @@ import webpush from 'web-push';
 // IMPORTANT: In production, store these in environment variables!
 const vapidKeys = {
   publicKey: process.env.VAPID_PUBLIC_KEY,
-  privateKey: process.env.VAPID_PRIVATE_KEY
-  
-};
+  privateKey: process.env.VAPID_PRIVATE_KEY 
+  };
 
 // Configure web-push
 webpush.setVapidDetails(

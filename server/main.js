@@ -1,4 +1,6 @@
 import { Meteor } from 'meteor/meteor';
+import { Accounts } from 'meteor/accounts-base';
+import 'meteor/accounts-password';
 import { check } from 'meteor/check';
 import { ServiceConfiguration } from 'meteor/service-configuration';
 import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
@@ -23,9 +25,9 @@ dotenv.config(); // uses .env at project root by default
 
 Meteor.startup(async () => {
   // Configure Google OAuth from environment variables
-  
-    const googleClientId = process.env.GOOGLE_CLIENT_ID;
-    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+   const googleClientId = process.env.GOOGLE_CLIENT_ID;
+   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   
   if (googleClientId && googleClientSecret) {
@@ -44,9 +46,10 @@ Meteor.startup(async () => {
     console.error('Google OAuth environment variables not found. Please check your .env file.');
     console.error('Required: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
   }
-  const githubClientId = process.env.HUB_CLIENT_ID;
-  const githubClientSecret = process.env.HUB_CLIENT_SECRET;
-  // Configure GitHub OAuth from environment variables
+    // Configure GitHub OAuth from environment variables
+    const githubClientId = process.env.HUB_CLIENT_ID;
+    const githubClientSecret = process.env.HUB_CLIENT_SECRET;
+
   if (githubClientId && githubClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
       { service: 'github' },
@@ -90,6 +93,37 @@ Meteor.startup(async () => {
     sendVerificationEmail: false, // Don't require email verification for now
     loginExpirationInDays: 90 // Session expires after 90 days
   });
+
+  // Initialize default passwords for users without one (first 6 chars of email)
+  const usersWithoutPassword = await Meteor.users
+    .find({ 'services.password': { $exists: false } })
+    .fetchAsync();
+
+  for (const user of usersWithoutPassword) {
+    const existingEmail = user?.emails?.[0]?.address;
+    const fallbackEmail =
+      user?.services?.google?.email ||
+      user?.services?.github?.email ||
+      user?.services?.github?.username ||
+      null;
+    const emailToUse = (existingEmail || fallbackEmail || '').trim();
+    if (!emailToUse) continue;
+
+    if (!existingEmail) {
+      await Meteor.users.updateAsync(user._id, {
+        $set: { emails: [{ address: emailToUse, verified: true }] },
+      });
+    }
+
+    const defaultPassword = emailToUse.slice(0, 6);
+    if (!defaultPassword) continue;
+
+    if (typeof Accounts.setPassword === 'function') {
+      Accounts.setPassword(user._id, defaultPassword, { logout: false });
+    } else if (typeof Accounts.setPasswordAsync === 'function') {
+      await Accounts.setPasswordAsync(user._id, defaultPassword, { logout: false });
+    }
+  }
 
   // Code to run on server startup
   if (await Tickets.find().countAsync() === 0) {

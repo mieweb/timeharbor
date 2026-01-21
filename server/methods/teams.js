@@ -1,4 +1,6 @@
 import { Meteor } from 'meteor/meteor';
+import { Accounts } from 'meteor/accounts-base';
+import 'meteor/accounts-password';
 import { check } from 'meteor/check';
 import { Teams } from '../../collections.js';
 
@@ -151,5 +153,74 @@ export const teamMethods = {
 
     // Remove user from admins array
     await Teams.updateAsync(teamId, { $set: { admins: remainingAdmins } });
+  },
+
+  // Admin-only: set a password for a team member
+  async setTeamMemberPassword({ teamId, userId, newPassword }) {
+    check(teamId, String);
+    check(userId, String);
+    check(newPassword, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+
+    const isRequesterAdmin =
+      Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isRequesterAdmin) {
+      throw new Meteor.Error('forbidden', 'Only admins can set passwords');
+    }
+
+    const isMember =
+      (Array.isArray(team.members) && team.members.includes(userId)) ||
+      (Array.isArray(team.admins) && team.admins.includes(userId));
+    if (!isMember) {
+      throw new Meteor.Error('bad-request', 'User is not a member of this team');
+    }
+
+    const trimmedPassword = newPassword.trim();
+    if (trimmedPassword.length < 6) {
+      throw new Meteor.Error('bad-request', 'Password must be at least 6 characters');
+    }
+
+    const user = await Meteor.users.findOneAsync(userId);
+    if (!user) {
+      throw new Meteor.Error('not-found', 'User not found');
+    }
+
+    const existingEmail = user?.emails?.[0]?.address;
+    const fallbackEmail =
+      user?.services?.google?.email ||
+      user?.services?.github?.email ||
+      user?.services?.github?.username ||
+      null;
+    const emailToSet = existingEmail || fallbackEmail;
+
+    if (!emailToSet) {
+      throw new Meteor.Error('bad-request', 'User does not have an email to set a password');
+    }
+
+    if (!existingEmail) {
+      await Meteor.users.updateAsync(userId, {
+        $set: { emails: [{ address: emailToSet, verified: true }] },
+      });
+    }
+
+    if (typeof Accounts.setPassword === 'function') {
+      Accounts.setPassword(userId, trimmedPassword, { logout: false });
+      return true;
+    }
+
+    if (typeof Accounts.setPasswordAsync === 'function') {
+      await Accounts.setPasswordAsync(userId, trimmedPassword, { logout: false });
+      return true;
+    }
+
+    throw new Meteor.Error('not-available', 'Password functionality is not available on the server');
   },
 };
