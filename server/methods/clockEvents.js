@@ -35,7 +35,7 @@ export const clockEventMethods = {
       endTime: null
     });
     
-    // Send push notification to team admins/leaders
+    // Send push notification to team admins
     try {
       await notifyTeamAdmins(teamId, {
         title: 'Time Harbor',
@@ -114,7 +114,7 @@ export const clockEventMethods = {
         $set: { endTime: new Date() },
       });
       
-      // Send push notification to team admins/leaders
+      // Send push notification to team admins
       try {
         await notifyTeamAdmins(teamId, {
           title: 'Time Harbor',
@@ -194,18 +194,16 @@ export const clockEventMethods = {
     if (!this.userId) throw new Meteor.Error('not-authorized');
 
     // Check if current user has permission to view this user's data
-    // Only allow if current user is a leader/admin of a team that includes the target user
+    // Only allow if current user is an admin of a team that includes the target user
     const userTeams = await Teams.find({
       $or: [
         { members: this.userId },
-        { leader: this.userId },
         { admins: this.userId }
       ]
     }).fetchAsync();
 
     const hasPermission = userTeams.some(team => 
       team.members?.includes(userId) || 
-      team.leader === userId || 
       team.admins?.includes(userId)
     );
 
@@ -273,7 +271,7 @@ export const clockEventMethods = {
     };
   },
 
-  // Admin/leader: update clock event times
+  // Admin: update clock event times
   async updateClockEventTimes({ clockEventId, startTimestamp, endTimestamp }) {
     check(clockEventId, String);
     if (startTimestamp !== undefined && typeof startTimestamp !== 'number') {
@@ -287,13 +285,10 @@ export const clockEventMethods = {
     const clockEvent = await ClockEvents.findOneAsync(clockEventId);
     if (!clockEvent) throw new Meteor.Error('not-found', 'Clock event not found');
 
-    // Only team leader/admins can edit clock events
+    // Only team admins can edit clock events
     const team = await Teams.findOneAsync({
       _id: clockEvent.teamId,
-      $or: [
-        { leader: this.userId },
-        { admins: this.userId }
-      ]
+      admins: this.userId
     });
     if (!team) throw new Meteor.Error('not-authorized', 'You are not allowed to edit this clock event');
 

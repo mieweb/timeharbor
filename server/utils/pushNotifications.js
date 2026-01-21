@@ -3,8 +3,8 @@ import webpush from 'web-push';
 // VAPID keys for Web Push (generate new ones using: npx web-push generate-vapid-keys)
 // IMPORTANT: In production, store these in environment variables!
 const vapidKeys = {
-  publicKey: process.env.VAPID_PUBLIC_KEY,
-  privateKey: process.env.VAPID_PRIVATE_KEY
+  
+  
 };
 
 // Configure web-push
@@ -34,7 +34,7 @@ export async function sendPushNotification(subscription, payload) {
 }
 
 /**
- * Send notifications to all team admins/leaders
+ * Send notifications to all team admins
  * @param {String} teamId - The team ID
  * @param {Object} notificationData - The notification data
  */
@@ -46,8 +46,8 @@ export async function notifyTeamAdmins(teamId, notificationData) {
     const team = await Teams.findOneAsync(teamId);
     if (!team) return;
 
-    // Get all admin and leader user IDs
-    const adminIds = [...(team.admins || []), team.leader].filter(Boolean);
+    // Get all admin user IDs
+    const adminIds = team.admins || [];
     
     // Get users with push subscriptions
     const users = await Meteor.users.find({ 

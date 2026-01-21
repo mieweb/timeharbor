@@ -50,7 +50,6 @@ Template.calendar.events({
     const userTeams = Teams.find({ 
       $or: [
         { members: Meteor.userId() },
-        { leader: Meteor.userId() },
         { admins: Meteor.userId() }
       ]
     }).fetch();
@@ -142,7 +141,7 @@ function showTeamSelectionModal(userTeams, meetingId, title, duration) {
                     data-team-id="${team._id}">
               <div class="font-medium">${team.name}</div>
               <div class="text-sm text-gray-500">
-                ${team.leader === Meteor.userId() ? 'Leader' : 'Member'}
+                ${team.admins?.includes(Meteor.userId()) ? 'Admin' : 'Member'}
               </div>
             </button>
           `).join('')}

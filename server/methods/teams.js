@@ -32,8 +32,7 @@ export const teamMethods = {
     const teamId = await Teams.insertAsync({
       name: teamName,
       members: [this.userId],
-      admins: [this.userId],
-      leader: this.userId,
+      admins: [this.userId], // Creator is admin
       code,
       createdAt: new Date(),
     });
@@ -93,4 +92,64 @@ export const teamMethods = {
     }
     await Teams.removeAsync(teamId);
   },
-}; 
+
+  // Promote a team member to admin/co-admin
+  async addTeamAdmin(teamId, userId) {
+    check(teamId, String);
+    check(userId, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+
+    const isRequesterAdmin =
+      Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isRequesterAdmin) {
+      throw new Meteor.Error('forbidden', 'Only admins can promote members');
+    }
+
+    if (!Array.isArray(team.members) || !team.members.includes(userId)) {
+      throw new Meteor.Error('bad-request', 'User is not a member of this team');
+    }
+
+    // Add the user as admin/co-admin (no duplicates)
+    await Teams.updateAsync(teamId, { $addToSet: { admins: userId } });
+  },
+
+  // Remove admin/co-admin status from a team member
+  async removeTeamAdmin(teamId, userId) {
+    check(teamId, String);
+    check(userId, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+
+    const isRequesterAdmin =
+      Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isRequesterAdmin) {
+      throw new Meteor.Error('forbidden', 'Only admins can remove admin status');
+    }
+
+    const admins = Array.isArray(team.admins) ? team.admins : [];
+
+    // Ensure at least one admin remains
+    const remainingAdmins = admins.filter((id) => id !== userId);
+    if (remainingAdmins.length === 0) {
+      throw new Meteor.Error('bad-request', 'Team must have at least one admin');
+    }
+
+    // Remove user from admins array
+    await Teams.updateAsync(teamId, { $set: { admins: remainingAdmins } });
+  },
+};

@@ -40,15 +40,25 @@ Template.teams.helpers({
   },
   userTeams: getUserTeams,
   selectedTeam() {
-    const id = Template.instance().selectedTeamId.get();
+    const instance = Template.instance();
+    const id = instance.selectedTeamId.get();
     const queriedTeam = id ? Teams.findOne(id) : null;
     if (!queriedTeam) return null;
+
+    const users = instance.selectedTeamUsers.get() || [];
+    const admins = queriedTeam.admins || [];
+
+    const membersWithRoles = users.map((user) => ({
+      ...user,
+      isAdmin: admins.includes(user.id),
+    }));
+
     return {
+      _id: queriedTeam._id,
       name: queriedTeam.name,
       code: queriedTeam.code,
-      members: Template.instance().selectedTeamUsers.get(),
-      admins: queriedTeam.admins,
-      leader: queriedTeam.leader,
+      members: membersWithRoles,
+      admins,
       createdAt: queriedTeam.createdAt,
     };
   },
@@ -56,6 +66,18 @@ Template.teams.helpers({
     const team = Teams.findOne(teamId);
     const userId = Meteor.userId();
     return !!(team && Array.isArray(team.admins) && userId && team.admins.includes(userId));
+  },
+  // Is the current user an admin for the currently selected team?
+  currentUserIsAdminForSelectedTeam() {
+    const instance = Template.instance();
+    const id = instance.selectedTeamId.get();
+    const team = id ? Teams.findOne(id) : null;
+    const userId = Meteor.userId();
+    return !!(team && Array.isArray(team.admins) && userId && team.admins.includes(userId));
+  },
+  // Check if a user ID is the current user
+  isCurrentUser(userId) {
+    return userId === Meteor.userId();
   },
 });
 
@@ -156,5 +178,38 @@ Template.teams.events({
         }
       });
     }
+  },
+  // Promote a member to admin
+  'click .make-admin-btn'(e, t) {
+    e.preventDefault();
+    const teamId = t.selectedTeamId.get();
+    const userId = e.currentTarget.dataset.id;
+    if (!teamId || !userId) return;
+
+    Meteor.call('addTeamAdmin', teamId, userId, (err) => {
+      if (err) {
+        alert('Error making admin: ' + (err.reason || err.message));
+      }
+    });
+  },
+  // Remove admin status from a co-admin
+  'click .remove-admin-btn'(e, t) {
+    e.preventDefault();
+    const teamId = t.selectedTeamId.get();
+    const userId = e.currentTarget.dataset.id;
+    if (!teamId || !userId) return;
+
+    const user = t.selectedTeamUsers.get().find(u => u.id === userId);
+    const userName = user?.name || user?.email || 'this user';
+    
+    if (!confirm(`Are you sure you want to remove admin status from ${userName}? They will lose all admin privileges.`)) {
+      return;
+    }
+
+    Meteor.call('removeTeamAdmin', teamId, userId, (err) => {
+      if (err) {
+        alert('Error removing admin: ' + (err.reason || err.message));
+      }
+    });
   },
 });

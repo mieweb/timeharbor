@@ -48,9 +48,47 @@ module.exports = {
           "--tab-border": "1px",
           "--tab-radius": "0.25rem",
         },
+        dark: {
+          "primary": "#8B7FD9",        // Lighter SlateBlue for dark mode
+          "primary-focus": "#7A6BC9",
+          "primary-content": "#ffffff",
+          
+          "secondary": "#718096",      // Lighter gray for dark mode
+          "secondary-focus": "#4A5568",
+          "secondary-content": "#ffffff",
+          
+          "accent": "#9CA3AF",         // Light gray
+          "accent-focus": "#718096",
+          "accent-content": "#1A202C",
+          
+          "neutral": "#374151",        // Dark gray
+          "neutral-focus": "#4B5563",
+          "neutral-content": "#ffffff",
+          
+          "base-100": "#1F2937",       // Dark gray background
+          "base-200": "#111827",       // Darker gray
+          "base-300": "#374151",       // Medium dark gray
+          "base-content": "#F9FAFB",   // Light text
+          
+          "info": "#60A5FA",           // Lighter info blue
+          "success": "#34D399",        // Lighter success green
+          "warning": "#FBBF24",        // Lighter warning yellow
+          "error": "#F87171",          // Lighter error red
+          
+          "--rounded-box": "0.5rem",
+          "--rounded-btn": "0.25rem",
+          "--rounded-badge": "0.125rem",
+          "--animation-btn": "0.25s",
+          "--animation-input": "0.2s",
+          "--btn-text-case": "normal-case",
+          "--btn-focus-scale": "0.95",
+          "--border-btn": "1px",
+          "--tab-border": "1px",
+          "--tab-radius": "0.25rem",
+        },
       },
     ],
-    darkTheme: false,
+    darkTheme: "dark",
   },
   plugins: [require('daisyui')],
 };

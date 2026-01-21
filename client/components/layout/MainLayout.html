@@ -10,7 +10,10 @@
       <a href="/calendar" class="btn btn-ghost hover:bg-primary-focus">Calendar</a>
       <a href="/admin" class="btn btn-ghost hover:bg-primary-focus">Admin Review</a>
     </nav>
-    <div class="flex-none">
+    <div class="flex-none flex items-center gap-2">
+      <button id="themeToggle" class="btn btn-ghost btn-sm btn-square" title="Toggle theme">
+        <i id="themeIcon" class="fa-solid fa-moon"></i>
+      </button>
       <button id="logoutBtn" class="btn btn-outline btn-error" {{logoutBtnAttrs}}>
         {{#if isLogoutLoading}}
           <span class="loading loading-spinner loading-sm"></span>

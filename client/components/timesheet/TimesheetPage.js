@@ -345,21 +345,20 @@ Template.timesheet.onCreated(function () {
     const currentUserId = Meteor.userId();
     
     if (userId) {
-      // Check if user is viewing their own timesheet or if current user is admin/leader
+      // Check if user is viewing their own timesheet or if current user is admin
       const isViewingOwnTimesheet = userId === currentUserId;
-      const leaderTeams = Teams.find({ leader: currentUserId }).fetch();
       const adminTeams = Teams.find({ admins: currentUserId }).fetch();
-      const isAdminOrLeader = leaderTeams.length > 0 || adminTeams.length > 0;
-      instance.canEdit.set(isAdminOrLeader);
+      const isAdmin = adminTeams.length > 0;
+      instance.canEdit.set(isAdmin);
       
       if (isViewingOwnTimesheet) {
         // Regular team member viewing their own timesheet
         this.subscribe('clockEventsForUser'); // Only their own clock events
         this.subscribe('userTeams'); // Teams they're part of
         this.subscribe('teamTickets', Teams.find({ members: currentUserId }).fetch().map(t => t._id));
-      } else if (isAdminOrLeader) {
-        // Admin/leader viewing team member timesheet
-        const allTeamIds = [...leaderTeams, ...adminTeams].map(t => t._id);
+      } else if (isAdmin) {
+        // Admin viewing team member timesheet
+        const allTeamIds = adminTeams.map(t => t._id);
         
         if (allTeamIds.length) {
           this.subscribe('clockEventsForTeams', allTeamIds);
@@ -373,13 +372,12 @@ Template.timesheet.onCreated(function () {
         const allTeams = Teams.find({
           $or: [
             { members: currentUserId },
-            { leader: currentUserId },
             { admins: currentUserId }
           ]
         }).fetch();
         
         const allMembers = Array.from(new Set(
-          allTeams.flatMap(t => [...(t.members || []), ...(t.admins || []), t.leader].filter(id => id))
+          allTeams.flatMap(t => [...(t.members || []), ...(t.admins || [])].filter(id => id))
         ));
         
         if (allMembers.length) {
@@ -589,7 +587,7 @@ Template.timesheet.events({
   
   'click #editClockins': (e, t) => {
     if (!t.canEdit.get()) {
-      alert('Only team admins/leaders can edit timesheets.');
+      alert('Only team admins can edit timesheets.');
       return;
     }
     

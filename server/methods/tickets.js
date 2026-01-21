@@ -197,13 +197,10 @@ export const ticketMethods = {
 
     if (!this.userId) throw new Meteor.Error('not-authorized');
 
-    // Verify user is admin/leader of the team
+    // Verify user is admin of the team
     const team = await Teams.findOneAsync({ 
       _id: teamId, 
-      $or: [
-        { leader: this.userId },
-        { admins: this.userId }
-      ]
+      admins: this.userId
     });
 
     if (!team) throw new Meteor.Error('not-authorized', 'You are not authorized to perform this operation');
