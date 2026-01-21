@@ -1,5 +1,6 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { Teams } from '../../../collections.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
@@ -211,5 +212,17 @@ Template.teams.events({
         alert('Error removing admin: ' + (err.reason || err.message));
       }
     });
+  },
+  // Handle member name click - navigate to member activity page
+  'click .member-name-link'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const userId = e.currentTarget.getAttribute('data-user-id');
+    // Get teamId from template instance instead of HTML attribute
+    const teamId = t.selectedTeamId.get();
+    
+    if (userId && teamId) {
+      FlowRouter.go(`/member/${teamId}/${userId}`);
+    }
   },
 });

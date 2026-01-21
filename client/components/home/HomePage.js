@@ -80,7 +80,17 @@ const getColumnDefinitions = (showClockTimes = true) => {
   columns.push(
     { 
       headerName: 'Tickets', field: 'tickets', flex: 1.5, sortable: false, filter: false,
-      valueFormatter: p => (Array.isArray(p.value) && p.value.length) ? p.value.join(', ') : 'No tickets'
+      cellRenderer: p => {
+        if (!Array.isArray(p.value) || !p.value.length) return 'No tickets';
+        return p.value.map(ticket => {
+          const title = ticket?.title || 'Untitled';
+          const url = ticket?.url;
+          if (url) {
+            return `<a class="text-primary hover:text-primary-focus hover:underline" href="${url}" target="_blank" rel="noopener noreferrer">${title}</a>`;
+          }
+          return `<span>${title}</span>`;
+        }).join(', ');
+      }
     }
   );
 
@@ -200,7 +210,7 @@ Template.home.onCreated(function () {
           let firstClockIn = null;
           let lastClockOut = null;
           let hasActiveSession = false;
-          const ticketTitles = new Set();
+          const ticketMap = new Map();
 
           dayClockEvents.forEach(clockEvent => {
             const sessionStart = clockEvent.startTimestamp;
@@ -229,7 +239,13 @@ Template.home.onCreated(function () {
               
               clockEvent.tickets?.forEach(ticket => {
                 const ticketDoc = Tickets.findOne(ticket.ticketId);
-                if (ticketDoc) ticketTitles.add(ticketDoc.title);
+                if (!ticketDoc) return;
+                if (!ticketMap.has(ticketDoc._id)) {
+                  ticketMap.set(ticketDoc._id, {
+                    title: ticketDoc.title,
+                    url: ticketDoc.github || null
+                  });
+                }
               });
             }
           });
@@ -246,7 +262,7 @@ Template.home.onCreated(function () {
               firstClockIn,
               lastClockOut,
               hasActiveSession,
-              tickets: Array.from(ticketTitles)
+              tickets: Array.from(ticketMap.values())
             });
           }
         }

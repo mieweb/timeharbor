@@ -44,8 +44,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
               {{#each selectedTeam.members}}
                 <div class="flex items-center justify-between gap-3 rounded-lg border border-base-300 bg-base-100 p-3">
-                  <div class="min-w-0">
-                    <div class="font-medium truncate">
+                  <div class="min-w-0 flex-1">
+                    <div 
+                      class="font-medium truncate cursor-pointer hover:text-primary transition-colors member-name-link" 
+                      data-user-id="{{this.id}}">
                       {{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}
                     </div>
                     <div class="text-xs text-base-content/60 truncate">

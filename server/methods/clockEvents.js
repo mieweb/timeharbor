@@ -150,10 +150,13 @@ export const clockEventMethods = {
     if (!clockEvent) return;
     const existing = (clockEvent.tickets || []).find(t => t.ticketId === ticketId);
     if (existing) {
-      // If already exists and is stopped, start it again by setting startTimestamp
+      // If already exists and is stopped, start it again and create a new session
       await ClockEvents.updateAsync(
         { _id: clockEventId, 'tickets.ticketId': ticketId },
-        { $set: { 'tickets.$.startTimestamp': now } }
+        {
+          $set: { 'tickets.$.startTimestamp': now },
+          $push: { 'tickets.$.sessions': { startTimestamp: now, endTimestamp: null } }
+        }
       );
     } else {
       // Get the ticket's initial accumulated time
@@ -169,7 +172,8 @@ export const clockEventMethods = {
           tickets: {
             ticketId,
             startTimestamp: now,
-            accumulatedTime: initialTime // Include initial time from ticket
+            accumulatedTime: initialTime, // Include initial time from ticket
+            sessions: [{ startTimestamp: now, endTimestamp: null }]
           }
         },
         $set: {

@@ -72,6 +72,16 @@ FlowRouter.route('/timesheet/:userId', {
   }
 });
 
+// Member Activity route
+FlowRouter.route('/member/:teamId/:userId', {
+  name: 'memberActivity',
+  action() {
+    requireAuth(this, FlowRouter.go);
+    currentScreen.set('mainLayout');
+    currentRouteTemplate.set('memberActivity');
+  }
+});
+
 // User Guide route
 FlowRouter.route('/guide', {
   name: 'guide',
@@ -112,6 +122,9 @@ export const navigateToRoute = (routeName, params = {}) => {
       break;
     case 'timesheet':
       FlowRouter.go(`/timesheet/${params.userId}`);
+      break;
+    case 'memberActivity':
+      FlowRouter.go(`/member/${params.teamId}/${params.userId}`);
       break;
     default:
       FlowRouter.go('/');
