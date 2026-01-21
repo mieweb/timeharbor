@@ -80,7 +80,17 @@ const getColumnDefinitions = (showClockTimes = true) => {
   columns.push(
     { 
       headerName: 'Tickets', field: 'tickets', flex: 1.5, sortable: false, filter: false,
-      valueFormatter: p => (Array.isArray(p.value) && p.value.length) ? p.value.join(', ') : 'No tickets'
+      cellRenderer: p => {
+        if (!Array.isArray(p.value) || !p.value.length) return 'No tickets';
+        return p.value.map(ticket => {
+          const title = ticket?.title || 'Untitled';
+          const url = ticket?.url;
+          if (url) {
+            return `<a class="text-primary hover:text-primary-focus hover:underline" href="${url}" target="_blank" rel="noopener noreferrer">${title}</a>`;
+          }
+          return `<span>${title}</span>`;
+        }).join(', ');
+      }
     }
   );
 
@@ -123,8 +133,8 @@ Template.home.onCreated(function () {
   
   // Subscribe to data
   this.autorun(() => {
-    const leaderTeams = Teams.find({ leader: Meteor.userId() }).fetch();
-    const teamIds = leaderTeams.map(t => t._id);
+    const adminTeams = Teams.find({ admins: Meteor.userId() }).fetch();
+    const teamIds = adminTeams.map(t => t._id);
     
     if (teamIds.length) {
       this.subscribe('clockEventsForTeams', teamIds);
@@ -135,13 +145,12 @@ Template.home.onCreated(function () {
     const allTeams = Teams.find({
       $or: [
         { members: Meteor.userId() },
-        { leader: Meteor.userId() },
         { admins: Meteor.userId() }
       ]
     }).fetch();
     
     const allMembers = Array.from(new Set(
-      allTeams.flatMap(t => [...(t.members || []), ...(t.admins || []), t.leader].filter(id => id))
+      allTeams.flatMap(t => [...(t.members || []), ...(t.admins || [])].filter(id => id))
     ));
     
     if (allMembers.length) {
@@ -153,16 +162,16 @@ Template.home.onCreated(function () {
   template.computeTeamMemberSummary = () => {
     const startDateStr = template.startDate.get();
     const endDateStr = template.endDate.get();
-    const leaderTeams = Teams.find({ leader: Meteor.userId() }).fetch();
+    const adminTeams = Teams.find({ admins: Meteor.userId() }).fetch();
     
-    if (!leaderTeams.length) return [];
+    if (!adminTeams.length) return [];
 
     const startDate = new Date(startDateStr + 'T00:00:00');
     const endDate = new Date(endDateStr + 'T23:59:59');
-    const teamIds = leaderTeams.map(t => t._id);
+    const teamIds = adminTeams.map(t => t._id);
 
     const allMembers = Array.from(new Set(
-      leaderTeams.flatMap(t => [...(t.members || []), ...(t.admins || []), t.leader].filter(id => id))
+      adminTeams.flatMap(t => [...(t.members || []), ...(t.admins || [])].filter(id => id))
     ));
 
     const rows = [];
@@ -201,7 +210,7 @@ Template.home.onCreated(function () {
           let firstClockIn = null;
           let lastClockOut = null;
           let hasActiveSession = false;
-          const ticketTitles = new Set();
+          const ticketMap = new Map();
 
           dayClockEvents.forEach(clockEvent => {
             const sessionStart = clockEvent.startTimestamp;
@@ -230,7 +239,13 @@ Template.home.onCreated(function () {
               
               clockEvent.tickets?.forEach(ticket => {
                 const ticketDoc = Tickets.findOne(ticket.ticketId);
-                if (ticketDoc) ticketTitles.add(ticketDoc.title);
+                if (!ticketDoc) return;
+                if (!ticketMap.has(ticketDoc._id)) {
+                  ticketMap.set(ticketDoc._id, {
+                    title: ticketDoc.title,
+                    url: ticketDoc.github || null
+                  });
+                }
               });
             }
           });
@@ -247,7 +262,7 @@ Template.home.onCreated(function () {
               firstClockIn,
               lastClockOut,
               hasActiveSession,
-              tickets: Array.from(ticketTitles)
+              tickets: Array.from(ticketMap.values())
             });
           }
         }
@@ -267,8 +282,8 @@ Template.home.onRendered(function () {
   // Initialize grid when ready
   instance.autorun(() => {
     const teamsReady = !isTeamsLoading.get();
-    const hasLeaderTeam = !!Teams.findOne({ leader: Meteor.userId() });
-    if (!teamsReady || !hasLeaderTeam) return;
+    const hasAdminTeam = !!Teams.findOne({ admins: Meteor.userId() });
+    if (!teamsReady || !hasAdminTeam) return;
 
     Tracker.afterFlush(() => {
       const gridEl = instance.find('#teamDashboardGrid');
@@ -296,7 +311,7 @@ Template.home.onRendered(function () {
     instance.startDate.get();
     instance.endDate.get();
     instance.selectedPreset.get();
-    Teams.find({ leader: Meteor.userId() }).fetch();
+    Teams.find({ admins: Meteor.userId() }).fetch();
     ClockEvents.find().fetch();
     Tickets.find().fetch();
 
@@ -317,8 +332,8 @@ Template.home.onDestroyed(function () {
 
 Template.home.helpers({
   // User role helpers
-  isTeamLeader() {
-    return Teams.findOne({ leader: Meteor.userId() });
+  isTeamAdmin() {
+    return Teams.findOne({ admins: Meteor.userId() });
   },
   
   isFirstTimeUser() {
@@ -379,8 +394,8 @@ Template.home.helpers({
   
   // Legacy helpers for team dashboard
   allClockEvents() {
-    const leaderTeams = Teams.find({ leader: Meteor.userId() }).fetch();
-    const teamIds = leaderTeams.map(t => t._id);
+    const adminTeams = Teams.find({ admins: Meteor.userId() }).fetch();
+    const teamIds = adminTeams.map(t => t._id);
     return ClockEvents.find({ teamId: { $in: teamIds } }, { sort: { startTimestamp: -1 } }).fetch();
   },
   

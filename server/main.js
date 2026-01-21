@@ -19,12 +19,14 @@ import { notifyTeamAdmins, notifyUser } from './utils/pushNotifications.js';
 
 // Load environment variables from .env file
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env' });
+dotenv.config(); // uses .env at project root by default
 
 Meteor.startup(async () => {
   // Configure Google OAuth from environment variables
-  const googleClientId = process.env.GOOGLE_CLIENT_ID;
-  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
   
   if (googleClientId && googleClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
@@ -42,11 +44,9 @@ Meteor.startup(async () => {
     console.error('Google OAuth environment variables not found. Please check your .env file.');
     console.error('Required: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
   }
-
-  // Configure GitHub OAuth from environment variables
   const githubClientId = process.env.HUB_CLIENT_ID;
   const githubClientSecret = process.env.HUB_CLIENT_SECRET;
-  
+  // Configure GitHub OAuth from environment variables
   if (githubClientId && githubClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
       { service: 'github' },
@@ -202,7 +202,7 @@ Meteor.startup(async () => {
                 console.error('Failed to send auto-clock-out notification to user:', error);
               }
 
-              // Send notification to team admins/leaders
+              // Send notification to team admins
               try {
                 await notifyTeamAdmins(clockEvent.teamId, {
                   title: 'Time Harbor - Auto Clock Out',
@@ -240,12 +240,11 @@ Meteor.startup(async () => {
 });
 
 Meteor.publish('userTeams', function () {
-  // Publish teams where the user is a member, leader, or admin
+  // Publish teams where the user is a member or admin
   if (!this.userId) return this.ready();
   return Teams.find({
     $or: [
       { members: this.userId },
-      { leader: this.userId },
       { admins: this.userId },
     ],
   });
@@ -264,12 +263,11 @@ Meteor.publish('teamMembers', async function (teamIds) {
   
   if (!this.userId) return this.ready();
 
-  // Allow if user is a member, leader, or admin of the requested teams
+  // Allow if user is a member or admin of the requested teams
   const teams = await Teams.find({
     _id: { $in: validTeamIds },
     $or: [
       { members: this.userId },
-      { leader: this.userId },
       { admins: this.userId },
     ],
   }).fetchAsync();
@@ -304,30 +302,26 @@ Meteor.publish('clockEventsForTeams', async function (teamIds) {
   
   if (!this.userId) return this.ready();
 
-  // Publish clock events for teams the user leads OR admins
+  // Publish clock events for teams the user is a member of (admin or regular member)
+  // Publish clock events for teams the user is a member of (admin or regular member)
   const allowedTeams = await Teams.find({
     _id: { $in: validTeamIds },
-    $or: [
-      { leader: this.userId },
-      { admins: this.userId },
-    ],
+    members: this.userId, // Check if user is a member (includes admins)
+    members: this.userId, // Check if user is a member (includes admins)
   }).fetchAsync();
   const allowedTeamIds = allowedTeams.map(t => t._id);
   return ClockEvents.find({ teamId: { $in: allowedTeamIds } });
 });
 
-// Publish all tickets for a team for admin review (only for team leaders/admins)
+// Publish all tickets for a team for admin review (only for team admins)
 Meteor.publish('adminTeamTickets', async function (teamId) {
   check(teamId, String);
   if (!this.userId) return this.ready();
 
-  // Check if user is admin/leader of the team
+  // Check if user is admin of the team
   const team = await Teams.findOneAsync({ 
     _id: teamId, 
-    $or: [
-      { leader: this.userId },
-      { admins: this.userId }
-    ]
+    admins: this.userId
   });
 
   if (!team) return this.ready();
@@ -346,16 +340,15 @@ Meteor.publish('usersByIds', async function (userIds) {
   
   check(validUserIds, [String]);
   
-  // Only publish users that are in teams the current user is a member, leader, or admin of
-  const userTeams = await Teams.find({ $or: [{ members: this.userId }, { leader: this.userId }, { admins: this.userId }] }).fetchAsync();
+  // Only publish users that are in teams the current user is a member or admin of
+  const userTeams = await Teams.find({ $or: [{ members: this.userId }, { admins: this.userId }] }).fetchAsync();
   
   // Filter out null/undefined values and flatten the arrays safely
   const allowedUserIds = Array.from(new Set(
     userTeams.flatMap(team => {
       const members = team.members || [];
       const admins = team.admins || [];
-      const leader = team.leader || null;
-      return [...members, ...admins, leader].filter(id => id !== null && id !== undefined);
+      return [...members, ...admins].filter(id => id !== null && id !== undefined);
     })
   ));
   

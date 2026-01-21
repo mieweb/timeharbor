@@ -141,11 +141,10 @@ Template.admin.onRendered(function () {
 
 Template.admin.helpers({
   adminTeams() {
+    // Show teams where user is in admins array (includes creator and co-admins)
+    // Note: leader is redundant since creator is already in admins
     return Teams.find({
-      $or: [
-        { leader: Meteor.userId() },
-        { admins: Meteor.userId() }
-      ]
+      admins: Meteor.userId()
     });
   },
 

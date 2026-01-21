@@ -5,10 +5,23 @@ export async function stopTicketInClockEvent(clockEventId, ticketId, now, ClockE
   if (ticketEntry) {
     const elapsed = Math.floor((now - ticketEntry.startTimestamp) / 1000);
     const prev = ticketEntry.accumulatedTime || 0;
+    const sessions = Array.isArray(ticketEntry.sessions) ? [...ticketEntry.sessions] : [];
+    const lastSessionIndex = sessions.length - 1;
+    if (lastSessionIndex >= 0 && sessions[lastSessionIndex].endTimestamp == null) {
+      sessions[lastSessionIndex] = {
+        ...sessions[lastSessionIndex],
+        endTimestamp: now
+      };
+    } else {
+      sessions.push({ startTimestamp: ticketEntry.startTimestamp, endTimestamp: now });
+    }
     await ClockEvents.updateAsync(
       { _id: clockEventId, 'tickets.ticketId': ticketId },
       {
-        $set: { 'tickets.$.accumulatedTime': prev + elapsed },
+        $set: {
+          'tickets.$.accumulatedTime': prev + elapsed,
+          'tickets.$.sessions': sessions
+        },
         $unset: { 'tickets.$.startTimestamp': '' }
       }
     );

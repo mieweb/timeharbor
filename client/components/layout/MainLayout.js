@@ -87,6 +87,19 @@ if (Template.mainLayout) {
         FlowRouter.go('/');
       }
     },
+    'click #themeToggle'(event) {
+      event.preventDefault();
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      // Update icon
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        icon.className = newTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      }
+    },
     'click #logoutBtn'(event, instance) {
       event.preventDefault();
       
@@ -98,6 +111,15 @@ if (Template.mainLayout) {
       // Start logout process
       isLogoutLoading.set(true);
       Meteor.logout(handleLogoutResult);
+    }
+  });
+
+  // Update theme icon on template render
+  Template.mainLayout.onRendered(function() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const icon = document.getElementById('themeIcon');
+    if (icon) {
+      icon.className = currentTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     }
   });
 }
