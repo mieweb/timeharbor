@@ -193,6 +193,37 @@ Template.teams.events({
       }
     });
   },
+  // Set a password for a team member (admin-only)
+  'click .set-password-btn'(e, t) {
+    e.preventDefault();
+    const teamId = t.selectedTeamId.get();
+    const userId = e.currentTarget.dataset.id;
+    if (!teamId || !userId) return;
+
+    const user = t.selectedTeamUsers.get().find(u => u.id === userId);
+    const userName = user?.name || user?.email || 'this user';
+
+    const newPassword = prompt(`Set a new password for ${userName}. Minimum 6 characters:`);
+    if (!newPassword) return;
+    if (newPassword.trim().length < 6) {
+      alert('Password must be at least 6 characters.');
+      return;
+    }
+
+    const confirmPassword = prompt('Confirm the new password:');
+    if (confirmPassword !== newPassword) {
+      alert('Passwords do not match.');
+      return;
+    }
+
+    Meteor.call('setTeamMemberPassword', { teamId, userId, newPassword }, (err) => {
+      if (err) {
+        alert('Error setting password: ' + (err.reason || err.message));
+      } else {
+        alert(`Password updated for ${userName}.`);
+      }
+    });
+  },
   // Remove admin status from a co-admin
   'click .remove-admin-btn'(e, t) {
     e.preventDefault();

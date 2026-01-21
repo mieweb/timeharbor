@@ -8,6 +8,7 @@ export const currentScreen = new ReactiveVar('authPage');
 
 Template.authPage.onCreated(function() {
   this.loginError = new ReactiveVar('');
+  this.resetMessage = new ReactiveVar('');
   this.isLoginLoading = new ReactiveVar(false);
   
   this.autorun(() => {
@@ -22,8 +23,10 @@ Template.authPage.onCreated(function() {
 Template.authPage.helpers({
   showLoginForm: () => authFormType.get() === 'login',
   showSignupForm: () => authFormType.get() === 'signup',
+  showResetForm: () => authFormType.get() === 'reset',
   showEmailForm: () => authFormType.get() !== 'hidden',
   loginError: () => Template.instance().loginError.get(),
+  resetMessage: () => Template.instance().resetMessage.get(),
   isLoginLoading: () => Template.instance().isLoginLoading.get()
 });
 
@@ -39,6 +42,7 @@ Template.formField.helpers({
 Template.authPage.events({
   'click #showSignupBtn': () => authFormType.set('signup'),
   'click #showLoginBtn': () => authFormType.set('login'),
+  'click #showResetBtn': () => authFormType.set('reset'),
   
   'click #showEmailForm': () => {
     authFormType.set(authFormType.get() === 'hidden' ? 'login' : 'hidden');
@@ -99,6 +103,32 @@ Template.authPage.events({
     Meteor.loginWithPassword(email.value.trim(), password.value, (err) => {
       if (err) alert('Login failed: ' + err.reason);
       else currentScreen.set('mainLayout');
+    });
+  },
+  'submit #resetForm'(event, template) {
+    event.preventDefault();
+    const { email, teamCode, newPassword, confirmPassword } = event.target;
+
+    template.loginError.set('');
+    template.resetMessage.set('');
+
+    if (newPassword.value !== confirmPassword.value) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    Meteor.call('resetPasswordWithTeamCode', {
+      email: email.value.trim(),
+      teamCode: teamCode.value.trim(),
+      newPassword: newPassword.value
+    }, (err) => {
+      if (err) {
+        alert('Reset failed: ' + (err.reason || err.message));
+      } else {
+        alert('Password updated. Please log in.');
+        authFormType.set('login');
+        event.target.reset();
+      }
     });
   }
 });

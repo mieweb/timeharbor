@@ -63,6 +63,13 @@
                     {{/if}}
 
                     {{#if currentUserIsAdminForSelectedTeam}}
+                      {{#unless (isCurrentUser this.id)}}
+                        <button
+                          class="btn btn-xs btn-outline set-password-btn"
+                          data-id="{{this.id}}">
+                          Set password
+                        </button>
+                      {{/unless}}
                       {{#if this.isAdmin}}
                         {{#unless (isCurrentUser this.id)}}
                           <button
