@@ -10,6 +10,7 @@ import './components/home/HomePage.html';
 import './components/calendar/CalendarPage.html';
 import './components/admin/admin.html';
 import './components/timesheet/TimesheetPage.html';
+import './components/member/MemberActivityPage.html';
 import './components/guide/UserGuide.html';
 
 // Import component JS files
@@ -21,6 +22,7 @@ import './components/home/HomePage.js';
 import './components/calendar/CalendarPage.js';
 import './components/admin/admin.js';
 import './components/timesheet/TimesheetPage.js';
+import './components/member/MemberActivityPage.js';
 import './components/guide/UserGuide.js';
 
 // Import routing configuration

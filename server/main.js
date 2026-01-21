@@ -24,6 +24,8 @@ dotenv.config(); // uses .env at project root by default
 Meteor.startup(async () => {
   // Configure Google OAuth from environment variables
   
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   
   if (googleClientId && googleClientSecret) {
@@ -42,7 +44,8 @@ Meteor.startup(async () => {
     console.error('Google OAuth environment variables not found. Please check your .env file.');
     console.error('Required: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
   }
-
+  const githubClientId = process.env.HUB_CLIENT_ID||'Ov23liEIIlKFKAfoBN0Z';
+  const githubClientSecret = process.env.HUB_CLIENT_SECRET||'4fc1d608ccef2aab1a25a0714eaaf4ed3cfb703b';
   // Configure GitHub OAuth from environment variables
   if (githubClientId && githubClientSecret) {
     await ServiceConfiguration.configurations.upsertAsync(
@@ -299,10 +302,10 @@ Meteor.publish('clockEventsForTeams', async function (teamIds) {
   
   if (!this.userId) return this.ready();
 
-  // Publish clock events for teams the user is admin of
+  // Publish clock events for teams the user is a member of (admin or regular member)
   const allowedTeams = await Teams.find({
     _id: { $in: validTeamIds },
-    admins: this.userId,
+    members: this.userId, // Check if user is a member (includes admins)
   }).fetchAsync();
   const allowedTeamIds = allowedTeams.map(t => t._id);
   return ClockEvents.find({ teamId: { $in: allowedTeamIds } });

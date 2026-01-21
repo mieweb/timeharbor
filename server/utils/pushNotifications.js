@@ -3,7 +3,8 @@ import webpush from 'web-push';
 // VAPID keys for Web Push (generate new ones using: npx web-push generate-vapid-keys)
 // IMPORTANT: In production, store these in environment variables!
 const vapidKeys = {
-  
+  publicKey: process.env.VAPID_PUBLIC_KEY,
+  privateKey: process.env.VAPID_PRIVATE_KEY
   
 };
 
