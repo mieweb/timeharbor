@@ -209,7 +209,6 @@ Template.tickets.helpers({
     const teamId = Template.instance().selectedTeamId.get();
     if (!teamId) return [];
     
-    const activeTicketId = Template.instance().activeTicketId.get();
     const now = currentTime.get();
     const searchQuery = (Template.instance().searchQuery?.get() || '').toLowerCase().trim();
     
@@ -217,14 +216,14 @@ Template.tickets.helpers({
     return Tickets.find({ teamId, createdBy: Meteor.userId() }).fetch()
       .filter(ticket => !searchQuery || ticket.title.toLowerCase().includes(searchQuery))
       .map(ticket => {
-      const isActive = ticket._id === activeTicketId && ticket.startTimestamp;
-      const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
-      
-      return {
-        ...ticket,
-        displayTime: (ticket.accumulatedTime || 0) + elapsed
-      };
-    });
+        const isActive = !!ticket.startTimestamp;
+        const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
+
+        return {
+          ...ticket,
+          displayTime: (ticket.accumulatedTime || 0) + elapsed
+        };
+      });
   },
   isActive(ticketId) {
     const ticket = Tickets.findOne(ticketId);
