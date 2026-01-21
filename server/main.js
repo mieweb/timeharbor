@@ -303,8 +303,10 @@ Meteor.publish('clockEventsForTeams', async function (teamIds) {
   if (!this.userId) return this.ready();
 
   // Publish clock events for teams the user is a member of (admin or regular member)
+  // Publish clock events for teams the user is a member of (admin or regular member)
   const allowedTeams = await Teams.find({
     _id: { $in: validTeamIds },
+    members: this.userId, // Check if user is a member (includes admins)
     members: this.userId, // Check if user is a member (includes admins)
   }).fetchAsync();
   const allowedTeamIds = allowedTeams.map(t => t._id);
