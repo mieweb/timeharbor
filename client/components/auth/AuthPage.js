@@ -49,44 +49,6 @@ Template.authPage.events({
     authFormType.set(authFormType.get() === 'hidden' ? 'login' : 'hidden');
   },
   
-  'click #at-google'(event, template) {
-    event.preventDefault();
-    template.loginError.set('');
-    template.isLoginLoading.set(true);
-    
-    Meteor.loginWithGoogle({
-      requestPermissions: ['email', 'profile']
-    }, (err) => {
-      template.isLoginLoading.set(false);
-      if (err) {
-        console.error('Google login error:', err);
-        template.loginError.set(err.reason || 'Google login failed. Please try again.');
-      } else {
-        currentScreen.set('mainLayout');
-        FlowRouter.go('/');
-      }
-    });
-  },
-
-  'click #at-github'(event, template) {
-    event.preventDefault();
-    template.loginError.set('');
-    template.isLoginLoading.set(true);
-    
-    Meteor.loginWithGithub({
-      requestPermissions: ['user:email']
-    }, (err) => {
-      template.isLoginLoading.set(false);
-      if (err) {
-        console.error('GitHub login error:', err);
-        template.loginError.set(err.reason || 'GitHub login failed. Please try again.');
-      } else {
-        currentScreen.set('mainLayout');
-        FlowRouter.go('/');
-      }
-    });
-  },
-  
   'submit #signupForm'(event) {
     event.preventDefault();
     const { email, password, confirmPassword } = event.target;

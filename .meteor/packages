@@ -25,8 +25,5 @@ hot-module-replacement@0.5.4  # Update code in development without reloading the
 blaze-hot               # Update files using Blaze's API with HMR
 accounts-base@3.1.2
 accounts-password
-accounts-google@1.4.1
-service-configuration@1.3.5
-accounts-github@1.5.1
 http
 ostrio:flow-router-extra

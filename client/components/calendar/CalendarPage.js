@@ -20,25 +20,10 @@ Template.calendar.helpers({
   },
   calendarError() {
     return Template.instance().calendarError.get();
-  },
-  hasGoogleAccount() {
-    const user = Meteor.user();
-    return user?.services?.google;
   }
 });
 
 Template.calendar.events({
-  'click #reauth-google'(event, template) {
-    event.preventDefault();
-    authenticateGoogle(template, true);
-  },
-
-  'click #connect-google-account'(event, template) {
-    event.preventDefault();
-    authenticateGoogle(template, false);
-  },
-
-  
   'click .log-meeting'(event, template) {
     event.preventDefault();
     
@@ -69,40 +54,6 @@ Template.calendar.events({
     showTeamSelectionModal(userTeams, meetingId, title, duration);
   }
 });
-
-// Helper function for Google CALENDAR authentication (separate from login)
-function authenticateGoogle(template, isReauth = false) {
-  const options = {
-    requestPermissions: ['email', 'profile', 'https://www.googleapis.com/auth/calendar.readonly'], // Add calendar access
-    requestOfflineToken: true,
-    loginStyle: 'popup'
-  };
-  
-  if (isReauth) {
-    options.forceApprovalPrompt = true;
-  }
-  
-  Meteor.loginWithGoogle(options, (error) => {
-    if (error) {
-      template.calendarError.set(`Failed to ${isReauth ? 're-authenticate' : 'connect'}: ${error.reason}`);
-    } else {
-      template.calendarError.set('');
-      // Auto-fetch calendar events after successful connection
-      setTimeout(() => {
-        template.isSyncingCalendar.set(true);
-        Meteor.call('getMyCalendarEvents', (error, result) => {
-          template.isSyncingCalendar.set(false);
-          if (error) {
-            template.calendarError.set(error.reason || 'Failed to fetch calendar events');
-          } else {
-            template.calendarEvents.set(result.meetings || []);
-            template.calendarError.set('');
-          }
-        });
-      }, 1000);
-    }
-  });
-}
 
 // Helper function for logging calendar meetings
 function logCalendarMeeting(teamId, meetingId, title, duration) {

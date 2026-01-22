@@ -47,15 +47,13 @@ export const teamMethods = {
     const toName = (user) => {
       return (
         user?.profile?.name ||
-        user?.services?.google?.name ||
-        user?.services?.github?.username ||
         user?.username ||
-        (user?.emails?.[0]?.address || user?.services?.google?.email || '').split('@')[0] ||
+        (user?.emails?.[0]?.address || '').split('@')[0] ||
         'Unknown'
       );
     };
     const toEmail = (user) => (
-      user?.emails?.[0]?.address || user?.services?.google?.email || 'No email'
+      user?.emails?.[0]?.address || 'No email'
     );
     return users.map(user => ({ id: user._id, name: toName(user), email: toEmail(user) }));
   },
@@ -194,12 +192,7 @@ export const teamMethods = {
     }
 
     const existingEmail = user?.emails?.[0]?.address;
-    const fallbackEmail =
-      user?.services?.google?.email ||
-      user?.services?.github?.email ||
-      user?.services?.github?.username ||
-      null;
-    const emailToSet = existingEmail || fallbackEmail;
+    const emailToSet = existingEmail || user?.username || null;
 
     if (!emailToSet) {
       throw new Meteor.Error('bad-request', 'User does not have an email to set a password');
