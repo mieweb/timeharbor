@@ -8,7 +8,9 @@
       <a href="/teams" class="btn btn-ghost hover:bg-primary-focus">Teams</a>
       <a href="/tickets" class="btn btn-ghost hover:bg-primary-focus">Tickets</a>
       <a href="/calendar" class="btn btn-ghost hover:bg-primary-focus">Calendar</a>
-      <a href="/admin" class="btn btn-ghost hover:bg-primary-focus">Admin Review</a>
+      {{#if isTeamAdmin}}
+        <a href="/admin" class="btn btn-ghost hover:bg-primary-focus">Admin Review</a>
+      {{/if}}
     </nav>
     <div class="flex-none flex items-center gap-2">
       <button id="themeToggle" class="btn btn-ghost btn-sm btn-square" title="Toggle theme">

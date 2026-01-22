@@ -3,7 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { currentScreen } from '../auth/AuthPage.js';
 import { currentRouteTemplate } from '../../routes.js';
-import { ClockEvents } from '../../../collections.js';
+import { ClockEvents, Teams } from '../../../collections.js';
 import { dateToLocalString } from '../../utils/DateUtils.js';
 
 const MESSAGE_TIMEOUT = 3000;
@@ -126,6 +126,9 @@ if (Template.mainLayout) {
     },
     logoutBtnAttrs() {
       return isLogoutLoading.get() ? { disabled: true } : {};
+    },
+    isTeamAdmin() {
+      return !!Teams.findOne({ admins: Meteor.userId() });
     }
   });
 
