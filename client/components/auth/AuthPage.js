@@ -3,7 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Meteor } from 'meteor/meteor';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 
-const authFormType = new ReactiveVar('hidden');
+const authFormType = new ReactiveVar('login');
 
 export const currentScreen = new ReactiveVar('authPage');
 
@@ -25,7 +25,7 @@ Template.authPage.helpers({
   showLoginForm: () => authFormType.get() === 'login',
   showSignupForm: () => authFormType.get() === 'signup',
   showResetForm: () => authFormType.get() === 'reset',
-  showEmailForm: () => authFormType.get() !== 'hidden',
+  showEmailForm: () => true,
   loginError: () => Template.instance().loginError.get(),
   resetMessage: () => Template.instance().resetMessage.get(),
   isLoginLoading: () => Template.instance().isLoginLoading.get()

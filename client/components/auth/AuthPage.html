@@ -54,13 +54,6 @@
         </div>
       {{/if}}
 
-      <!-- Login with Email Button -->
-      <div class="text-center mb-6">
-        <button type="button" id="showEmailForm" class="btn btn-link text-blue-600 hover:text-blue-800 font-bold">
-          Login with Email
-        </button>
-      </div>
-
       <!-- Form Container -->
       {{#if showEmailForm}}
         <div class="card bg-white shadow-xl">
@@ -68,7 +61,7 @@
             <!-- Login Form -->
             {{#if showLoginForm}}
               <form id="loginForm" class="space-y-4">
-                <h2 class="text-2xl font-bold text-center mb-6">Welcome Back</h2>
+                <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Welcome Back</h2>
                 {{> formField id="loginEmail" name="email" type="email" label="Email" placeholder="Enter email address"}}
                 {{> formField id="loginPassword" name="password" type="password" label="Password" placeholder="Enter password"}}
                 <button type="submit" class="btn btn-primary w-full">Log In</button>
@@ -91,7 +84,7 @@
             <!-- Signup Form -->
             {{#if showSignupForm}}
               <form id="signupForm" class="space-y-4">
-                <h2 class="text-2xl font-bold text-center mb-6">Create Account</h2>
+                <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Create Account</h2>
                 {{> formField id="signupEmail" name="email" type="email" label="Email" placeholder="Enter email address"}}
                 {{> formField id="signupPassword" name="password" type="password" label="Password" placeholder="Choose password"}}
                 {{> formField id="confirmPassword" name="confirmPassword" type="password" label="Confirm Password" placeholder="Confirm password"}}
@@ -110,7 +103,7 @@
             <!-- Reset Password Form -->
             {{#if showResetForm}}
               <form id="resetForm" class="space-y-4">
-                <h2 class="text-2xl font-bold text-center mb-6">Reset Password</h2>
+                <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Reset Password</h2>
                 {{> formField id="resetEmail" name="email" type="email" label="Email" placeholder="Enter your email"}}
                 {{> formField id="resetTeamCode" name="teamCode" type="text" label="Team Code" placeholder="Enter team code"}}
                 {{> formField id="resetNewPassword" name="newPassword" type="password" label="New Password" placeholder="Enter new password"}}
