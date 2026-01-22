@@ -1,6 +1,7 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Meteor } from 'meteor/meteor';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 
 const authFormType = new ReactiveVar('hidden');
 
@@ -60,6 +61,9 @@ Template.authPage.events({
       if (err) {
         console.error('Google login error:', err);
         template.loginError.set(err.reason || 'Google login failed. Please try again.');
+      } else {
+        currentScreen.set('mainLayout');
+        FlowRouter.go('/');
       }
     });
   },
@@ -76,6 +80,9 @@ Template.authPage.events({
       if (err) {
         console.error('GitHub login error:', err);
         template.loginError.set(err.reason || 'GitHub login failed. Please try again.');
+      } else {
+        currentScreen.set('mainLayout');
+        FlowRouter.go('/');
       }
     });
   },
@@ -91,8 +98,12 @@ Template.authPage.events({
       email: email.value.trim(), 
       password: password.value 
     }, (err) => {
-      if (err) alert('Signup failed: ' + err.reason);
-      else currentScreen.set('mainLayout');
+      if (err) {
+        alert('Signup failed: ' + err.reason);
+      } else {
+        currentScreen.set('mainLayout');
+        FlowRouter.go('/');
+      }
     });
   },
   
@@ -101,8 +112,12 @@ Template.authPage.events({
     const { email, password } = event.target;
     
     Meteor.loginWithPassword(email.value.trim(), password.value, (err) => {
-      if (err) alert('Login failed: ' + err.reason);
-      else currentScreen.set('mainLayout');
+      if (err) {
+        alert('Login failed: ' + err.reason);
+      } else {
+        currentScreen.set('mainLayout');
+        FlowRouter.go('/');
+      }
     });
   },
   'submit #resetForm'(event, template) {
