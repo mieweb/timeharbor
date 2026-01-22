@@ -3,6 +3,8 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { currentScreen } from '../auth/AuthPage.js';
 import { currentRouteTemplate } from '../../routes.js';
+import { ClockEvents } from '../../../collections.js';
+import { dateToLocalString } from '../../utils/DateUtils.js';
 
 const MESSAGE_TIMEOUT = 3000;
 const ERROR_PREFIX = 'Logout failed: ';
@@ -31,6 +33,9 @@ const handleLogoutResult = (error) => {
 
 if (Template.mainLayout) {
   Template.mainLayout.onCreated(function () {
+    this.midnightWarningKeys = new Set();
+    this.midnightAutoClockOut = new Set();
+
     this.autorun(() => {
       if (!Meteor.userId()) {
         currentScreen.set('authPage');
@@ -44,6 +49,64 @@ if (Template.mainLayout) {
         isTeamsLoading.set(!teamsHandle.ready());
         isClockEventsLoading.set(!clockEventsHandle.ready());
       }
+    });
+
+    // Auto clock-out at local midnight with warning at 11:59 PM
+    this.autorun(() => {
+      const userId = Meteor.userId();
+      if (!userId) return;
+
+      const nowMs = currentTime.get();
+      const nowDate = new Date(nowMs);
+      const todayKey = dateToLocalString(nowDate);
+
+      const activeEvents = ClockEvents.find({ userId, endTime: null }).fetch();
+      const activeEventIds = new Set(activeEvents.map(e => e._id));
+
+      // Cleanup flags for inactive events
+      this.midnightAutoClockOut.forEach((eventId) => {
+        if (!activeEventIds.has(eventId)) {
+          this.midnightAutoClockOut.delete(eventId);
+        }
+      });
+      this.midnightWarningKeys.forEach((key) => {
+        const [eventId] = key.split(':');
+        if (!activeEventIds.has(eventId)) {
+          this.midnightWarningKeys.delete(key);
+        }
+      });
+
+      activeEvents.forEach((event) => {
+        const startDate = new Date(event.startTimestamp);
+        const sameDay =
+          startDate.getFullYear() === nowDate.getFullYear() &&
+          startDate.getMonth() === nowDate.getMonth() &&
+          startDate.getDate() === nowDate.getDate();
+
+        if (sameDay) {
+          if (nowDate.getHours() === 23 && nowDate.getMinutes() === 59) {
+            const warnKey = `${event._id}:${todayKey}`;
+            if (!this.midnightWarningKeys.has(warnKey)) {
+              this.midnightWarningKeys.add(warnKey);
+              alert('Day is ending. Your clock will stop at 12:00 AM. If you continue working, please clock in again.');
+            }
+          }
+          return;
+        }
+
+        if (this.midnightAutoClockOut.has(event._id)) return;
+        this.midnightAutoClockOut.add(event._id);
+
+        Meteor.call('clockEventStop', event.teamId, (err) => {
+          if (err) {
+            console.error('Midnight auto clock-out failed:', err);
+            this.midnightAutoClockOut.delete(event._id);
+            return;
+          }
+
+          alert('Your session was automatically clocked out at midnight. If you are still working, please clock in again.');
+        });
+      });
     });
   });
 
