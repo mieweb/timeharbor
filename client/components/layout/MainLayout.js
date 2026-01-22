@@ -48,6 +48,10 @@ if (Template.mainLayout) {
         // Update loading states
         isTeamsLoading.set(!teamsHandle.ready());
         isClockEventsLoading.set(!clockEventsHandle.ready());
+
+        if (!currentRouteTemplate.get()) {
+          currentRouteTemplate.set('home');
+        }
       }
     });
 
