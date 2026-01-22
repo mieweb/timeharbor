@@ -1,11 +1,16 @@
 export async function stopTicketInClockEvent(clockEventId, ticketId, now, ClockEvents) {
   const clockEvent = await ClockEvents.findOneAsync(clockEventId);
   if (!clockEvent || !clockEvent.tickets) return;
-  const ticketEntry = clockEvent.tickets.find(t => t.ticketId === ticketId && t.startTimestamp);
-  if (ticketEntry) {
-    const elapsed = Math.floor((now - ticketEntry.startTimestamp) / 1000);
-    const prev = ticketEntry.accumulatedTime || 0;
-    const sessions = Array.isArray(ticketEntry.sessions) ? [...ticketEntry.sessions] : [];
+  const ticketEntry = clockEvent.tickets.find(t => t.ticketId === ticketId);
+  if (!ticketEntry) return;
+
+  const sessions = Array.isArray(ticketEntry.sessions) ? [...ticketEntry.sessions] : [];
+  const prev = ticketEntry.accumulatedTime || 0;
+  let elapsed = 0;
+  let shouldUpdate = false;
+
+  if (ticketEntry.startTimestamp) {
+    elapsed = Math.floor((now - ticketEntry.startTimestamp) / 1000);
     const lastSessionIndex = sessions.length - 1;
     if (lastSessionIndex >= 0 && sessions[lastSessionIndex].endTimestamp == null) {
       sessions[lastSessionIndex] = {
@@ -15,17 +20,32 @@ export async function stopTicketInClockEvent(clockEventId, ticketId, now, ClockE
     } else {
       sessions.push({ startTimestamp: ticketEntry.startTimestamp, endTimestamp: now });
     }
-    await ClockEvents.updateAsync(
-      { _id: clockEventId, 'tickets.ticketId': ticketId },
-      {
-        $set: {
-          'tickets.$.accumulatedTime': prev + elapsed,
-          'tickets.$.sessions': sessions
-        },
-        $unset: { 'tickets.$.startTimestamp': '' }
-      }
-    );
+    shouldUpdate = true;
+  } else {
+    const activeSessionIndex = sessions.findIndex(s => s?.startTimestamp && s.endTimestamp == null);
+    if (activeSessionIndex !== -1) {
+      const activeSession = sessions[activeSessionIndex];
+      elapsed = Math.floor((now - activeSession.startTimestamp) / 1000);
+      sessions[activeSessionIndex] = {
+        ...activeSession,
+        endTimestamp: now
+      };
+      shouldUpdate = true;
+    }
   }
+
+  if (!shouldUpdate) return;
+
+  await ClockEvents.updateAsync(
+    { _id: clockEventId, 'tickets.ticketId': ticketId },
+    {
+      $set: {
+        'tickets.$.accumulatedTime': prev + elapsed,
+        'tickets.$.sessions': sessions
+      },
+      $unset: { 'tickets.$.startTimestamp': '' }
+    }
+  );
 }
 
 /**

@@ -91,12 +91,13 @@ const sessionManager = {
   // Stop a session
   stopSession: async (teamId) => {
     try {
+      const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
       // Find running tickets created by current user and stop them
       const runningTickets = Tickets.find({ teamId, createdBy: Meteor.userId(), startTimestamp: { $exists: true } }).fetch();
       
       // Stop all running tickets
       const stopPromises = runningTickets.map(ticket => 
-        ticketManager.stopTicket(ticket._id)
+        ticketManager.stopTicket(ticket._id, clockEvent)
       );
       
       // Wait for all tickets to stop
