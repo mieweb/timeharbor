@@ -8,8 +8,10 @@ node_modules/
 # Environment variables
 .env
 
-# Google OAuth credentials (SECURITY CRITICAL)
+# Google configuration files (SECURITY CRITICAL)
 settings.json
+google-services.json
+GoogleService-Info.plist
 
 # Logs
 *.log
