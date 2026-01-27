@@ -30,16 +30,22 @@ import './routes.js';
 
 // Import utilities
 import './utils/DateUtils.js';
+import { initializeNotifications } from './utils/NotificationUtils.js';
 
 // Initialize dark mode theme
 Meteor.startup(() => {
+  // Initialize push notifications
+  initializeNotifications().catch(err => {
+    console.error('[Startup] Failed to initialize notifications:', err);
+  });
+
   // Check for saved theme preference or default to system preference
-  const savedTheme = localStorage.getItem('theme') || 
+  const savedTheme = localStorage.getItem('theme') ||
     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  
+
   // Apply theme to html element (DaisyUI uses data-theme attribute)
   document.documentElement.setAttribute('data-theme', savedTheme);
-  
+
   // Listen for system theme changes if no manual preference is set
   if (!localStorage.getItem('theme')) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
