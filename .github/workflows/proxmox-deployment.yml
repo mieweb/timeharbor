@@ -23,6 +23,14 @@ jobs:
         runs-on: self-hosted
         needs: setup-runner
         steps:
+          - name: Checkout code
+            uses: actions/checkout@v3
+          - name: Setup sensitive files
+            env:
+              GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+              GOOGLE_SERVICES_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICES_INFO_PLIST_BASE64 }}
+              METEOR_SETTINGS: ${{ secrets.METEOR_SETTINGS }}
+            run: bash scripts/setup-secrets.sh
           - name: Deploy to Proxmox
             uses: maxklema/proxmox-launchpad@main
             with: 
@@ -41,7 +49,7 @@ jobs:
                   export VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
                   export VAPID_PRIVATE_KEY=${{ secrets.VAPID_PRIVATE_KEY }}
                   export METEOR_ALLOW_SUPERUSER=true
-                  meteor run --port 0.0.0.0:3000 --allow-superuser
+                  meteor run --port 0.0.0.0:3000 --allow-superuser --settings settings.json
                 runtime_language: nodejs
                 services: '["meteor"]'
 
