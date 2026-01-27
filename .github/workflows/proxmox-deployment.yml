@@ -48,7 +48,11 @@ jobs:
                   export HUB_CLIENT_SECRET=${{ secrets.HUB_CLIENT_SECRET }}
                   export VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
                   export VAPID_PRIVATE_KEY=${{ secrets.VAPID_PRIVATE_KEY }}
+                  export GOOGLE_SERVICES_JSON_BASE64=${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+                  export GOOGLE_SERVICES_INFO_PLIST_BASE64=${{ secrets.GOOGLE_SERVICES_INFO_PLIST_BASE64 }}
+                  export METEOR_SETTINGS=${{ secrets.METEOR_SETTINGS }}
                   export METEOR_ALLOW_SUPERUSER=true
+                  bash scripts/setup-secrets.sh
                   meteor run --port 0.0.0.0:3000 --allow-superuser --settings settings.json
                 runtime_language: nodejs
                 services: '["meteor"]'
