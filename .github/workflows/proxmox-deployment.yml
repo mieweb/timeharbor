@@ -23,14 +23,6 @@ jobs:
         runs-on: self-hosted
         needs: setup-runner
         steps:
-          - name: Checkout code
-            uses: actions/checkout@v3
-          - name: Setup sensitive files
-            env:
-              GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
-              GOOGLE_SERVICES_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICES_INFO_PLIST_BASE64 }}
-              METEOR_SETTINGS: ${{ secrets.METEOR_SETTINGS }}
-            run: bash scripts/setup-secrets.sh
           - name: Deploy to Proxmox
             uses: maxklema/proxmox-launchpad@main
             with: 
