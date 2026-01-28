@@ -41,6 +41,11 @@ jobs:
                 http_port: 3000
                 install_command: npm install
                 start_command: |
+                  echo "========== INSIDE CONTAINER =========="
+                  pwd
+                  ls -la
+
+                  echo "========== EXPORTING SECRETS =========="        
                   export ROOT_URL=https://mieweb-timeharbor-main.opensource.mieweb.org
                   export GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
                   export GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -52,7 +57,14 @@ jobs:
                   export GOOGLE_SERVICES_INFO_PLIST_BASE64=${{ secrets.GOOGLE_SERVICES_INFO_PLIST_BASE64 }}
                   export METEOR_SETTINGS=${{ secrets.METEOR_SETTINGS }}
                   export METEOR_ALLOW_SUPERUSER=true
+                  echo "========== RUNNING setup-secrets.sh =========="
                   bash scripts/setup-secrets.sh
+                  echo "========== AFTER SECRET FILE CREATION =========="
+                  ls -la
+                  echo "========== VERIFY settings.json =========="
+                  head -n 5 settings.json || echo "settings.json NOT FOUND"
+
+                  echo "========== STARTING METEOR =========="
                   meteor run --port 0.0.0.0:3000 --allow-superuser --settings settings.json
                 runtime_language: nodejs
                 services: '["meteor"]'
