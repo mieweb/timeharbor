@@ -2,6 +2,12 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 /* You can add custom styles below if needed */
 
 /* Line clamp utility for text truncation */
