@@ -18,9 +18,6 @@ import { notificationMethods } from './methods/notifications.js';
 import { stopTicketInClockEvent, formatDurationText } from './utils/ClockEventHelpers.js';
 import { notifyTeamAdmins, notifyUser } from './utils/pushNotifications.js';
 
-// Load environment variables from .env file
-import dotenv from 'dotenv';
-dotenv.config(); // uses .env at project root by default
 
 Meteor.startup(async () => {
 
@@ -96,7 +93,7 @@ Meteor.startup(async () => {
 
       if (activeEvents.length > 0) {
         const longRunningEvents = [];
-        
+
         // Check each active event to see if it has been running for 10+ hours continuously
         for (const clockEvent of activeEvents) {
           const sessionDuration = now - clockEvent.startTimestamp;
@@ -153,11 +150,11 @@ Meteor.startup(async () => {
 
               // Get user and team info for logging/notification
               const user = await Meteor.users.findOneAsync(clockEvent.userId);
-              const userName = user?.profile?.name || 
-                               user?.username || 
-                               user?.emails?.[0]?.address?.split('@')[0] || 
-                               'A user';
-              
+              const userName = user?.profile?.name ||
+                user?.username ||
+                user?.emails?.[0]?.address?.split('@')[0] ||
+                'A user';
+
               const team = await Teams.findOneAsync(clockEvent.teamId);
               const teamName = team?.name || 'a team';
 
@@ -243,9 +240,9 @@ Meteor.publish('teamDetails', function (teamId) {
 Meteor.publish('teamMembers', async function (teamIds) {
   // Filter out null/undefined values before validation
   const validTeamIds = teamIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   check(validTeamIds, [String]);
-  
+
   if (!this.userId) return this.ready();
 
   // Allow if user is a member or admin of the requested teams
@@ -266,9 +263,9 @@ Meteor.publish('teamMembers', async function (teamIds) {
 Meteor.publish('teamTickets', function (teamIds) {
   // Filter out null/undefined values before validation
   const validTeamIds = teamIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   check(validTeamIds, [String]);
-  
+
   // Publish all tickets for these teams (not just created by current user)
   return Tickets.find({ teamId: { $in: validTeamIds } });
 });
@@ -282,9 +279,9 @@ Meteor.publish('clockEventsForUser', function () {
 Meteor.publish('clockEventsForTeams', async function (teamIds) {
   // Filter out null/undefined values before validation
   const validTeamIds = teamIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   check(validTeamIds, [String]);
-  
+
   if (!this.userId) return this.ready();
 
   // Publish clock events for teams the user is a member of (admin or regular member)
@@ -304,8 +301,8 @@ Meteor.publish('adminTeamTickets', async function (teamId) {
   if (!this.userId) return this.ready();
 
   // Check if user is admin of the team
-  const team = await Teams.findOneAsync({ 
-    _id: teamId, 
+  const team = await Teams.findOneAsync({
+    _id: teamId,
     admins: this.userId
   });
 
@@ -318,16 +315,16 @@ Meteor.publish('adminTeamTickets', async function (teamId) {
 Meteor.publish('usersByIds', async function (userIds) {
   // Filter out null/undefined values before validation
   const validUserIds = userIds.filter(id => id !== null && id !== undefined && typeof id === 'string');
-  
+
   if (validUserIds.length === 0) {
     return this.ready();
   }
-  
+
   check(validUserIds, [String]);
-  
+
   // Only publish users that are in teams the current user is a member or admin of
   const userTeams = await Teams.find({ $or: [{ members: this.userId }, { admins: this.userId }] }).fetchAsync();
-  
+
   // Filter out null/undefined values and flatten the arrays safely
   const allowedUserIds = Array.from(new Set(
     userTeams.flatMap(team => {
@@ -336,19 +333,19 @@ Meteor.publish('usersByIds', async function (userIds) {
       return [...members, ...admins].filter(id => id !== null && id !== undefined);
     })
   ));
-  
+
   const filteredUserIds = validUserIds.filter(id => allowedUserIds.includes(id));
-  
+
   if (filteredUserIds.length === 0) {
     return this.ready();
   }
-  
-  return Meteor.users.find({ _id: { $in: filteredUserIds } }, { 
-    fields: { 
-      'emails.address': 1, 
+
+  return Meteor.users.find({ _id: { $in: filteredUserIds } }, {
+    fields: {
+      'emails.address': 1,
       'profile': 1,
       'username': 1
-    } 
+    }
   });
 });
 
