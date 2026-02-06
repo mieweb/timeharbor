@@ -299,6 +299,24 @@ Template.memberActivity.helpers({
   },
   eq(a, b) {
     return a === b;
+  },
+  
+  // Mobile card view helpers
+  filteredTicketsData() {
+    return Template.instance().filteredTickets.get();
+  },
+  
+  ticketIsActive(status) {
+    return status === 'Active';
+  },
+  
+  formatTicketHours(seconds) {
+    return formatTimeHoursMinutes(seconds || 0);
+  },
+  
+  formatTicketTime(timestamp) {
+    if (!timestamp) return '';
+    return formatTimestampHoursMinutes(timestamp, false);
   }
 });
 

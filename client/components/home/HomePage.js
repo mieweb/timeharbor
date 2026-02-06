@@ -342,7 +342,27 @@ Template.home.helpers({
     return userClockEvents === 0 && userTeams === 0;
   },
   
-  // Optimized personal dashboard helpers
+  // Mobile card view helpers
+  teamMemberSummaryData() {
+    return Template.instance().computeTeamMemberSummary();
+  },
+  
+  formatDateForCard(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  },
+  
+  formatHoursForCard(totalSeconds) {
+    return formatTimeHoursMinutes(totalSeconds || 0);
+  },
+  
+  formatTimeForCard(timestamp) {
+    if (!timestamp) return '';
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  },
+  
+  // Personal dashboard helpers
   todayHours() {
     const todayBoundaries = getTodayBoundaries();
     const todayEvents = ClockEvents.find({
@@ -521,5 +541,16 @@ Template.home.events({
   
   'click #viewGuide': (e, t) => {
     FlowRouter.go('/guide');
+  },
+  
+  // Mobile card click - navigate to user timesheet
+  'click #teamMobileCards .card[data-user-id]': (e, t) => {
+    const userId = e.currentTarget.dataset.userId;
+    if (userId) {
+      const start = t.startDate.get();
+      const end = t.endDate.get();
+      const qs = `?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+      FlowRouter.go(`/timesheet/${userId}${qs}`);
+    }
   }
 });

@@ -516,6 +516,29 @@ Template.timesheet.helpers({
   selectedPreset: () => Template.instance().selectedPreset.get(),
   isEditMode: () => Template.instance().editMode.get(),
   
+  // Mobile card view helpers
+  sessionData() {
+    return Template.instance().computeSessionData();
+  },
+  
+  formatDateCard(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  },
+  
+  formatTimeCard(timestamp) {
+    if (!timestamp) return '';
+    const d = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  },
+  
+  formatDurationCard(duration, isActive) {
+    if (isActive) return 'Running...';
+    if (!duration) return '0:00';
+    return formatTimeHoursMinutes(duration);
+  },
+  
   totalHours() {
     const instance = Template.instance();
     const userId = instance.userId;

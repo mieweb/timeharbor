@@ -52,7 +52,44 @@
           </button>
         </div>
       </div>
-      <div id="ticketsGrid" class="ag-theme-alpine" style="height: 500px; width: 100%;"></div>
+      
+      <!-- Mobile Card View -->
+      <div id="ticketsMobileCards" class="md:hidden space-y-3 max-h-96 overflow-y-auto">
+        {{#each filteredTicketsData}}
+          <div class="bg-base-200 rounded-lg p-3">
+            <div class="flex justify-between items-start mb-2">
+              <div class="flex-1 min-w-0">
+                {{#if url}}
+                  <a href="{{url}}" target="_blank" class="text-primary hover:underline font-medium text-sm truncate block">
+                    {{title}}
+                  </a>
+                {{else}}
+                  <div class="font-medium text-sm truncate">{{title}}</div>
+                {{/if}}
+              </div>
+              {{#if (ticketIsActive status)}}
+                <span class="badge badge-success badge-sm gap-1 ml-2 flex-shrink-0">
+                  <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                  Active
+                </span>
+              {{else}}
+                <span class="badge badge-ghost badge-sm ml-2 flex-shrink-0">Done</span>
+              {{/if}}
+            </div>
+            <div class="flex justify-between items-center text-xs text-base-content opacity-70">
+              <span class="font-bold text-primary text-base">{{formatTicketHours hours}}</span>
+              <span>{{formatTicketTime startTime}} - {{#if endTime}}{{formatTicketTime endTime}}{{else}}now{{/if}}</span>
+            </div>
+          </div>
+        {{else}}
+          <div class="text-center py-8 text-base-content opacity-60">
+            No tickets for selected filter
+          </div>
+        {{/each}}
+      </div>
+      
+      <!-- Desktop Grid View -->
+      <div id="ticketsGrid" class="ag-theme-alpine hidden md:block" style="height: 500px; width: 100%;"></div>
     </div>
   </div>
 </template>
