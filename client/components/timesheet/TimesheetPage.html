@@ -1,9 +1,10 @@
 <template name="timesheet">
-  <div class="flex items-center gap-4 mb-6">
-    <button id="backToHome" class="btn btn-outline btn-primary">&larr; Back to Dashboard</button>
-    <h3 class="text-2xl font-bold text-base-content">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+    <button id="backToHome" class="btn btn-outline btn-primary btn-sm sm:btn-md w-fit">&larr; Back</button>
+    <h3 class="text-xl sm:text-2xl font-bold text-base-content">
       {{#if isOwnTimesheet}}
-        📊 My Timesheet
+        My Timesheet
       {{else}}
         Individual Timesheet
       {{/if}}
@@ -11,42 +12,47 @@
   </div>
 
   <!-- User Info Card -->
-  <div class="card bg-base-100 shadow p-6 mb-6">
-    <div class="flex items-center justify-between">
+  <div class="card bg-base-100 shadow p-4 sm:p-6 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
-        <h4 class="text-xl font-semibold text-base-content">{{userName}}</h4>
-        <p class="text-base-content opacity-70">{{userEmail}}</p>
+        <h4 class="text-lg sm:text-xl font-semibold text-base-content">{{userName}}</h4>
+        <p class="text-base-content opacity-70 text-sm sm:text-base">{{userEmail}}</p>
       </div>
-      <div class="text-right">
-        <div class="badge badge-primary badge-lg">Total Hours: {{totalHours}}</div>
+      <div>
+        <div class="badge badge-primary badge-md sm:badge-lg">Total: {{totalHours}}</div>
       </div>
     </div>
   </div>
 
-
-  <!-- Date Filter (reused from HomePage) -->
-  <div class="mb-6 flex flex-wrap items-center gap-4">
-    <label class="font-medium text-base-content">Date Range:</label>
-    <input type="date" id="start-date" class="input input-bordered" value="{{startDate}}">
-    <span class="opacity-60">to</span>
-    <input type="date" id="end-date" class="input input-bordered" value="{{endDate}}">
-    <div class="flex items-center gap-2">
-      <button id="apply-range" class="btn btn-sm {{#if isPresetSelected 'custom'}}btn-primary{{else}}btn-outline{{/if}}">Apply</button>
-      <button id="preset-today" class="btn btn-sm {{#if isPresetSelected 'today'}}btn-primary{{else}}btn-outline{{/if}}">Today</button>
-      <button id="preset-yesterday" class="btn btn-sm {{#if isPresetSelected 'yesterday'}}btn-primary{{else}}btn-outline{{/if}}">Yesterday</button>
-      <button id="preset-last7" class="btn btn-sm {{#if isPresetSelected 'last7'}}btn-primary{{else}}btn-outline{{/if}}">Last 7 Days</button>
-      <button id="preset-thisweek" class="btn btn-sm {{#if isPresetSelected 'thisweek'}}btn-primary{{else}}btn-outline{{/if}}">This Week</button>
-      <button id="preset-last14" class="btn btn-sm {{#if isPresetSelected 'last14'}}btn-primary{{else}}btn-outline{{/if}}">Last 14 Days</button>
+  <!-- Date Filter -->
+  <div class="mb-6 space-y-3">
+    <!-- Date inputs row -->
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+      <label class="font-medium text-sm sm:text-base text-base-content">Date Range:</label>
+      <div class="flex items-center gap-2 flex-1">
+        <input type="date" id="start-date" class="input input-bordered input-sm sm:input-md flex-1 min-w-0" value="{{startDate}}">
+        <span class="opacity-60 text-sm">to</span>
+        <input type="date" id="end-date" class="input input-bordered input-sm sm:input-md flex-1 min-w-0" value="{{endDate}}">
+      </div>
+    </div>
+    <!-- Preset buttons row - scrollable on mobile -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2">
+      <button id="apply-range" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'custom'}}btn-primary{{else}}btn-outline{{/if}}">Apply</button>
+      <button id="preset-today" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'today'}}btn-primary{{else}}btn-outline{{/if}}">Today</button>
+      <button id="preset-yesterday" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'yesterday'}}btn-primary{{else}}btn-outline{{/if}}">Yesterday</button>
+      <button id="preset-last7" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'last7'}}btn-primary{{else}}btn-outline{{/if}}">7 Days</button>
+      <button id="preset-thisweek" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'thisweek'}}btn-primary{{else}}btn-outline{{/if}}">This Week</button>
+      <button id="preset-last14" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'last14'}}btn-primary{{else}}btn-outline{{/if}}">14 Days</button>
     </div>
   </div>
 
   <!-- Clock-in Details Grid -->
-  <div class="card bg-base-100 shadow p-6">
+  <div class="card bg-base-100 shadow p-4 sm:p-6">
     <div class="flex items-center justify-between mb-4">
-      <h5 class="text-lg font-semibold text-base-content">Clock-in Details</h5>
-      <div class="flex items-center gap-2">
-        <span class="text-sm text-base-content opacity-70" id="clockInCount">Loading...</span>
-        <button id="refreshData" class="btn btn-sm btn-outline btn-primary" title="Refresh Data">
+      <h5 class="text-base sm:text-lg font-semibold text-base-content">Clock-in Details</h5>
+      <div class="flex items-center gap-1 sm:gap-2">
+        <span class="text-xs sm:text-sm text-base-content opacity-70 hidden sm:inline" id="clockInCount">Loading...</span>
+        <button id="refreshData" class="btn btn-sm btn-outline btn-primary btn-square sm:btn-circle" title="Refresh Data">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
