@@ -1,73 +1,74 @@
 <template name="teams">
-  <h3 class="text-xl font-semibold mb-4">Teams</h3>
+  <h3 class="text-lg sm:text-xl font-semibold mb-4">Teams</h3>
   {{#if selectedTeam}}
-    <div class="card bg-base-100 shadow p-6 mb-6">
+    <div class="card bg-base-100 shadow p-4 sm:p-6 mb-6">
       <div class="flex flex-col gap-4">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <!-- Header with back button and team name -->
+        <div class="flex flex-col gap-3">
           <div class="flex items-center gap-3">
             <button id="backToTeams" class="btn btn-outline btn-sm">&larr; Back</button>
-            <div>
-              <h4 class="text-xl font-bold leading-tight">{{selectedTeam.name}}</h4>
-              <div class="text-sm text-base-content/70">Team settings & collaborators</div>
+            <div class="min-w-0 flex-1">
+              <h4 class="text-lg sm:text-xl font-bold leading-tight truncate">{{selectedTeam.name}}</h4>
+              <div class="text-xs sm:text-sm text-base-content/70">Team settings & collaborators</div>
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
-            <div class="join">
-              <span class="btn btn-sm btn-ghost join-item pointer-events-none">Join code</span>
-              <span class="btn btn-sm join-item font-mono">{{selectedTeam.code}}</span>
-              <button id="copyTeamCode" class="btn btn-sm btn-outline join-item">Copy</button>
-            </div>
+          <!-- Join code - stacks on mobile -->
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-sm text-base-content/70">Join code:</span>
+            <code class="bg-base-200 px-2 py-1 rounded font-mono text-sm">{{selectedTeam.code}}</code>
+            <button id="copyTeamCode" class="btn btn-sm btn-outline">Copy</button>
           </div>
         </div>
 
         <div class="card bg-base-200/50 border border-base-300">
-          <div class="card-body p-4">
-            <div class="flex items-center justify-between gap-3 mb-3">
+          <div class="card-body p-3 sm:p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
               <div>
-                <h5 class="font-semibold">Collaborators</h5>
+                <h5 class="font-semibold text-sm sm:text-base">Collaborators</h5>
                 <div class="text-xs text-base-content/60">
                   {{#if currentUserIsAdminForSelectedTeam}}
-                    You can promote members to admin or remove admin access.
+                    Manage member roles
                   {{else}}
-                    Only admins can manage roles.
+                    Only admins can manage roles
                   {{/if}}
                 </div>
               </div>
               {{#if currentUserIsAdminForSelectedTeam}}
-                <span class="badge badge-secondary badge-outline">Admin view</span>
+                <span class="badge badge-secondary badge-outline badge-sm sm:badge-md w-fit">Admin</span>
               {{else}}
-                <span class="badge badge-ghost">Member view</span>
+                <span class="badge badge-ghost badge-sm sm:badge-md w-fit">Member</span>
               {{/if}}
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <!-- Member list - single column on mobile -->
+            <div class="space-y-2">
               {{#each selectedTeam.members}}
-                <div class="flex items-center justify-between gap-3 rounded-lg border border-base-300 bg-base-100 p-3">
-                  <div class="min-w-0 flex-1">
-                    <div 
-                      class="font-medium truncate cursor-pointer hover:text-primary transition-colors member-name-link" 
-                      data-user-id="{{this.id}}">
-                      {{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 rounded-lg border border-base-300 bg-base-100 p-3">
+                  <!-- Member info -->
+                  <div class="min-w-0 flex-1 flex items-center gap-2">
+                    <div class="flex-1 min-w-0">
+                      <div 
+                        class="font-medium truncate cursor-pointer hover:text-primary transition-colors member-name-link text-sm sm:text-base" 
+                        data-user-id="{{this.id}}">
+                        {{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}
+                      </div>
                     </div>
-                    <div class="text-xs text-base-content/60 truncate">
-                      {{#if this.isAdmin}}Admin{{else}}Member{{/if}}
-                    </div>
+                    {{#if this.isAdmin}}
+                      <span class="badge badge-secondary badge-sm">Admin</span>
+                    {{else}}
+                      <span class="badge badge-ghost badge-sm">Member</span>
+                    {{/if}}
                   </div>
 
-                  <div class="flex items-center gap-2 shrink-0">
-                    {{#if this.isAdmin}}
-                      <span class="badge badge-secondary">Admin</span>
-                    {{else}}
-                      <span class="badge badge-ghost">Member</span>
-                    {{/if}}
-
-                    {{#if currentUserIsAdminForSelectedTeam}}
+                  <!-- Actions - wrap on mobile -->
+                  {{#if currentUserIsAdminForSelectedTeam}}
+                    <div class="flex flex-wrap items-center gap-1 sm:gap-2">
                       {{#unless (isCurrentUser this.id)}}
                         <button
                           class="btn btn-xs btn-outline set-password-btn"
                           data-id="{{this.id}}">
-                          Set password
+                          Password
                         </button>
                       {{/unless}}
                       {{#if this.isAdmin}}
@@ -75,10 +76,10 @@
                           <button
                             class="btn btn-xs btn-outline btn-error remove-admin-btn"
                             data-id="{{this.id}}">
-                            Remove admin
+                            Remove
                           </button>
                         {{else}}
-                          <span class="badge badge-primary badge-outline">You</span>
+                          <span class="badge badge-primary badge-outline badge-sm">You</span>
                         {{/unless}}
                       {{else}}
                         <button
@@ -87,8 +88,8 @@
                           Make admin
                         </button>
                       {{/if}}
-                    {{/if}}
-                  </div>
+                    </div>
+                  {{/if}}
                 </div>
               {{/each}}
             </div>
@@ -97,40 +98,45 @@
       </div>
     </div>
   {{else}}
-    <div class="flex gap-4 mb-4">
-      <button id="showCreateTeamForm" class="btn btn-primary">Create Team</button>
-      <button id="showJoinTeamForm" class="btn btn-neutral">Join Team</button>
+    <!-- Action buttons -->
+    <div class="flex flex-wrap gap-2 sm:gap-4 mb-4">
+      <button id="showCreateTeamForm" class="btn btn-primary btn-sm sm:btn-md">Create Team</button>
+      <button id="showJoinTeamForm" class="btn btn-neutral btn-sm sm:btn-md">Join Team</button>
     </div>
+    
     {{#if showCreateTeam}}
       <form id="createTeamForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="teamName" placeholder="Team Name" class="input input-bordered" required />
+        <input type="text" name="teamName" placeholder="Team Name" class="input input-bordered input-sm sm:input-md" required />
         <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary">Create</button>
-          <button type="button" id="cancelCreateTeam" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm sm:btn-md">Create</button>
+          <button type="button" id="cancelCreateTeam" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
         </div>
       </form>
     {{/if}}
+    
     {{#if showJoinTeam}}
       <form id="joinTeamForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="teamCode" placeholder="Enter Team Code" class="input input-bordered" required />
+        <input type="text" name="teamCode" placeholder="Enter Team Code" class="input input-bordered input-sm sm:input-md" required />
         <div class="flex gap-2">
-          <button type="submit" class="btn btn-neutral">Join</button>
-          <button type="button" id="cancelJoinTeam" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-neutral btn-sm sm:btn-md">Join</button>
+          <button type="button" id="cancelJoinTeam" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
         </div>
       </form>
     {{/if}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    
+    <!-- Team list -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
       {{#each userTeams}}
-        <div class="card bg-base-100 shadow p-4">
-          <div class="flex items-start justify-between gap-2">
-            <a href="#" class="link team-link text-lg font-semibold" data-id="{{_id}}">{{name}}</a>
+        <div class="card bg-base-100 shadow p-3 sm:p-4">
+          <div class="flex items-center justify-between gap-2">
+            <a href="#" class="link team-link text-base sm:text-lg font-semibold truncate flex-1" data-id="{{_id}}">{{name}}</a>
             {{#if isAdmin _id}}
-              <div class="flex items-center gap-2">
-                <button class="edit-team-btn btn btn-ghost btn-sm btn-square" data-id="{{_id}}" title="Edit Team">
-                  <i class="fa-solid fa-pen text-primary"></i>
+              <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                <button class="edit-team-btn btn btn-ghost btn-xs sm:btn-sm btn-square" data-id="{{_id}}" title="Edit Team">
+                  <i class="fa-solid fa-pen text-primary text-xs sm:text-sm"></i>
                 </button>
-                <button class="delete-team-btn btn btn-ghost btn-sm btn-square text-error" data-id="{{_id}}" title="Delete Team">
-                  <i class="fa-solid fa-trash"></i>
+                <button class="delete-team-btn btn btn-ghost btn-xs sm:btn-sm btn-square text-error" data-id="{{_id}}" title="Delete Team">
+                  <i class="fa-solid fa-trash text-xs sm:text-sm"></i>
                 </button>
               </div>
             {{/if}}

@@ -1,72 +1,89 @@
 <template name="tickets">
-  <h3 class="text-xl font-semibold mb-4">My Tickets & Activities</h3>
+  <h3 class="text-lg sm:text-xl font-semibold mb-4">My Tickets & Activities</h3>
   {{#if userTeams.length}}
-    <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-      <label for="teamSelect" class="label">Select Team:</label>
-      <select id="teamSelect" class="select select-bordered">
-        {{#each userTeams}}
-          <option value="{{_id}}" {{isSelectedTeam _id}}>{{name}}</option>
-        {{/each}}
-      </select>
-      <button id="showCreateTicketForm" class="btn btn-primary">Create Ticket</button>
+    <!-- Team selection and create button -->
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
+      <div class="flex items-center gap-2 flex-1">
+        <label for="teamSelect" class="label text-sm sm:text-base whitespace-nowrap">Team:</label>
+        <select id="teamSelect" class="select select-bordered select-sm sm:select-md flex-1 min-w-0">
+          {{#each userTeams}}
+            <option value="{{_id}}" {{isSelectedTeam _id}}>{{name}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <button id="showCreateTicketForm" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">Create Ticket</button>
     </div>
+    
+    <!-- Search -->
     <div class="mb-4">
-      <input type="text" id="searchTickets" placeholder="Search tickets..." class="input input-bordered w-full max-w-md" />
+      <input type="text" id="searchTickets" placeholder="Search tickets..." class="input input-bordered input-sm sm:input-md w-full" />
     </div>
-    <div class="mb-4 flex items-center gap-4">
+    
+    <!-- Clock in/out controls -->
+    <div class="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
       {{#if isClockedInForTeam selectedTeamId}}
-        <button id="clockOutBtn" class="btn btn-outline btn-primary">Clock Out</button>
-        <div class="flex items-center gap-2">
-          <img src="/timeharbor-icon.svg" alt="Timer" class="w-8 h-8" />
-          <span class="font-mono text-2xl font-bold">{{currentSessionTime}}</span>
+        <div class="flex items-center justify-between sm:justify-start gap-3">
+          <button id="clockOutBtn" class="btn btn-outline btn-primary btn-sm sm:btn-md">Clock Out</button>
+          <div class="flex items-center gap-2">
+            <img src="/timeharbor-icon.svg" alt="Timer" class="w-6 h-6 sm:w-8 sm:h-8" />
+            <span class="font-mono text-xl sm:text-2xl font-bold">{{currentSessionTime}}</span>
+          </div>
         </div>
       {{else}}
-        <button id="clockInBtn" class="btn btn-outline btn-primary">Clock In</button>
+        <button id="clockInBtn" class="btn btn-outline btn-primary btn-sm sm:btn-md w-full sm:w-auto">Clock In</button>
       {{/if}}
     </div>
+    
     {{#if showCreateTicketForm}}
-      <form id="createTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="title" placeholder="Ticket Title (e.g., 'Create Dashboard', 'ImplementAuthentication')" class="input input-bordered" required />
-        <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered" />
+      <form id="createTicketForm" class="card bg-base-100 shadow p-3 sm:p-4 mb-4 flex flex-col gap-2">
+        <input type="text" name="title" placeholder="Ticket Title" class="input input-bordered input-sm sm:input-md" required />
+        <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered input-sm sm:input-md" />
         <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary">Create</button>
-          <button type="button" id="cancelCreateTicket" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm sm:btn-md">Create</button>
+          <button type="button" id="cancelCreateTicket" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
         </div>
       </form>
     {{/if}}
-  {{#if showEditTicketForm}}
-      <form id="editTicketForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
+    
+    {{#if showEditTicketForm}}
+      <form id="editTicketForm" class="card bg-base-100 shadow p-3 sm:p-4 mb-4 flex flex-col gap-2">
         <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
-        <input type="text" name="title" value="{{editingTicket.title}}" placeholder="Ticket Title" class="input input-bordered" required />
-        <input type="text" name="github" value="{{editingTicket.github}}" placeholder="Reference Link or Notes" class="input input-bordered" />
+        <input type="text" name="title" value="{{editingTicket.title}}" placeholder="Ticket Title" class="input input-bordered input-sm sm:input-md" required />
+        <input type="text" name="github" value="{{editingTicket.github}}" placeholder="Reference Link or Notes" class="input input-bordered input-sm sm:input-md" />
         <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary">Update</button>
-          <button type="button" id="cancelEditTicket" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm sm:btn-md">Update</button>
+          <button type="button" id="cancelEditTicket" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
         </div>
       </form>
-  {{/if}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-y-3 gap-x-2 md:gap-x-3">
+    {{/if}}
+    
+    <!-- Tickets grid - responsive columns -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
       {{#each tickets}}
-        <div class="card bg-base-100 shadow-md p-2 flex flex-col {{#if isActive _id}}border border-slate-600{{/if}}">
-          <div class="flex justify-between items-start mb-1">
-            <div class="ticket-title text-base font-bold line-clamp-1 truncate overflow-hidden flex-1" title="{{title}}">{{title}}</div>
-            <div class="flex gap-1 ml-1">
-              <button class="edit-ticket-btn btn btn-ghost btn-xs" data-id="{{_id}}" title="Edit Ticket">
-                <i class="fa-solid fa-pen text-primary"></i>
+        <div class="card bg-base-100 shadow-md p-3 flex flex-col {{#if isActive _id}}border-2 border-primary{{/if}}">
+          <div class="flex justify-between items-start mb-2 gap-2">
+            <div class="ticket-title text-sm sm:text-base font-bold line-clamp-2 flex-1" title="{{title}}">{{title}}</div>
+            <div class="flex gap-1 shrink-0">
+              <button class="edit-ticket-btn btn btn-ghost btn-xs btn-square" data-id="{{_id}}" title="Edit Ticket">
+                <i class="fa-solid fa-pen text-primary text-xs"></i>
               </button>
-              <button class="delete-ticket-btn btn btn-ghost btn-xs text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Ticket">
-                <i class="fa-solid fa-trash"></i>
+              <button class="delete-ticket-btn btn btn-ghost btn-xs btn-square text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Ticket">
+                <i class="fa-solid fa-trash text-xs"></i>
               </button>
             </div>
           </div>
-          <div class="ticket-time mb-1"><span class="badge badge-sm bg-gray-700 text-white">{{formatTime displayTime}}</span></div>
-          <div class="flex flex-col mt-auto">
+          <div class="ticket-time mb-2">
+            <span class="badge badge-sm {{#if isActive _id}}badge-primary{{else}}bg-gray-700 text-white{{/if}}">
+              {{formatTime displayTime}}
+            </span>
+          </div>
+          <div class="flex flex-col gap-1 mt-auto">
             {{#if github}}
-              <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus text-sm mb-1">Reference</a>
+              <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus text-xs sm:text-sm truncate">Reference</a>
             {{/if}}
             <button class="activate-ticket {{getButtonClasses _id}} btn-sm w-full" 
-            data-id="{{_id}}"
-            title="{{getButtonTooltip _id}}">
+              data-id="{{_id}}"
+              title="{{getButtonTooltip _id}}">
               {{#if isActive _id}}
                 Stop
               {{else}}
