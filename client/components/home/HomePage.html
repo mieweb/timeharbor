@@ -39,19 +39,24 @@
       <h3 class="text-xl font-semibold mb-4">Team Dashboard</h3>
       
       <!-- Date Range Filter -->
-      <div class="mb-6 flex flex-wrap items-center gap-4">
-        <label class="font-medium">Date Range:</label>
-        <input type="date" id="start-date" class="input input-bordered" value="{{startDate}}">
-        <span class="opacity-60">to</span>
-        <input type="date" id="end-date" class="input input-bordered" value="{{endDate}}">
-         <div class="flex items-center gap-2">
-           <button id="apply-range" class="btn btn-sm {{#if isPresetSelected 'custom'}}btn-primary{{else}}btn-outline{{/if}}">Apply Date Range</button>
-           <button id="preset-today" class="btn btn-sm {{#if isPresetSelected 'today'}}btn-primary{{else}}btn-outline{{/if}}">Today</button>
-           <button id="preset-yesterday" class="btn btn-sm {{#if isPresetSelected 'yesterday'}}btn-primary{{else}}btn-outline{{/if}}">Yesterday</button>
-           <button id="preset-last7" class="btn btn-sm {{#if isPresetSelected 'last7'}}btn-primary{{else}}btn-outline{{/if}}">Last 7 Days</button>
-           <button id="preset-thisweek" class="btn btn-sm {{#if isPresetSelected 'thisweek'}}btn-primary{{else}}btn-outline{{/if}}">This Week</button>
-           <button id="preset-last14" class="btn btn-sm {{#if isPresetSelected 'last14'}}btn-primary{{else}}btn-outline{{/if}}">Last 14 Days</button>
-         </div>
+      <div class="mb-6 space-y-3">
+        <!-- Date inputs row -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+          <label class="font-medium text-sm sm:text-base">Date Range:</label>
+          <div class="flex items-center gap-2 flex-1">
+            <input type="date" id="start-date" class="input input-bordered input-sm sm:input-md flex-1 min-w-0" value="{{startDate}}">
+            <span class="opacity-60 text-sm">to</span>
+            <input type="date" id="end-date" class="input input-bordered input-sm sm:input-md flex-1 min-w-0" value="{{endDate}}">
+          </div>
+        </div>
+        <!-- Preset buttons row - scrollable on mobile -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2">
+          <button id="preset-today" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'today'}}btn-primary{{else}}btn-outline{{/if}}">Today</button>
+          <button id="preset-yesterday" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'yesterday'}}btn-primary{{else}}btn-outline{{/if}}">Yesterday</button>
+          <button id="preset-last7" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'last7'}}btn-primary{{else}}btn-outline{{/if}}">7 Days</button>
+          <button id="preset-thisweek" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'thisweek'}}btn-primary{{else}}btn-outline{{/if}}">This Week</button>
+          <button id="preset-last14" class="btn btn-sm whitespace-nowrap {{#if isPresetSelected 'last14'}}btn-primary{{else}}btn-outline{{/if}}">14 Days</button>
+        </div>
       </div>
 
       <!-- Team Summary - Mobile Card View -->
@@ -97,75 +102,75 @@
 
   <!-- Personal Dashboard Section (for all users) -->
   <div class="mb-8">
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="text-xl font-semibold">Your Personal Dashboard</h3>
-      <div class="flex gap-2">
-        <button id="viewMyTimesheet" class="btn btn-sm btn-outline btn-primary">
-          📊 View My Timesheet
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <h3 class="text-lg sm:text-xl font-semibold">Your Personal Dashboard</h3>
+      <div class="flex flex-wrap gap-2">
+        <button id="viewMyTimesheet" class="btn btn-xs sm:btn-sm btn-outline btn-primary">
+          View Timesheet
         </button>
-        <button id="reportIssue" class="btn btn-sm btn-outline btn-secondary">
-          🐛 Report an Issue
+        <button id="reportIssue" class="btn btn-xs sm:btn-sm btn-outline btn-secondary">
+          Report Issue
         </button>
       </div>
     </div>
 
     <!-- Quick Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <div class="card bg-base-100 shadow p-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6">
+      <div class="card bg-base-100 shadow p-3 sm:p-4">
         <div class="text-center">
-          <div class="text-2xl font-bold text-primary">{{todayHours}}</div>
-          <div class="text-sm text-base-content opacity-70">Today's Hours</div>
+          <div class="text-xl sm:text-2xl font-bold text-primary">{{todayHours}}</div>
+          <div class="text-xs sm:text-sm text-base-content opacity-70">Today</div>
         </div>
       </div>
-      <div class="card bg-base-100 shadow p-4">
+      <div class="card bg-base-100 shadow p-3 sm:p-4">
         <div class="text-center">
-          <div class="text-2xl font-bold text-primary">{{weekHours}}</div>
-          <div class="text-sm text-base-content opacity-70">This Week</div>
+          <div class="text-xl sm:text-2xl font-bold text-primary">{{weekHours}}</div>
+          <div class="text-xs sm:text-sm text-base-content opacity-70">This Week</div>
         </div>
       </div>
-      <div class="card bg-base-100 shadow p-4">
+      <div class="card bg-base-100 shadow p-3 sm:p-4">
         <div class="text-center">
-          <div class="text-2xl font-bold text-primary">{{activeSessionsCount}}</div>
-          <div class="text-sm text-base-content opacity-70">Active Clock-ins</div>
+          <div class="text-xl sm:text-2xl font-bold text-primary">{{activeSessionsCount}}</div>
+          <div class="text-xs sm:text-sm text-base-content opacity-70">Active</div>
         </div>
       </div>
-      <div class="card bg-base-100 shadow p-4">
+      <div class="card bg-base-100 shadow p-3 sm:p-4">
         <div class="text-center">
-          <div class="text-2xl font-bold text-primary">{{totalProjects}}</div>
-          <div class="text-sm text-base-content opacity-70">Active Teams</div>
+          <div class="text-xl sm:text-2xl font-bold text-primary">{{totalProjects}}</div>
+          <div class="text-xs sm:text-sm text-base-content opacity-70">Teams</div>
         </div>
       </div>
     </div>
 
     <!-- Recent Activity -->
-    <div class="card bg-base-100 shadow p-6">
-      <h4 class="text-lg font-semibold mb-4">Recent Activity</h4>
+    <div class="card bg-base-100 shadow p-4 sm:p-6">
+      <h4 class="text-base sm:text-lg font-semibold mb-4">Recent Activity</h4>
       
       {{#if hasRecentActivity}}
-        <div class="space-y-4">
+        <div class="space-y-3">
           {{#each recentClockEvents}}
-            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-              <div class="flex items-center gap-3">
-                <div class="text-2xl">
+            <div class="flex items-center justify-between gap-2 p-2 sm:p-3 bg-base-200 rounded-lg">
+              <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <div class="text-lg sm:text-2xl shrink-0">
                   {{#if endTime}}
                     ✅
                   {{else}}
                     🟢
                   {{/if}}
                 </div>
-                <div>
-                  <div class="font-semibold">{{teamName teamId}}</div>
-                  <div class="text-sm text-base-content opacity-70">
+                <div class="min-w-0 flex-1">
+                  <div class="font-semibold text-sm sm:text-base truncate">{{teamName teamId}}</div>
+                  <div class="text-xs sm:text-sm text-base-content opacity-70">
                     {{#if endTime}}
                       {{formatTimestampHoursMinutes startTimestamp}} - {{formatTimestampHoursMinutes endTime}}
                     {{else}}
-                      Started {{formatTimestampHoursMinutes startTimestamp}} (Active)
+                      {{formatTimestampHoursMinutes startTimestamp}} (Active)
                     {{/if}}
                   </div>
                 </div>
               </div>
-              <div class="text-right">
-                <div class="badge badge-primary">{{formatTimeHoursMinutes (clockEventTotalTime this)}}</div>
+              <div class="text-right shrink-0">
+                <div class="badge badge-primary badge-sm sm:badge-md">{{formatTimeHoursMinutes (clockEventTotalTime this)}}</div>
                 {{#unless endTime}}
                   <div class="text-xs text-success mt-1">Running</div>
                 {{/unless}}

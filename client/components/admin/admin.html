@@ -1,11 +1,11 @@
 <template name="admin">
-  <div class="flex flex-col gap-4">
-    <h3 class="text-xl font-semibold">Administrative Time Entry Review</h3>
+  <div class="flex flex-col gap-3 sm:gap-4">
+    <h3 class="text-lg sm:text-xl font-semibold">Admin Time Entry Review</h3>
 
     <!-- Team Selection -->
-    <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-      <label for="adminTeamSelect" class="label">Select Team to Review:</label>
-      <select id="adminTeamSelect" class="select select-bordered">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
+      <label for="adminTeamSelect" class="label text-sm sm:text-base">Team:</label>
+      <select id="adminTeamSelect" class="select select-bordered select-sm sm:select-md flex-1 min-w-0">
         <option value="">Choose a team...</option>
         {{#each adminTeams}}
           <option value="{{_id}}" {{isSelectedAdminTeam _id}}>{{name}}</option>
@@ -14,36 +14,45 @@
     </div>
 
     {{#if selectedAdminTeamId}}
-
-
         <!-- Batch Actions -->
-        <div class="card bg-base-100 shadow p-4 mb-4">
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex gap-2">
-              <button id="batchReviewed" class="btn btn-primary btn-sm" disabled>Mark as Reviewed</button>
-              <button id="batchClosed" class="btn btn-success btn-sm" disabled>Mark as Closed</button>
-              <button id="batchDeleted" class="btn btn-error btn-sm" disabled>Mark as Deleted</button>
+        <div class="card bg-base-100 shadow p-3 sm:p-4 mb-3 sm:mb-4">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div class="flex flex-wrap gap-2">
+              <button id="batchReviewed" class="btn btn-primary btn-xs sm:btn-sm" disabled>Reviewed</button>
+              <button id="batchClosed" class="btn btn-success btn-xs sm:btn-sm" disabled>Closed</button>
+              <button id="batchDeleted" class="btn btn-error btn-xs sm:btn-sm" disabled>Deleted</button>
             </div>
-            <span id="selectedCount" class="text-sm text-gray-600">0 items selected</span>
-            <!-- Help button -->
-            <button id="helpButton" class="btn btn-circle btn-ghost btn-xs" title="Help with status meanings">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
+            <div class="flex items-center gap-2">
+              <span id="selectedCount" class="text-xs sm:text-sm text-gray-600">0 selected</span>
+              <button id="helpButton" class="btn btn-circle btn-ghost btn-xs" title="Help">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- AG Grid -->
-        <div class="overflow-x-auto">
+        <!-- AG Grid - hidden on mobile, show message instead -->
+        <div class="hidden md:block overflow-x-auto">
           <div id="adminGrid" class="ag-theme-alpine w-full" style="height: 560px;"></div>
         </div>
+        
+        <!-- Mobile message -->
+        <div class="md:hidden">
+          <div class="alert alert-info">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-sm">Admin review works best on a larger screen. Please use a tablet or desktop for full functionality.</span>
+          </div>
+        </div>
     {{else}}
-      <div class="alert alert-warning">
+      <div class="alert alert-warning text-sm">
         <p>Please select a team to review time entries.</p>
       </div>
-         {{/if}}
-   </div>
+    {{/if}}
+  </div>
 
    <!-- Help Modal -->
    <div id="helpModal" class="modal">
