@@ -722,13 +722,23 @@ Template.timesheet.events({
     }
   },
   
-  'click #apply-range': (e, t) => {
-    const start = t.$('#start-date').val();
-    const end = t.$('#end-date').val();
-    if (start) t.startDate.set(start);
-    if (end) t.endDate.set(end);
-    t.selectedPreset.set('custom');
-    t.updateGridData();
+  // Auto-apply when date inputs change
+  'change #start-date': (e, t) => {
+    const start = e.target.value;
+    if (start) {
+      t.startDate.set(start);
+      t.selectedPreset.set('custom');
+      t.updateGridData();
+    }
+  },
+  
+  'change #end-date': (e, t) => {
+    const end = e.target.value;
+    if (end) {
+      t.endDate.set(end);
+      t.selectedPreset.set('custom');
+      t.updateGridData();
+    }
   },
   
   'click #preset-today': (e, t) => 
