@@ -4,14 +4,24 @@ import 'meteor/accounts-password';
 import { Teams } from '../../collections.js';
 
 export const authMethods = {
-  createUserAccount({ email, password }) {
+  createUserAccount({ email, password, firstName, lastName }) {
     if (!email || !password) {
       throw new Meteor.Error('invalid-data', 'Email and password are required');
     }
+    if (!firstName || !lastName) {
+      throw new Meteor.Error('invalid-data', 'First name and last name are required');
+    }
     
     try {
-      const userId = Accounts.createUser({ email, password });
-      console.log('User created:', { userId, email }); // Log user creation details
+      const userId = Accounts.createUser({ 
+        email, 
+        password,
+        profile: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim()
+        }
+      });
+      console.log('User created:', { userId, email, firstName, lastName }); // Log user creation details
       return userId;
     } catch (error) {
       console.error('Error in createUserAccount method:', error);

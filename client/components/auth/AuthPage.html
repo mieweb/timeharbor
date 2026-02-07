@@ -50,6 +50,10 @@
             {{#if showSignupForm}}
               <form id="signupForm" class="space-y-4">
                 <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Create Account</h2>
+                <div class="grid grid-cols-2 gap-4">
+                  {{> formField id="signupFirstName" name="firstName" type="text" label="First Name" placeholder="Enter first name"}}
+                  {{> formField id="signupLastName" name="lastName" type="text" label="Last Name" placeholder="Enter last name"}}
+                </div>
                 {{> formField id="signupEmail" name="email" type="email" label="Email" placeholder="Enter email address"}}
                 {{> formField id="signupPassword" name="password" type="password" label="Password" placeholder="Choose password"}}
                 {{> formField id="confirmPassword" name="confirmPassword" type="password" label="Confirm Password" placeholder="Confirm password"}}
