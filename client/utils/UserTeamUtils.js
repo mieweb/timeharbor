@@ -34,16 +34,28 @@ export const getUserEmail = (userId) => {
 export const getUserName = (userId) => {
     const user = Meteor.users?.findOne(userId);
     
+    // Helper to build full name from firstName and lastName
+    const getFullName = (profile) => {
+        if (profile?.firstName && profile?.lastName) {
+            return `${profile.firstName} ${profile.lastName}`;
+        }
+        if (profile?.firstName) return profile.firstName;
+        if (profile?.lastName) return profile.lastName;
+        return null;
+    };
+    
     // If no user found, check if it's the current user
     if (!user && userId === Meteor.userId()) {
         const currentUser = Meteor.user();
-        return currentUser?.profile?.name ||
+        return getFullName(currentUser?.profile) ||
+               currentUser?.profile?.name ||
                currentUser?.username ||
                'Unknown User';
     }
     
     if (user) {
-        return user.profile?.name || 
+        return getFullName(user.profile) ||
+               user.profile?.name || 
                user.username ||
                // Fallback: extract name from email
                (user.emails?.[0]?.address || '').split('@')[0] ||

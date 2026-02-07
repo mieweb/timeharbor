@@ -51,14 +51,19 @@ Template.authPage.events({
   
   'submit #signupForm'(event) {
     event.preventDefault();
-    const { email, password, confirmPassword } = event.target;
+    const { firstName, lastName, email, password, confirmPassword } = event.target;
     
+    if (!firstName.value.trim() || !lastName.value.trim()) return alert('First name and last name are required');
     if (password.value !== confirmPassword.value) return alert('Passwords do not match');
     if (password.value.length < 6) return alert('Password too short');
     
     Accounts.createUser({ 
       email: email.value.trim(), 
-      password: password.value 
+      password: password.value,
+      profile: {
+        firstName: firstName.value.trim(),
+        lastName: lastName.value.trim()
+      }
     }, (err) => {
       if (err) {
         alert('Signup failed: ' + err.reason);

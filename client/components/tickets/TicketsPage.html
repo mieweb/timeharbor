@@ -114,4 +114,33 @@
       </div>
     </div>
   </dialog>
+
+  <!-- Profile Name Required Modal -->
+  <dialog id="profileNameModal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">Complete Your Profile</h3>
+      <p class="text-base-content/70 mb-4">Please enter your first name and last name to continue.</p>
+      <form id="profileNameForm" class="flex flex-col gap-4">
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">First Name</span>
+          </label>
+          <input type="text" name="firstName" placeholder="Enter your first name" class="input input-bordered" required />
+        </div>
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Last Name</span>
+          </label>
+          <input type="text" name="lastName" placeholder="Enter your last name" class="input input-bordered" required />
+        </div>
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost" onclick="document.getElementById('profileNameModal').close()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save & Clock In</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 </template>
