@@ -100,6 +100,24 @@ export const clockEventMethods = {
         await Promise.all(updates);
       }
 
+      // Also stop ticket timers stored on Tickets collection
+      // This ensures the UI timer stops when clock-out occurs (including auto midnight clock-out)
+      const runningTickets = await Tickets.find({
+        teamId: clockEvent.teamId,
+        createdBy: this.userId,
+        startTimestamp: { $exists: true }
+      }).fetchAsync();
+
+      const ticketUpdates = runningTickets.map(ticket => {
+        const elapsedSeconds = Math.floor((now - ticket.startTimestamp) / 1000);
+        const prev = ticket.accumulatedTime || 0;
+        return Tickets.updateAsync(ticket._id, {
+          $set: { accumulatedTime: prev + elapsedSeconds },
+          $unset: { startTimestamp: '' }
+        });
+      });
+      await Promise.all(ticketUpdates);
+
       // Mark clock event as ended
       await ClockEvents.updateAsync(clockEvent._id, {
         $set: { endTime: new Date() },
