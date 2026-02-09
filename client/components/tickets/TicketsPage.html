@@ -78,8 +78,8 @@
             </span>
           </div>
           <div class="flex flex-col gap-1 mt-auto">
-            {{#if github}}
-              <a href="{{githubLink github}}" target="_blank" class="link text-primary hover:text-primary-focus text-xs sm:text-sm truncate">Reference</a>
+            {{#if hasReferenceUrl github}}
+              <a href="{{githubLink github}}" target="_blank" rel="noopener noreferrer" class="ticket-reference-link link text-primary hover:text-primary-focus text-xs sm:text-sm truncate inline-flex items-center justify-center min-h-[44px] py-2 px-3 -mx-1 rounded border border-primary/30 hover:bg-primary/10 touch-manipulation">Reference →</a>
             {{/if}}
             <button class="activate-ticket {{getButtonClasses _id}} btn-sm w-full" 
               data-id="{{_id}}"

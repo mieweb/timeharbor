@@ -3,7 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime } from '../layout/MainLayout.js';
 import { formatTime, formatTimeHoursMinutes, calculateTotalTime, formatDurationText } from '../../utils/TimeUtils.js';
-import { extractUrlTitle } from '../../utils/UrlUtils.js';
+import { extractUrlTitle, openExternalUrl, normalizeReferenceUrl } from '../../utils/UrlUtils.js';
 import { getUserTeams } from '../../utils/UserTeamUtils.js';
 
 // Utility functions
@@ -232,8 +232,11 @@ Template.tickets.helpers({
   },
   formatTime,
   githubLink(github) {
-    if (!github) return '';
-    return github.startsWith('http') ? github : `https://github.com/${github}`;
+    return normalizeReferenceUrl(github) || '';
+  },
+  hasReferenceUrl(github) {
+    if (!github || typeof github !== 'string') return false;
+    return github.trim().length > 0;
   },
   isClockedIn() {
     return Template.instance().clockedIn.get();
@@ -316,6 +319,14 @@ Template.tickets.events({
     setTimeout(() => extractUrlTitle(e.target.value, e.target), 0);
   },
   
+  'click .ticket-reference-link'(e, t) {
+    const href = e.currentTarget.getAttribute('href');
+    if (href && href !== '#') {
+      e.preventDefault();
+      e.stopPropagation();
+      openExternalUrl(href);
+    }
+  },
   'click .edit-ticket-btn'(e, t) {
     e.preventDefault();
     e.stopPropagation();

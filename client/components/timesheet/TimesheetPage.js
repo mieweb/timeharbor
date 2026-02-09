@@ -3,6 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { ClockEvents, Teams, Tickets } from '../../../collections.js';
 import { formatTime, formatTimeHoursMinutes, formatDate } from '../../utils/TimeUtils.js';
+import { openExternalUrl, normalizeReferenceUrl } from '../../utils/UrlUtils.js';
 import { getUserName, getUserEmail } from '../../utils/UserTeamUtils.js';
 import { dateToLocalString, getToday, getYesterday, getDaysAgo, getThisWeekStart, formatDateForDisplay } from '../../utils/DateUtils.js';
 import { Grid, createGrid } from 'ag-grid-community';
@@ -74,14 +75,36 @@ const getColumnDefinitions = (isEditable) => [
     comparator: (valueA, valueB) => (valueA || 0) - (valueB || 0)
   },
   { 
-    headerName: 'Ticket', 
-    field: 'activityTitle', 
+    headerName: 'Tickets', 
+    field: 'ticketsWorkedOn', 
     flex: 1.5, 
     sortable: true, 
     filter: 'agTextColumnFilter',
-    valueFormatter: p => p.value || 'No activity',
+    valueGetter: p => (p.data?.ticketsWorkedOn || []).map(t => t.title).join(', ') || 'No tickets',
+    valueFormatter: p => p.value || 'No tickets',
+    cellRenderer: p => {
+      const tickets = p.data?.ticketsWorkedOn || [];
+      const escape = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      if (!tickets.length) {
+        return '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-base-200 text-base-content/60">No tickets</span>';
+      }
+      const pillWrap = 'style="display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;"';
+      const pills = tickets.map(t => {
+        const title = escape(t.title || 'Untitled');
+        if (t.url) {
+          const href = t.url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+          return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-primary/15 text-primary hover:bg-primary hover:text-primary-content transition-colors no-underline border border-primary/20 hover:border-primary cursor-pointer" style="max-width:180px;"><span class="truncate">${title}</span><svg class="shrink-0 w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg></a>`;
+        }
+        return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-base-200 text-base-content/80 border border-base-300" style="max-width:180px;"><span class="truncate">${title}</span></span>`;
+      }).join('');
+      return `<span ${pillWrap}>${pills}</span>`;
+    },
     cellClass: 'font-medium',
-    tooltipField: 'activityTitle'
+    tooltipValueGetter: p => {
+      const tickets = p.data?.ticketsWorkedOn || [];
+      if (!tickets.length) return 'No tickets';
+      return tickets.map(t => t.url ? `${t.title}: ${t.url}` : t.title).join('\n');
+    }
   },
   { 
     headerName: 'Team', 
@@ -115,10 +138,31 @@ const createDateRange = (startDateStr, endDateStr) => ({
 const isEventInDateRange = (eventStart, dateRange) => 
   eventStart >= dateRange.start && eventStart <= dateRange.end;
 
+const buildTicketsWorkedOn = (event, ticketsCache) => {
+  const seen = new Set();
+  const list = [];
+  const add = (ticketId) => {
+    if (!ticketId || seen.has(ticketId)) return;
+    seen.add(ticketId);
+    const ticket = ticketsCache.get(ticketId);
+    if (!ticket) return;
+    const title = ticket.title || 'Untitled';
+    const url = normalizeReferenceUrl(ticket.github) || null;
+    list.push({ title, url });
+  };
+  (event.tickets || []).forEach(t => t.ticketId && add(t.ticketId));
+  if (list.length === 0 && event.ticketId) add(event.ticketId);
+  return list;
+};
+
 const processSessionData = (event, ticketsCache, teamsCache) => {
   const startTime = new Date(event.startTimestamp);
   const endTime = event.endTime ? new Date(event.endTime) : null;
   const duration = endTime ? (endTime - startTime) / 1000 : null;
+  const ticketsWorkedOn = buildTicketsWorkedOn(event, ticketsCache);
+  const activityTitle = ticketsWorkedOn.length
+    ? ticketsWorkedOn.map(t => t.title).join(', ')
+    : (event.ticketId ? (ticketsCache.get(event.ticketId)?.title || null) : null);
   
   return {
     eventId: event._id,
@@ -127,10 +171,9 @@ const processSessionData = (event, ticketsCache, teamsCache) => {
     endTime,
     duration,
     isActive: !endTime,
-    activityTitle: event.ticketId ? (ticketsCache.get(event.ticketId)?.title || null) : null,
+    activityTitle: activityTitle || null,
     teamName: event.teamId ? (teamsCache.get(event.teamId)?.name || null) : null,
-    ticketId: event.ticketId,
-    teamId: event.teamId
+    ticketsWorkedOn
   };
 };
 
@@ -600,7 +643,14 @@ Template.timesheet.helpers({
 
 Template.timesheet.events({
   'click #backToHome': (e, t) => FlowRouter.go('/'),
-  
+  'click .timesheet-ticket-link'(e, t) {
+    const href = e.currentTarget.getAttribute('href');
+    if (href && href !== '#') {
+      e.preventDefault();
+      e.stopPropagation();
+      openExternalUrl(href);
+    }
+  },
   'click #refreshData': (e, t) => {
     const currentStart = t.startDate.get();
     const currentEnd = t.endDate.get();

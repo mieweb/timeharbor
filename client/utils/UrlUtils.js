@@ -1,4 +1,34 @@
 /**
+ * Normalize ticket reference URL (full URL or path → https://github.com/...).
+ * @param {string} github - Reference link or path
+ * @returns {string|null} Full URL or null if empty/invalid
+ */
+export function normalizeReferenceUrl(github) {
+  if (!github || typeof github !== 'string') return null;
+  const t = github.trim();
+  if (!t) return null;
+  return t.startsWith('http') ? t : `https://github.com/${t}`;
+}
+
+/**
+ * Opens a URL externally. In Cordova app uses _system (device browser) via cordova-plugin-inappbrowser.
+ * @param {string} href - Full URL to open
+ */
+export function openExternalUrl(href) {
+  if (!href) return;
+  try {
+    if (window.cordova) {
+      window.open(href, '_system');
+      return;
+    }
+    const w = window.open(href, '_blank', 'noopener,noreferrer');
+    if (!w) window.location.href = href;
+  } catch (e) {
+    window.location.href = href;
+  }
+}
+
+/**
  * Extracts title from a URL and performs callback actions
  * @param {string} input - The URL to process
  * @param {HTMLInputElement} titleInput - The input element containing the URL
