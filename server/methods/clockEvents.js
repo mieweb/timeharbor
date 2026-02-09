@@ -3,6 +3,7 @@ import { check } from 'meteor/check';
 import { ClockEvents, Tickets, Teams } from '../../collections.js';
 import { stopTicketInClockEvent, formatDurationText } from '../utils/ClockEventHelpers.js';
 import { notifyTeamAdmins } from '../utils/pushNotifications.js';
+import { getUserDisplayName } from '../utils/userHelpers.js';
 
 export const clockEventMethods = {
   async clockEventStart(teamId) {
@@ -11,10 +12,7 @@ export const clockEventMethods = {
     
     // Get user info for notification
     const user = await Meteor.users.findOneAsync(this.userId);
-    const userName = user?.profile?.name || 
-                     user?.username || 
-                     user?.emails?.[0]?.address?.split('@')[0] || 
-                     'A user';
+    const userName = getUserDisplayName(user, 'A user');
     
     // Get team info
     const team = await Teams.findOneAsync(teamId);
@@ -65,10 +63,7 @@ export const clockEventMethods = {
     
     // Get user info for notification
     const user = await Meteor.users.findOneAsync(this.userId);
-    const userName = user?.profile?.name || 
-                     user?.username || 
-                     user?.emails?.[0]?.address?.split('@')[0] || 
-                     'A user';
+    const userName = getUserDisplayName(user, 'A user');
     
     // Get team info
     const team = await Teams.findOneAsync(teamId);

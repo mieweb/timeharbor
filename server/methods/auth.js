@@ -4,20 +4,60 @@ import 'meteor/accounts-password';
 import { Teams } from '../../collections.js';
 
 export const authMethods = {
-  createUserAccount({ email, password }) {
+  createUserAccount({ email, password, firstName, lastName }) {
     if (!email || !password) {
       throw new Meteor.Error('invalid-data', 'Email and password are required');
     }
+    if (!firstName || !lastName) {
+      throw new Meteor.Error('invalid-data', 'First name and last name are required');
+    }
     
     try {
-      const userId = Accounts.createUser({ email, password });
-      console.log('User created:', { userId, email }); // Log user creation details
+      const userId = Accounts.createUser({ 
+        email, 
+        password,
+        profile: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim()
+        }
+      });
+      console.log('User created:', { userId, email, firstName, lastName }); // Log user creation details
       return userId;
     } catch (error) {
       console.error('Error in createUserAccount method:', error);
       throw new Meteor.Error('server-error', 'Failed to create user');
     }
   },
+  async updateUserProfile({ firstName, lastName }) {
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in to update your profile');
+    }
+    
+    if (!firstName || !lastName) {
+      throw new Meteor.Error('invalid-data', 'First name and last name are required');
+    }
+    
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    
+    if (!trimmedFirstName || !trimmedLastName) {
+      throw new Meteor.Error('invalid-data', 'First name and last name cannot be empty');
+    }
+    
+    try {
+      await Meteor.users.updateAsync(this.userId, {
+        $set: {
+          'profile.firstName': trimmedFirstName,
+          'profile.lastName': trimmedLastName
+        }
+      });
+      return true;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw new Meteor.Error('server-error', 'Failed to update profile');
+    }
+  },
+  
   async resetPasswordWithTeamCode({ email, teamCode, newPassword }) {
     if (!email || !teamCode || !newPassword) {
       throw new Meteor.Error('invalid-data', 'Email, team code, and password are required');

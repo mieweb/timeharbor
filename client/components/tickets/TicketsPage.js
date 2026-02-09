@@ -422,7 +422,47 @@ Template.tickets.events({
   
   'click #clockInBtn'(e, t) {
     const teamId = t.selectedTeamId.get();
+    const user = Meteor.user();
+    const firstName = user?.profile?.firstName;
+    const lastName = user?.profile?.lastName;
+    
+    // Check if user has first name and last name
+    if (!firstName || !lastName) {
+      // Show the profile name modal
+      document.getElementById('profileNameModal').showModal();
+      return;
+    }
+    
     sessionManager.startSession(teamId);
+  },
+  
+  async 'submit #profileNameForm'(e, t) {
+    e.preventDefault();
+    
+    const firstName = e.target.firstName.value.trim();
+    const lastName = e.target.lastName.value.trim();
+    
+    if (!firstName || !lastName) {
+      alert('First name and last name are required.');
+      return;
+    }
+    
+    try {
+      // Save the profile
+      await utils.meteorCall('updateUserProfile', { firstName, lastName });
+      
+      // Close the modal
+      document.getElementById('profileNameModal').close();
+      
+      // Clear the form
+      e.target.reset();
+      
+      // Now proceed with clock-in
+      const teamId = t.selectedTeamId.get();
+      sessionManager.startSession(teamId);
+    } catch (error) {
+      utils.handleError(error, 'Failed to save profile');
+    }
   },
   
   async 'click #clockOutBtn'(e, t) {

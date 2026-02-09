@@ -3,6 +3,7 @@ import { Accounts } from 'meteor/accounts-base';
 import 'meteor/accounts-password';
 import { check } from 'meteor/check';
 import { Teams } from '../../collections.js';
+import { getUserDisplayName, getUserDisplayEmail } from '../utils/userHelpers.js';
 
 function generateTeamCode() {
   return Math.random().toString(36).substr(2, 8).toUpperCase();
@@ -44,18 +45,11 @@ export const teamMethods = {
   async getUsers(userIds) {
     check(userIds, [String]);
     const users = await Meteor.users.find({ _id: { $in: userIds } }).fetchAsync();
-    const toName = (user) => {
-      return (
-        user?.profile?.name ||
-        user?.username ||
-        (user?.emails?.[0]?.address || '').split('@')[0] ||
-        'Unknown'
-      );
-    };
-    const toEmail = (user) => (
-      user?.emails?.[0]?.address || 'No email'
-    );
-    return users.map(user => ({ id: user._id, name: toName(user), email: toEmail(user) }));
+    return users.map(user => ({ 
+      id: user._id, 
+      name: getUserDisplayName(user, 'Unknown'), 
+      email: getUserDisplayEmail(user) 
+    }));
   },
   async updateTeamName(teamId, newName) {
     check(teamId, String);

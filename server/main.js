@@ -17,6 +17,7 @@ import { notificationMethods } from './methods/notifications.js';
 // Import clock event helpers for auto-clock-out
 import { stopTicketInClockEvent, formatDurationText } from './utils/ClockEventHelpers.js';
 import { notifyTeamAdmins, notifyUser } from './utils/pushNotifications.js';
+import { getUserDisplayName } from './utils/userHelpers.js';
 
 
 Meteor.startup(async () => {
@@ -150,11 +151,8 @@ Meteor.startup(async () => {
 
               // Get user and team info for logging/notification
               const user = await Meteor.users.findOneAsync(clockEvent.userId);
-              const userName = user?.profile?.name ||
-                user?.username ||
-                user?.emails?.[0]?.address?.split('@')[0] ||
-                'A user';
-
+              const userName = getUserDisplayName(user, 'A user');
+         
               const team = await Teams.findOneAsync(clockEvent.teamId);
               const teamName = team?.name || 'a team';
 
