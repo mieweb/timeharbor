@@ -1,6 +1,10 @@
 // TimeHarbor Mobile Configuration for Cordova
 // This file configures the Cordova mobile app build settings
 
+// Allow opening external URLs (e.g. ticket reference links) in system browser
+App.accessRule('https://*', { type: 'intent' });
+App.accessRule('http://*', { type: 'intent' });
+
 // App Metadata
 App.info({
   id: 'com.mieweb.timeharbor',
