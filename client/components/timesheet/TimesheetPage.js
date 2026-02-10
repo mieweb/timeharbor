@@ -475,6 +475,11 @@ Template.timesheet.onCreated(function () {
     
     if (!userId) return [];
     
+    // Reactive dependency on Tickets so that when tickets load (e.g. after clock events),
+    // session data recomputes and ticket names/times show in history regardless of clock state
+    const tickets = Tickets.find().fetch();
+    tickets.forEach(ticket => ticketsCache.set(ticket._id, ticket));
+    
     const dateRange = createDateRange(startDate.get(), endDate.get());
     
     // Filter clock events for the specific user we're viewing
