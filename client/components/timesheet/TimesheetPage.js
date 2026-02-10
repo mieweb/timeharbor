@@ -80,7 +80,7 @@ const getColumnDefinitions = (isEditable) => [
     flex: 1.5, 
     sortable: true, 
     filter: 'agTextColumnFilter',
-    valueGetter: p => (p.data?.ticketsWorkedOn || []).map(t => t.title).join(', ') || 'No tickets',
+    valueGetter: p => (p.data?.ticketsWorkedOn || []).map(t => `${t.title} (${t.durationFormatted || '0:00'})`).join(', ') || 'No tickets',
     valueFormatter: p => p.value || 'No tickets',
     cellRenderer: p => {
       const tickets = p.data?.ticketsWorkedOn || [];
@@ -91,11 +91,13 @@ const getColumnDefinitions = (isEditable) => [
       const pillWrap = 'style="display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;"';
       const pills = tickets.map(t => {
         const title = escape(t.title || 'Untitled');
+        const duration = t.durationFormatted || formatTimeHoursMinutes(t.durationSeconds || 0);
+        const label = `${title} (${duration})`;
         if (t.url) {
           const href = t.url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-          return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-primary/15 text-primary hover:bg-primary hover:text-primary-content transition-colors no-underline border border-primary/20 hover:border-primary cursor-pointer" style="max-width:180px;"><span class="truncate">${title}</span><svg class="shrink-0 w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg></a>`;
+          return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-primary/15 text-primary hover:bg-primary hover:text-primary-content transition-colors no-underline border border-primary/20 hover:border-primary cursor-pointer" style="max-width:200px;" title="${escape(label)}"><span class="truncate">${label}</span><svg class="shrink-0 w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg></a>`;
         }
-        return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-base-200 text-base-content/80 border border-base-300" style="max-width:180px;"><span class="truncate">${title}</span></span>`;
+        return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-base-200 text-base-content/80 border border-base-300" style="max-width:200px;" title="${escape(label)}"><span class="truncate">${label}</span></span>`;
       }).join('');
       return `<span ${pillWrap}>${pills}</span>`;
     },
@@ -103,7 +105,11 @@ const getColumnDefinitions = (isEditable) => [
     tooltipValueGetter: p => {
       const tickets = p.data?.ticketsWorkedOn || [];
       if (!tickets.length) return 'No tickets';
-      return tickets.map(t => t.url ? `${t.title}: ${t.url}` : t.title).join('\n');
+      return tickets.map(t => {
+        const duration = t.durationFormatted || formatTimeHoursMinutes(t.durationSeconds || 0);
+        const line = `${t.title} — ${duration}`;
+        return t.url ? `${line}\n${t.url}` : line;
+      }).join('\n');
     }
   },
   { 
@@ -141,17 +147,37 @@ const isEventInDateRange = (eventStart, dateRange) =>
 const buildTicketsWorkedOn = (event, ticketsCache) => {
   const seen = new Set();
   const list = [];
-  const add = (ticketId) => {
+  const now = Date.now();
+  (event.tickets || []).forEach((ticketEntry) => {
+    const ticketId = ticketEntry.ticketId;
     if (!ticketId || seen.has(ticketId)) return;
     seen.add(ticketId);
     const ticket = ticketsCache.get(ticketId);
     if (!ticket) return;
     const title = ticket.title || 'Untitled';
     const url = normalizeReferenceUrl(ticket.github) || null;
-    list.push({ title, url });
-  };
-  (event.tickets || []).forEach(t => t.ticketId && add(t.ticketId));
-  if (list.length === 0 && event.ticketId) add(event.ticketId);
+    let durationSeconds = ticketEntry.accumulatedTime || 0;
+    if (!event.endTime && ticketEntry.startTimestamp) {
+      durationSeconds += Math.floor((now - ticketEntry.startTimestamp) / 1000);
+    }
+    list.push({
+      title,
+      url,
+      durationSeconds,
+      durationFormatted: formatTimeHoursMinutes(durationSeconds)
+    });
+  });
+  if (list.length === 0 && event.ticketId) {
+    const ticket = ticketsCache.get(event.ticketId);
+    if (ticket) {
+      list.push({
+        title: ticket.title || 'Untitled',
+        url: normalizeReferenceUrl(ticket.github) || null,
+        durationSeconds: 0,
+        durationFormatted: '0:00'
+      });
+    }
+  }
   return list;
 };
 
@@ -448,6 +474,11 @@ Template.timesheet.onCreated(function () {
     const { userId, startDate, endDate, ticketsCache, teamsCache } = instance;
     
     if (!userId) return [];
+    
+    // Reactive dependency on Tickets so that when tickets load (e.g. after clock events),
+    // session data recomputes and ticket names/times show in history regardless of clock state
+    const tickets = Tickets.find().fetch();
+    tickets.forEach(ticket => ticketsCache.set(ticket._id, ticket));
     
     const dateRange = createDateRange(startDate.get(), endDate.get());
     
