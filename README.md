@@ -2,7 +2,7 @@
 
 **Privacy-First Time Tracking and Institutional Knowledge Sharing**
 
-<img src="/public/timeharbor-icon-generator.html" alt="TimeHarbor Logo" width="80" style="border-radius: 10px;"/>
+![TimeHarbor](https://img.shields.io/badge/Meteor-3.0+-blue?style=flat-square) ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square) ![Node](https://img.shields.io/badge/Node-18+-success?style=flat-square)
 
 Meteor MongoDB Blaze Tailwind Firebase Real-Time Notifications
 
@@ -34,235 +34,889 @@ TimeHarbor is a comprehensive time tracking and institutional knowledge manageme
 
 ---
 
-## Features
+## 🎯 Purpose & Vision
 
-- ⏱️ **Clock In/Clock Out:** Simple, intuitive interface for tracking work sessions
-- 🏷️ **Project Tagging:** Organize time entries by projects, objectives, or tasks (e.g., "robotics build," "grant writing," "classwork")
-- 📝 **Personal Reflection:** Add context, challenges, and accomplishments to each session
-- 🔒 **User-Controlled Sharing:** All data stays private by default—you decide who sees what and when
-- 👥 **Team Collaboration:** Create teams, invite members, and selectively share progress and insights
-- 📊 **Reporting & Summaries:** Generate custom reports to share contributions and progress
-- 🎯 **Role Flexibility:** Supports employees, students, mentors, volunteers, and nonprofit contributors
-- 📱 **Responsive Design:** Works seamlessly on desktop, tablet, and mobile devices
+TimeHarbor addresses critical needs in modern institutional knowledge management and accountability:
 
----
+**Core Mission**
+- Enable individuals to document, reflect on, and communicate the value of their time investment
+- Provide transparent, consent-driven time tracking that respects privacy by default
+- Facilitate institutional knowledge transfer and activity documentation
+- Support team coordination and progress tracking without surveillance
 
-## Quick Start
+**Why TimeHarbor Exists**
+Traditional time tracking solutions treat individuals as subjects to be monitored. TimeHarbor inverts this model—your data belongs to you. You decide what gets recorded, how it's categorized, and who gets to see it. This philosophy makes TimeHarbor uniquely suited for organizations that trust their people and believe transparency should flow both ways.
 
-1. **Create an account** at the login page
-2. **Create or join a team** on the Teams page
-3. **Start a session** to begin tracking time
-4. **Create activities** to document what you worked on
-5. **View progress** on the Home page to see team sessions and activities
-6. **Share selectively** by generating reports or inviting team members
-
-👉 **[Watch the video tutorial](https://youtube.com/shorts/uuosLqHDHRQ?feature=share)** for a visual walkthrough.
+**Institutional Problems Solved**
+- **Knowledge Loss**: Capture institutional procedures and training materials before experts leave
+- **Communication Gap**: Help team members advocate for themselves and their contributions
+- **Privacy Concerns**: Time tracking that doesn't feel like surveillance
+- **Accountability**: Transparent activity documentation with user consent
+- **Team Coordination**: Real-time awareness of team activities and workloads
+- **Grant Reporting**: Generate detailed time and activity reports for funding agencies
 
 ---
 
-## Installation
+## 🚀 Key Features
 
-### Prerequisites
+### Time Tracking & Session Management
+- **Clock In/Clock Out**: Simple, intuitive interface for starting and ending work sessions
+- **Auto-Clock-Out**: Automatic safety feature prevents sessions from running indefinitely (10-hour limit with server-side backup)
+- **Multiple Teams**: Join and track time across different teams simultaneously
+- **Session Persistence**: All sessions are recorded and timestamped for historical analysis
+- **Real-Time Updates**: Live session status across all connected devices
 
-- Node.js (v14+)
-- Meteor (install via `npm install -g meteor`)
-- MongoDB (Meteor includes a local instance for development)
+### Activity & Ticket Management
+- **Tickets/Tasks**: Create detailed activity records tied to specific work items
+- **Time Allocation**: Distribute session time across multiple tickets for granular tracking
+- **Ticket Linking**: Reference external tickets with automatic title extraction via URL scraping
+- **Session Breakdown**: View exactly how time was spent across different activities
+- **Start/Stop Timers**: Individual timers for each ticket with pause/resume capability
 
-### Setup Steps
+### Team Collaboration
+- **Team Creation**: Create teams and become the admin
+- **Member Management**: Invite members, assign admin roles, manage permissions
+- **Team Codes**: Share simple alphanumeric codes for team joining (no complex links needed)
+- **Role-Based Access**: Admin-only operations for team configuration
+- **Cross-Team Participation**: Users can belong to multiple teams independently
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/mieweb/timeharbor.git
-   cd timeharbor
-   ```
+### Dashboard & Reporting
+- **Home Dashboard**: Real-time view of all team sessions and member activity
+- **Timesheet View**: Individual member activity breakdown with filtering
+- **Time Analytics**: Aggregate time data by date range, team member, and ticket
+- **Calendar Integration**: Visual calendar view of time entries and activities
+- **Data Grid**: AG Grid integration for powerful data exploration and sorting
+- **Custom Reports**: Generate filtered reports for specific time periods
 
-2. **Install dependencies:**
-   ```bash
-   meteor npm install
-   ```
+### Notifications & Alerts
+- **Push Notifications**: Real-time alerts for team events (clock in/out, session end)
+- **Multiple Channels**: Web push, Firebase Cloud Messaging (FCM) for mobile
+- **Smart Notifications**: Only notify relevant team admins of significant events
+- **Notification Settings**: User control over notification preferences
+- **Cross-Platform**: Notifications work across web, iOS, and Android
 
-3. **Start the development server:**
-   ```bash
-   meteor
-   ```
+### Mobile & Responsive Design
+- **Mobile-First UI**: Fully responsive design for all device sizes
+- **Mobile App**: Cordova-based mobile application for iOS and Android
+- **Offline Support**: Works with service workers for offline functionality
+- **PWA Support**: Can be installed as a progressive web app
+- **Native Controls**: Camera flash, zoom, stabilization for mobile devices
 
-4. **Open in your browser:**
-   ```
-   http://localhost:3000
-   ```
-
-5. **Run tests (optional):**
-   ```bash
-   npm run test
-   ```
-
----
-
-## Basic Usage
-
-### For Individual Users
-
-1. **Sign up** and create your account
-2. **Create a team** (you'll be the admin)
-3. **Start a session** when you begin work
-   - Clock in for the start time
-   - Clock out when finished
-4. **Add activities** to describe what you did during the session
-   - Include relevant details and reflections
-5. **View your history** on the Home page
-6. **Invite team members** to collaborate and share progress
-
-### For Team Leads & Mentors
-
-1. **Create a team** and invite members
-2. **View all team sessions** and member activities on the Home page
-3. **Monitor progress** in real-time without surveillance
-4. **Receive shared data** only when team members choose to share with you
-5. **Provide feedback** based on reflections and accomplishments
-
-### For Administrators
-
-- **Manage team members:** Add, remove, and assign roles
-- **View team analytics:** See aggregated time and activity data
-- **Generate reports:** Create summaries for stakeholders or grant applications
-- **Customize settings:** Configure notification preferences and data sharing policies
+### Admin Dashboard
+- **User Management**: View all users and their team assignments
+- **Team Analytics**: Team-wide time and activity statistics
+- **System Health**: Monitor application performance and active sessions
+- **Advanced Filtering**: Deep analysis with custom date ranges and user filters
 
 ---
 
-## Core Concepts
+## 🏢 Institutional Use Cases
 
-### Sessions
-A **session** represents a continuous block of time spent on work or a project. You control when sessions start and stop.
+### FIRST Robotics & Educational Programs
+Document team member contributions and generate sponsor reports showcasing organizational effort and impact. Track mentoring time, build sessions, and student participation for comprehensive activity records.
 
-### Activities
-**Activities** are detailed entries within a session that describe what you accomplished, challenges faced, and reflections on your work.
+### Nonprofits & Community Organizations
+Log volunteer hours for grant applications, board reporting, and impact assessment. Create detailed reports showing organizational capacity and volunteer contributions for funding bodies.
+
+### Corporate Training & Onboarding
+Capture standard operating procedures and training sessions as institutional knowledge. Track new employee onboarding progress and identify areas needing documentation.
+
+### Research & Development Teams
+Document time spent on different research phases, experiments, and administrative tasks. Generate reports for grant compliance and research impact assessment.
+
+### Consulting & Professional Services
+Track billable hours across clients and projects with detailed activity breakdown. Automatically allocate time to specific client deliverables and generate invoicing records.
+
+### Educational Institutions
+Students track time on coursework, group projects, and extracurriculars. Teachers monitor class-wide engagement and identify students needing support.
+
+---
+
+## 📊 Core Concepts
+
+### Sessions (Clock Events)
+A **session** represents a continuous period of tracked time. When you "clock in," you're starting a session. Sessions accumulate time continuously and contain one or more tickets.
+
+**Session Lifecycle:**
+- Clock In → Session starts with `startTimestamp`
+- Add Tickets → Allocate session time to specific work items
+- Pause/Resume → Can be paused within an active session
+- Clock Out → Session ends with `endTime`, accumulating total time
+- Auto-Stop → Automatic safety stop after 10 continuous hours
+
+### Tickets (Activities)
+**Tickets** are work items that exist within sessions. They represent specific, named pieces of work. Multiple tickets can be active within a single session, with time being allocated across them.
+
+**Ticket Features:**
+- Title and optional GitHub/external URL
+- Time accumulation across multiple work sessions
+- Session breakdown showing exactly when work occurred
+- Linked to specific teams and creators
+
+```javascript
+// Ticket structure in database
+{
+  _id: ObjectId,
+  teamId: String,
+  title: String,           // "Implement login feature"
+  github: String,          // Optional external link
+  accumulatedTime: Number, // Total seconds spent
+  createdBy: String,       // User ID
+  createdAt: Date
+}
+```
 
 ### Teams
-A **team** is a group of users collaborating together. You can:
-- Create teams and be the admin
-- Join multiple teams
-- Manage team membership
-- Control what you share with each team
+**Teams** are organizational units that group members and track collective activities.
 
-### Privacy Controls
-All your data is private by default. You decide:
-- What to track
-- Who can see your data
-- When and what to share with others
-- How detailed reports should be
+**Team Features:**
+- Unique alphanumeric code for easy member joining
+- Admin role for team management
+- Member list with role assignments
+- Independent time tracking per team
+- Shared activity visibility within team
 
----
+```javascript
+// Team structure
+{
+  _id: ObjectId,
+  name: String,
+  code: String,           // Unique join code
+  members: [UserId],      // All team members
+  admins: [UserId],       // Admin members
+  createdAt: Date
+}
+```
 
-## Use Cases
+### Clock Events
+**Clock Events** form the core data structure linking sessions, time, and tickets. When you clock in, you create a clock event that tracks:
 
-**FIRST Robotics Teams**
-- Mentors and students log time on projects, then share summaries with sponsors or teachers
+```javascript
+// Clock Event structure
+{
+  _id: ObjectId,
+  userId: String,
+  teamId: String,
+  startTimestamp: Number,    // Unix timestamp in milliseconds
+  endTime: Date,             // Null if active
+  accumulatedTime: Number,   // Total seconds in this session
+  tickets: [                 // Array of tickets worked on
+    {
+      ticketId: String,
+      startTimestamp: Number,
+      accumulatedTime: Number,
+      sessions: [            // Time blocks for this ticket
+        {
+          startTimestamp: Number,
+          endTimestamp: Number
+        }
+      ]
+    }
+  ]
+}
+```
 
-**Nonprofits & Community Organizations**
-- Volunteers track hours for grant applications, board reports, and impact assessment
-
-**Educational Settings**
-- Students track time on assignments and extracurriculars, optionally sharing with teachers or parents
-
-**Workplaces**
-- Employees document project work, reflect on challenges, and share progress with managers
-
-**Personal Development**
-- Track time on learning, hobbies, or personal goals for self-reflection and improvement
-
----
-
-## Design Principles
-
-🔒 **Privacy First**
-- No data is visible to others without your explicit consent
-
-💪 **Empowerment**
-- Helps you advocate for yourself and communicate your value
-
-😊 **Non-Intrusive**
-- A supportive buddy, not a surveillance tool
-
-🌐 **Broad Applicability**
-- Works for nonprofits, education, traditional workplaces, and personal use
-
-📈 **Self-Reflection Focused**
-- Encourages personal growth and positive communication about your contributions
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| **Backend** | Meteor JS, MongoDB |
-| **Frontend** | Blaze Templates (React migration planned) |
-| **Styling** | Tailwind CSS, DaisyUI |
-| **Data Grid** | AG Grid Community |
-| **Deployment** | Web-based, mobile & desktop responsive |
-| **Notifications** | Firebase Cloud Messaging, Web Push |
+### User Roles
+- **Individual User**: Primary role—tracks personal time, controls all data sharing
+- **Team Member**: Part of a team, contributes to team activities
+- **Team Admin**: Manages team settings, invites members, views all team data
+- **System Admin**: Manages users and system-wide settings
 
 ---
 
-## Privacy & Data Ownership
+## 🔒 Privacy & Security
 
-✅ **What You Control**
-- All your time and activity data is yours
-- No data is shared without your permission
-- You can delete your data anytime
-- You decide what appears in reports
+### Privacy First Architecture
+- **No Tracking by Default**: Nothing is tracked until explicitly clocked in
+- **User-Controlled Sharing**: All team members implicitly see within-team activity only
+- **Data Ownership**: Individual users retain full ownership of their time data
+- **Explicit Consent**: No data harvesting or background collection
 
-❌ **What We Don't Do**
-- Monitor activity continuously
-- Share data with third parties
-- Sell or use your data for profit
-- Enforce surveillance or control
+### Security Measures
+- **Authentication**: Secure email/password accounts with Meteor's account system
+- **Authorization**: Role-based access control (RBAC) on teams and admin functions
+- **Session Management**: Automatic session expiration after 90 days of inactivity
+- **Firebase Security**: FCM tokens secured with Firebase Admin SDK
+- **VAPID Keys**: Web Push notifications secured with VAPID key pairs
+- **HTTPS Only**: All communications encrypted in transit (production environment)
+- **No Third-Party Tracking**: No analytics, no ads, no data selling
 
-✨ **How It Works**
-- Data is stored securely on our servers
-- You authenticate with your credentials
-- You explicitly grant access to team members
-- All sharing is opt-in and traceable
+### Data Protection
+- **Local Storage**: Password hashing with bcrypt via Meteor.js
+- **Database**: MongoDB with authentication credentials
+- **Backup**: Self-hosted with full control over data location
+- **Compliance Ready**: Designed for GDPR and institutional data policies
+
+### What TimeHarbor Does NOT Do
+- ❌ Monitor keyboard or mouse activity
+- ❌ Take screenshots or capture screen content
+- ❌ Track location or device movements
+- ❌ Sell data to third parties
+- ❌ Use data for targeted advertising
+- ❌ Share information without explicit user action
+- ❌ Enable "always-on" activity tracking
 
 ---
 
-## Project Structure
+## 💻 Technology Stack
+
+### Backend
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Framework** | Meteor.js | Full-stack JavaScript framework with real-time data sync |
+| **Database** | MongoDB | Document database for flexible data modeling |
+| **Real-Time** | Meteor DDP | Automatic synchronization between server and clients |
+| **Authentication** | Meteor Accounts | Built-in user account management |
+| **API** | Meteor Methods | Server-side RPC methods for client calls |
+| **Notifications** | Firebase Admin SDK | FCM for mobile push notifications |
+| **Web Push** | web-push npm | Web Push API for desktop notifications |
+
+### Frontend
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Templating** | Blaze (Meteor) | Reactive templates with two-way binding |
+| **CSS Framework** | Tailwind CSS | Utility-first CSS for rapid UI development |
+| **UI Components** | DaisyUI | Pre-built Tailwind component library |
+| **Data Grid** | AG Grid Community | Powerful, performance-optimized data tables |
+| **Routing** | FlowRouter Extra | Client-side routing with reactive URL management |
+| **HTTP Client** | Axios | Promise-based HTTP requests |
+| **DOM Parsing** | Cheerio | Extract data from HTML (server-side) |
+| **Dark Mode** | Native CSS | System preference detection and toggles |
+
+### Mobile & Deployment
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Mobile Build** | Cordova | Cross-platform mobile app wrapper |
+| **iOS** | Xcode, Swift | Native iOS development integration |
+| **Android** | Android Studio | Native Android development integration |
+| **Push Notifications** | FCM + APNS | Firebase Cloud Messaging for Android, APNs for iOS |
+| **PWA** | Service Workers | Offline capability and install prompt |
+
+### Development & DevOps
+| Tool | Purpose |
+|------|---------|
+| **Node.js 18+** | Runtime environment |
+| **npm** | Package management |
+| **Babel** | JavaScript transpilation |
+| **PostCSS** | CSS processing and optimization |
+| **Autoprefixer** | CSS vendor prefixing |
+| **Mocha + Meteortesting** | Testing framework |
+
+---
+
+## 📁 Project Structure
 
 ```
 timeharbor/
-├── client/              # Frontend code
-│   ├── components/      # Reusable UI components
-│   ├── utils/           # Client utilities
-│   └── routes.js        # Navigation
-├── server/              # Backend code
-│   ├── methods/         # Server-side logic
-│   └── utils/           # Server utilities
-├── tests/               # Test suite
-├── public/              # Static assets
-└── collections.js       # Data models
+├── client/                         # Frontend application
+│   ├── main.js                    # Client entry point
+│   ├── main.html                  # Root HTML template
+│   ├── main.css                   # Global styles
+│   ├── routes.js                  # Client-side routing configuration
+│   │
+│   ├── components/                # Reusable UI components
+│   │   ├── auth/                  # Authentication pages
+│   │   │   ├── AuthPage.html     # Login/signup UI
+│   │   │   └── AuthPage.js       # Auth logic and handlers
+│   │   │
+│   │   ├── layout/                # Main application layout
+│   │   │   ├── MainLayout.html   # Navigation and layout shell
+│   │   │   └── MainLayout.js     # Layout state management
+│   │   │
+│   │   ├── home/                  # Dashboard
+│   │   │   ├── HomePage.html     # Team activity view with AG Grid
+│   │   │   └── HomePage.js       # Session and activity logic
+│   │   │
+│   │   ├── teams/                 # Team management
+│   │   │   ├── TeamsPage.html    # Team creation/joining UI
+│   │   │   └── TeamsPage.js      # Team CRUD operations
+│   │   │
+│   │   ├── tickets/               # Activity tracking
+│   │   │   ├── TicketsPage.html  # Ticket creation and timers
+│   │   │   └── TicketsPage.js    # Ticket timer and allocation logic
+│   │   │
+│   │   ├── timesheet/             # Individual time summaries
+│   │   │   ├── TimesheetPage.html # Time summaries and analytics
+│   │   │   └── TimesheetPage.js  # Time calculations and filters
+│   │   │
+│   │   ├── calendar/              # Calendar view
+│   │   │   ├── CalendarPage.html # Calendar representation
+│   │   │   └── CalendarPage.js   # Date-based filtering
+│   │   │
+│   │   ├── admin/                 # Admin dashboard
+│   │   │   ├── admin.html        # Admin overview
+│   │   │   └── admin.js          # Admin functions
+│   │   │
+│   │   ├── member/                # Member activity detail
+│   │   │   ├── MemberActivityPage.html
+│   │   │   └── MemberActivityPage.js
+│   │   │
+│   │   ├── notifications/         # Notification preferences
+│   │   │   ├── NotificationSettings.html
+│   │   │   └── NotificationSettings.js
+│   │   │
+│   │   ├── guide/                 # User guide/help
+│   │   │   ├── UserGuide.html
+│   │   │   └── UserGuide.js
+│   │   │
+│   │   └── [component]/
+│   │       ├── [component].html   # Template markup
+│   │       └── [component].js     # Logic and helpers
+│   │
+│   └── utils/                     # Client-side utilities
+│       ├── DateUtils.js          # Date/time formatting and calculations
+│       ├── TimeUtils.js          # Duration formatting (H:MM:SS, etc.)
+│       ├── UrlUtils.js           # URL manipulation and external link handling
+│       ├── NotificationUtils.js  # Push notification registration
+│       └── UserTeamUtils.js      # User/team relationship queries
+│
+├── server/                        # Backend application
+│   ├── main.js                   # Server entry point and startup
+│   │
+│   ├── methods/                  # Server-side RPC methods
+│   │   ├── auth.js              # User creation and auth methods
+│   │   ├── teams.js             # Team CRUD and membership operations
+│   │   ├── tickets.js           # Activity/ticket operations
+│   │   ├── clockEvents.js       # Clock in/out and session logic
+│   │   ├── calendar.js          # Calendar-specific queries
+│   │   └── notifications.js     # Notification preference management
+│   │
+│   └── utils/                   # Server-side utilities
+│       ├── ClockEventHelpers.js # Session time calculations
+│       ├── pushNotifications.js # Firebase and web-push integration
+│       └── userHelpers.js       # User profile and display utilities
+│
+├── public/                      # Static assets
+│   ├── sw.js                   # Service worker for offline support
+│   └── timeharbor-icon-generator.html  # Icon generation utility
+│
+├── tests/                       # Test suite
+│   └── main.js                 # Mocha/Meteortesting configuration
+│
+├── collections.js              # Shared data models (client + server)
+│   ├── Tickets
+│   ├── Teams
+│   ├── Sessions
+│   └── ClockEvents
+│
+├── Configuration Files
+│   ├── package.json             # Dependencies and npm scripts
+│   ├── mobile-config.js         # Cordova mobile app configuration
+│   ├── settings.json            # Firebase and VAPID credentials
+│   ├── tailwind.config.js       # Tailwind CSS customization
+│   ├── postcss.config.mjs       # PostCSS pipeline configuration
+│   └── .meteor/                 # Meteor framework configuration
+│
+├── Firebase Configuration
+│   ├── GoogleService-Info.plist # iOS Firebase configuration
+│   └── google-services.json     # Android Firebase configuration
+│
+└── Documentation
+    ├── README.md                # This file
+    ├── USAGE.md                 # Quick start guide
+    └── .gitignore               # Git configuration
 ```
 
 ---
 
-## Contributing
+## ⚙️ Installation & Setup
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
-- Code style and standards
-- Testing requirements
-- Pull request process
-- Feature suggestions
+### Prerequisites
+
+**Required**
+- **Node.js 18+** ([Download](https://nodejs.org/))
+- **Meteor Framework** (Install via: `npm install -g meteor`)
+- **MongoDB** (Included with Meteor development environment)
+
+**For Mobile Development**
+- **Xcode 13+** (for iOS - macOS only)
+- **Android Studio 2021+** (for Android)
+- **CocoaPods** (for iOS dependencies: `sudo gem install cocoapods`)
+
+**For IDE/Editor**
+- Visual Studio Code (recommended)
+- Git for version control
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/mieweb/timeharbor.git
+cd timeharbor
+```
+
+### Step 2: Install Dependencies
+
+```bash
+# Install npm dependencies
+meteor npm install
+
+# For iOS development, install CocoaPods dependencies
+cd ios && pod install && cd ..
+```
+
+### Step 3: Configure Firebase & Notifications
+
+Copy your Firebase configuration into the project:
+
+```bash
+# Firebase configurations for mobile
+cp /path/to/GoogleService-Info.plist ./
+cp /path/to/google-services.json ./
+
+# Or configure settings.json with your Firebase credentials
+# (See Configuration section below)
+```
+
+### Step 4: Environment Configuration
+
+Create or update `settings.json` in the project root:
+
+```json
+{
+  "public": {
+    "vapidPublicKey": "YOUR_VAPID_PUBLIC_KEY",
+    "fcmSenderId": "YOUR_FCM_SENDER_ID"
+  },
+  "private": {
+    "VAPID_PRIVATE_KEY": "YOUR_VAPID_PRIVATE_KEY",
+    "VAPID_PUBLIC_KEY": "YOUR_VAPID_PUBLIC_KEY",
+    "project_id": "YOUR_FIREBASE_PROJECT_ID",
+    "private_key": "YOUR_FIREBASE_PRIVATE_KEY",
+    "client_email": "YOUR_FIREBASE_CLIENT_EMAIL"
+  }
+}
+```
 
 ---
 
-## License
+## 🛠️ Development
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+### Starting the Development Server
+
+```bash
+# Standard development (web only)
+meteor
+
+# With settings
+meteor --settings settings.json
+
+# Verbose output for debugging
+meteor --verbose
+
+# Specific port
+meteor --port 3000
+```
+
+The application will be available at `http://localhost:3000`
+
+### Running Tests
+
+```bash
+# Run tests once
+npm run test
+
+# Run tests in watch mode (auto-rerun on changes)
+npm run test-app
+
+# Run specific test file (create test files in tests/)
+npm run test -- --grep "description"
+```
+
+### Building for Production
+
+```bash
+# Standard production build
+meteor build --directory --server https://yourdomain.com
+
+# With visualization of bundle size
+npm run visualize
+```
+
+### Code Organization Best Practices
+
+**Client Code**
+- Place UI components in `client/components/[feature]/`
+- Keep utilities in `client/utils/`
+- Use Blaze templates for reactive UI
+- Leverage ReactiveVar for component state
+
+**Server Code**
+- Group related methods in `server/methods/[domain].js`
+- Place shared utilities in `server/utils/`
+- Use async/await for database operations
+- Validate all user input with `check()`
+
+**Shared Code**
+- Define collections in `collections.js`
+- Both client and server can import from here
+- Keep collection definitions simple
 
 ---
 
-## Contact
+## 📝 Configuration
 
-For questions, suggestions, or support:
-- **GitHub Issues:** [Create an issue](https://github.com/mieweb/timeharbor/issues) for bug reports or feature requests
-- **Email:** Contact the TimeHarbor team at [support email]
-- **Community:** Join discussions and connect with other users
+### Firebase Cloud Messaging (FCM)
+
+**For Android notifications:**
+
+1. Create a Firebase project at [firebase.google.com](https://firebase.google.com)
+2. Generate Android credentials and download `google-services.json`
+3. Place in project root
+4. Add credentials to `settings.json`:
+
+```json
+{
+  "private": {
+    "project_id": "your-project-id",
+    "private_key": "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n",
+    "client_email": "firebase-adminsdk@your-project.iam.gserviceaccount.com"
+  }
+}
+```
+
+### Web Push Notifications
+
+**For web (desktop/browser) notifications:**
+
+1. Generate VAPID key pair:
+
+```bash
+# Using web-push CLI
+npx web-push generate-vapid-keys
+```
+
+2. Add to `settings.json`:
+
+```json
+{
+  "public": {
+    "vapidPublicKey": "PUBLIC_KEY_HERE"
+  },
+  "private": {
+    "VAPID_PRIVATE_KEY": "PRIVATE_KEY_HERE",
+    "VAPID_PUBLIC_KEY": "PUBLIC_KEY_HERE"
+  }
+}
+```
+
+### Tailwind CSS Customization
+
+Edit `tailwind.config.js` to customize theme:
+
+```javascript
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#006bff',
+        // Add custom colors
+      }
+    }
+  },
+  plugins: [require('daisyui')],
+  daisyui: {
+    themes: ['light', 'dark']
+  }
+}
+```
+
+### Mobile Configuration
+
+Edit `mobile-config.js` to configure Cordova app:
+
+```javascript
+App.info({
+  name: 'TimeHarbor',
+  description: '...',
+  version: '1.0.0',
+  author: 'Your Name'
+});
+
+// iOS minimum version
+App.setPreference('deployment-target', '13.0', 'ios');
+
+// Add custom permissions
+App.setPermission('CAMERA', 'android');
+```
+
+---
+
+## 🚀 Running the Application
+
+### Web Application
+
+```bash
+# Development with hot reload
+meteor
+
+# Production mode
+meteor --production
+
+# Custom settings
+meteor --settings settings.json
+```
+
+**Access at:** `http://localhost:3000`
+
+### Mobile Application (iOS)
+
+```bash
+# Prebuild and prepare native project
+npx expo prebuild --platform ios
+
+# Open and run in Xcode
+cd ios
+pod install
+open pulse.xcworkspace
+
+# Or build and run directly
+npx expo run:ios
+
+# Build for App Store
+eas build --platform ios --profile production
+```
+
+### Mobile Application (Android)
+
+```bash
+# Build and run on Android
+npx expo run:android
+
+# Build for Google Play
+eas build --platform android --profile production
+
+# Emulator
+npx expo run:android --emulator
+```
+
+---
+
+## 🧪 Testing
+
+### Test Structure
+
+Create test files in the `tests/` directory:
+
+```javascript
+// tests/clock-events.tests.js
+import { Meteor } from 'meteor/meteor';
+import { describe, it, expect } from 'meteor/meteortesting:mocha';
+import { ClockEvents } from '../collections.js';
+
+describe('Clock Events', () => {
+  it('should create a new clock event', () => {
+    const id = ClockEvents.insert({ userId: 'test' });
+    expect(id).to.exist;
+  });
+});
+```
+
+### Running Tests
+
+```bash
+# Run all tests once
+npm run test
+
+# Watch mode with auto-rerun
+npm run test-app
+
+# Run with specific grep pattern
+npm run test -- --grep "Clock"
+```
+
+---
+
+## 🔄 Real-Time Features
+
+### Meteor DDP (Distributed Data Protocol)
+
+TimeHarbor uses Meteor's real-time synchronization for:
+
+- **Live Session Updates**: Clock in/out events broadcast to team members
+- **Automatic UI Updates**: Templates reactively update when data changes
+- **Subscription System**: Efficient data streaming to connected clients
+- **Method Calls**: Secure RPC calls to server with validation
+
+### Example: Real-Time Clock Event
+
+```javascript
+// Server publishes active sessions
+Meteor.publish('activeClockEvents', function(teamId) {
+  return ClockEvents.find({ teamId, endTime: null });
+});
+
+// Client subscribes and auto-updates
+this.subscribe('activeClockEvents', teamId);
+
+// Data automatically syncs via DDP
+const active = ClockEvents.find({ teamId, endTime: null });
+```
+
+### Push Notifications
+
+**Integration Points**
+- Team member clocks in → Admins notified
+- Long session detected → User warned and auto-clocked out
+- System alerts → Can be configured per user
+
+**Implementation**
+- **Web Push**: Uses VAPID keys and browser notifications API
+- **FCM**: Firebase Cloud Messaging for mobile devices
+- **Graceful Degradation**: App works fine if notifications fail
+
+---
+
+## 📱 Mobile & Platform Support
+
+### Responsive Design
+
+TimeHarbor uses Tailwind CSS for mobile-first responsive design:
+
+- **Mobile**: 320px+ (phones)
+- **Tablet**: 768px+ (iPad, Android tablets)
+- **Desktop**: 1024px+ (laptops, desktops)
+
+### Mobile App (Cordova)
+
+Features:
+- ✅ Offline support via Service Workers
+- ✅ Push notifications (FCM/APNS)
+- ✅ Camera access for profile photos
+- ✅ Native storage for fast load times
+- ✅ Permission handling for iOS/Android
+
+**Build Variants**
+- Debug: `cordova prepare` → local testing
+- Release: Signed APK/IPA for stores
+
+### Progressive Web App (PWA)
+
+```javascript
+// Service worker automatically caches assets
+// Install prompt appears when criteria met
+// Works offline with cached data
+```
+
+Users can:
+- Add to home screen (iOS/Android)
+- Install on desktop (Windows/macOS)
+- Use offline with last synced data
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get involved:
+
+### Development Workflow
+
+1. **Fork the repository**
+
+```bash
+git clone https://github.com/mieweb/timeharbor.git
+cd timeharbor
+```
+
+2. **Create a feature branch**
+
+```bash
+git checkout -b feature/amazing-feature
+```
+
+3. **Make your changes**
+
+```bash
+# Ensure code follows conventions
+# Write tests for new features
+# Update documentation as needed
+```
+
+4. **Test locally**
+
+```bash
+npm run test
+npm run lint
+meteor --settings settings.json
+```
+
+5. **Commit with clear messages**
+
+```bash
+git commit -m 'feat: add amazing feature' -m 'Detailed explanation of changes'
+```
+
+6. **Push to your branch**
+
+```bash
+git push origin feature/amazing-feature
+```
+
+7. **Open a Pull Request**
+
+Include:
+- Clear description of changes
+- Link to related issues
+- Testing notes
+- Screenshots for UI changes
+
+### Code Standards
+
+- **JavaScript**: Follow Meteor best practices
+- **Naming**: camelCase for variables, PascalCase for components
+- **Comments**: Use JSDoc for public functions
+- **Testing**: Aim for 80%+ coverage on business logic
+- **Performance**: Avoid N+1 queries, optimize subscriptions
+
+### Reporting Issues
+
+**Bug Reports**
+- Clear reproduction steps
+- Expected vs. actual behavior
+- Environment (OS, browser, Meteor version)
+- Error logs and stack traces
+
+**Feature Requests**
+- Clear use case and problem statement
+- Suggested implementation approach
+- Any alternative solutions considered
+
+---
+
+## 📄 License
+
+TimeHarbor is licensed under the **MIT License**.
+
+See [LICENSE](LICENSE) file for full details.
+
+**Summary:**
+- ✅ Free for personal and commercial use
+- ✅ Modify and distribute
+- ✅ Include original license and copyright
+
+---
+
+## 👋 Contact & Support
+
+### Get Help
+
+- **GitHub Issues**: [Report bugs](https://github.com/mieweb/timeharbor/issues) or [request features](https://github.com/mieweb/timeharbor/discussions)
+- **Email**: support@mieweb.com
+- **Community**: Join discussions in GitHub Discussions tab
+
+### Project Information
+
+- **Repository**: [github.com/mieweb/timeharbor](https://github.com/mieweb/timeharbor)
+- **Organization**: Medical Informatics Engineering, Inc.
+- **Website**: [mieweb.com](https://mieweb.com)
+- **Quick Start**: [Watch the video](https://youtube.com/shorts/uuosLqHDHRQ?feature=share)
+
+### Related Resources
+
+- **Meteor Documentation**: [docs.meteor.com](https://docs.meteor.com)
+- **Tailwind CSS**: [tailwindcss.com](https://tailwindcss.com)
+- **AG Grid**: [ag-grid.com](https://ag-grid.com)
+- **Firebase**: [firebase.google.com](https://firebase.google.com)
+
+---
+
+**Made with ❤️ for transparent, privacy-first time tracking and institutional knowledge sharing**
