@@ -1,95 +1,74 @@
 # TimeHarbor
 
-A privacy-first time tracking and reflection tool that empowers individuals to track, reflect on, and selectively share how they spend their time. Designed as your personal assistant and coach, not a surveillance tool.
+**Privacy-First Time Tracking and Institutional Knowledge Sharing**
 
-Quick start: [click here](./HOW_TO_USE.md)
+<img src="/public/timeharbor-icon-generator.html" alt="TimeHarbor Logo" width="80" style="border-radius: 10px;"/>
+
+Meteor MongoDB Blaze Tailwind Firebase Real-Time Notifications
+
+TimeHarbor is a comprehensive time tracking and institutional knowledge management platform designed specifically for teams, organizations, and communities that prioritize privacy and user empowerment. Unlike traditional employee monitoring solutions, TimeHarbor operates on the principle that **individuals own their time data** and control exactly what gets shared with whom.
+
+**Watch the quick start video:** [https://youtube.com/shorts/uuosLqHDHRQ?feature=share](https://youtube.com/shorts/uuosLqHDHRQ?feature=share)
 
 ---
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Core Purpose](#core-purpose)
-- [Key Features](#key-features)
-- [Design Principles](#design-principles)
-- [User Roles](#user-roles)
-- [Use Cases](#use-cases)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Privacy & Sharing](#privacy--sharing)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+- [🎯 Purpose & Vision](#-purpose--vision)
+- [🚀 Key Features](#-key-features)
+- [🏢 Institutional Use Cases](#-institutional-use-cases)
+- [📊 Core Concepts](#-core-concepts)
+- [🔒 Privacy & Security](#-privacy--security)
+- [💻 Technology Stack](#-technology-stack)
+- [📁 Project Structure](#-project-structure)
+- [⚙️ Installation & Setup](#️-installation--setup)
+- [🛠️ Development](#️-development)
+- [📝 Configuration](#-configuration)
+- [🚀 Running the Application](#-running-the-application)
+- [🧪 Testing](#-testing)
+- [🔄 Real-Time Features](#-real-time-features)
+- [📱 Mobile & Platform Support](#-mobile--platform-support)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+- [👋 Contact](#-contact)
 
 ---
 
-## Overview
+## Features
 
-**TimeHarbor** empowers individuals to take control of their time tracking and reflection. Whether you're an employee, student, mentor, volunteer, or nonprofit contributor, TimeHarbor helps you understand how you spend your time, reflect on your work, and communicate your value—all while keeping your data private by default.
-
----
-
-## Core Purpose
-
-- **Empower individuals** (employees, students, mentors, volunteers) to track, reflect on, and communicate how they spend their time
-- **Facilitate transparent, user-controlled sharing** of time and activity data with leadership, sponsors, teachers, or peers—only when the individual chooses
-- **Act as a supportive coach and assistant**, focusing on personal growth and self-advocacy rather than surveillance
-
----
-
-## Key Features
-
-1. **Clock In/Clock Out:** Simple, intuitive interface for starting and ending work or project sessions
-2. **Project & Objective Allocation:** Tag time entries to specific projects, objectives, or tasks (e.g., "robotics build," "grant writing," "classwork")
-3. **Personal Reflection & Notes:** Add context, challenges, and accomplishments to each time entry, helping communicate value and obstacles
-4. **User-Controlled Sharing:** All data remains private by default. Share with others (leaders, sponsors, teachers) only with explicit approval
-5. **Role Flexibility:** Designed for employees, students, mentors, volunteers, and nonprofit contributors
-6. **Reporting & Summaries:** Generate reports or summaries to share contributions, progress, or challenges as needed
-7. **Coach/Assistant Persona:** Supportive tool that helps with personal growth and positive communication
+- ⏱️ **Clock In/Clock Out:** Simple, intuitive interface for tracking work sessions
+- 🏷️ **Project Tagging:** Organize time entries by projects, objectives, or tasks (e.g., "robotics build," "grant writing," "classwork")
+- 📝 **Personal Reflection:** Add context, challenges, and accomplishments to each session
+- 🔒 **User-Controlled Sharing:** All data stays private by default—you decide who sees what and when
+- 👥 **Team Collaboration:** Create teams, invite members, and selectively share progress and insights
+- 📊 **Reporting & Summaries:** Generate custom reports to share contributions and progress
+- 🎯 **Role Flexibility:** Supports employees, students, mentors, volunteers, and nonprofit contributors
+- 📱 **Responsive Design:** Works seamlessly on desktop, tablet, and mobile devices
 
 ---
 
-## Design Principles
+## Quick Start
 
-- **Privacy First:** No data is visible to others without user consent
-- **Empowerment:** Helps users advocate for themselves, communicate their value, and reflect on their work
-- **Non-Intrusive:** Avoids any "big brother" feel; the assistant is a buddy, not a monitor
-- **Broad Applicability:** Useful for nonprofits, educational settings, and traditional workplaces
+1. **Create an account** at the login page
+2. **Create or join a team** on the Teams page
+3. **Start a session** to begin tracking time
+4. **Create activities** to document what you worked on
+5. **View progress** on the Home page to see team sessions and activities
+6. **Share selectively** by generating reports or inviting team members
 
----
-
-## User Roles
-
-- **Individual User:** Primary role - tracks personal time, reflects on work, controls data sharing
-- **Mentor/Leader:** Guides others while respecting their privacy; receives shared data only when offered
-- **Student/Learner:** Tracks time on assignments, projects, and extracurriculars for personal growth and optional sharing
-- **Volunteer/Contributor:** Logs hours and activities for personal records and grant/reporting purposes when needed
+👉 **[Watch the video tutorial](https://youtube.com/shorts/uuosLqHDHRQ?feature=share)** for a visual walkthrough.
 
 ---
 
-## Use Cases
+## Installation
 
-- **FIRST Robotics Teams:** Mentors and students log time spent on projects, then selectively share summaries with sponsors or teachers
-- **Nonprofits:** Volunteers track hours and activities, generating reports for grant applications or board meetings when needed
-- **Students:** Track time spent on assignments or extracurriculars, sharing with teachers or parents as desired
-- **Employees:** Document work on projects, reflect on challenges, and share progress with managers when ready
-- **Personal Development:** Individuals track time on learning, hobbies, or goals for self-reflection and improvement
+### Prerequisites
 
----
+- Node.js (v14+)
+- Meteor (install via `npm install -g meteor`)
+- MongoDB (Meteor includes a local instance for development)
 
-## Tech Stack
-
-*The following stack supports the privacy-first, individual-focused approach:*
-
-- **Backend:** Meteor JS, MongoDB
-- **Frontend:** Blaze Templates (with plans for React migration)
-- **Deployment:** Web-based (mobile and desktop responsive)
-- **Privacy:** User-controlled data sharing with no default visibility to others
-
----
-
-## Getting Started
+### Setup Steps
 
 1. **Clone the repository:**
    ```bash
@@ -102,40 +81,176 @@ Quick start: [click here](./HOW_TO_USE.md)
    meteor npm install
    ```
 
-3. **Run the application:**
+3. **Start the development server:**
    ```bash
    meteor
    ```
 
-4. **Access the app:**
-   Open your browser and navigate to `http://localhost:3000`
+4. **Open in your browser:**
+   ```
+   http://localhost:3000
+   ```
+
+5. **Run tests (optional):**
+   ```bash
+   npm run test
+   ```
 
 ---
 
-## Usage
+## Basic Usage
 
-- **Create Your Account:** Sign up as an individual user to start tracking your time privately
-- **Start a Personal Session:** Begin tracking your work, study, or project time with simple clock in/out
-- **Tag Your Activities:** Create projects or tasks to categorize your time (e.g., "Math Homework," "Robot Assembly," "Grant Writing")
-- **Add Reflections:** Include notes about challenges, accomplishments, or context for each session
-- **Control Your Privacy:** All data stays private unless you choose to share specific summaries or reports
-- **Generate Reports:** Create summaries to share with mentors, teachers, or supervisors when beneficial
+### For Individual Users
+
+1. **Sign up** and create your account
+2. **Create a team** (you'll be the admin)
+3. **Start a session** when you begin work
+   - Clock in for the start time
+   - Clock out when finished
+4. **Add activities** to describe what you did during the session
+   - Include relevant details and reflections
+5. **View your history** on the Home page
+6. **Invite team members** to collaborate and share progress
+
+### For Team Leads & Mentors
+
+1. **Create a team** and invite members
+2. **View all team sessions** and member activities on the Home page
+3. **Monitor progress** in real-time without surveillance
+4. **Receive shared data** only when team members choose to share with you
+5. **Provide feedback** based on reflections and accomplishments
+
+### For Administrators
+
+- **Manage team members:** Add, remove, and assign roles
+- **View team analytics:** See aggregated time and activity data
+- **Generate reports:** Create summaries for stakeholders or grant applications
+- **Customize settings:** Configure notification preferences and data sharing policies
 
 ---
 
-## Privacy & Sharing
+## Core Concepts
 
-- **Private by Default:** Your time data is only visible to you
-- **User-Controlled Sharing:** You decide what to share, when, and with whom
-- **Selective Reports:** Generate specific summaries rather than sharing raw data
-- **No Surveillance:** The tool focuses on empowerment and self-reflection, not monitoring
-- **Data Ownership:** You maintain full control over your information
+### Sessions
+A **session** represents a continuous block of time spent on work or a project. You control when sessions start and stop.
+
+### Activities
+**Activities** are detailed entries within a session that describe what you accomplished, challenges faced, and reflections on your work.
+
+### Teams
+A **team** is a group of users collaborating together. You can:
+- Create teams and be the admin
+- Join multiple teams
+- Manage team membership
+- Control what you share with each team
+
+### Privacy Controls
+All your data is private by default. You decide:
+- What to track
+- Who can see your data
+- When and what to share with others
+- How detailed reports should be
+
+---
+
+## Use Cases
+
+**FIRST Robotics Teams**
+- Mentors and students log time on projects, then share summaries with sponsors or teachers
+
+**Nonprofits & Community Organizations**
+- Volunteers track hours for grant applications, board reports, and impact assessment
+
+**Educational Settings**
+- Students track time on assignments and extracurriculars, optionally sharing with teachers or parents
+
+**Workplaces**
+- Employees document project work, reflect on challenges, and share progress with managers
+
+**Personal Development**
+- Track time on learning, hobbies, or personal goals for self-reflection and improvement
+
+---
+
+## Design Principles
+
+🔒 **Privacy First**
+- No data is visible to others without your explicit consent
+
+💪 **Empowerment**
+- Helps you advocate for yourself and communicate your value
+
+😊 **Non-Intrusive**
+- A supportive buddy, not a surveillance tool
+
+🌐 **Broad Applicability**
+- Works for nonprofits, education, traditional workplaces, and personal use
+
+📈 **Self-Reflection Focused**
+- Encourages personal growth and positive communication about your contributions
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Backend** | Meteor JS, MongoDB |
+| **Frontend** | Blaze Templates (React migration planned) |
+| **Styling** | Tailwind CSS, DaisyUI |
+| **Data Grid** | AG Grid Community |
+| **Deployment** | Web-based, mobile & desktop responsive |
+| **Notifications** | Firebase Cloud Messaging, Web Push |
+
+---
+
+## Privacy & Data Ownership
+
+✅ **What You Control**
+- All your time and activity data is yours
+- No data is shared without your permission
+- You can delete your data anytime
+- You decide what appears in reports
+
+❌ **What We Don't Do**
+- Monitor activity continuously
+- Share data with third parties
+- Sell or use your data for profit
+- Enforce surveillance or control
+
+✨ **How It Works**
+- Data is stored securely on our servers
+- You authenticate with your credentials
+- You explicitly grant access to team members
+- All sharing is opt-in and traceable
+
+---
+
+## Project Structure
+
+```
+timeharbor/
+├── client/              # Frontend code
+│   ├── components/      # Reusable UI components
+│   ├── utils/           # Client utilities
+│   └── routes.js        # Navigation
+├── server/              # Backend code
+│   ├── methods/         # Server-side logic
+│   └── utils/           # Server utilities
+├── tests/               # Test suite
+├── public/              # Static assets
+└── collections.js       # Data models
+```
 
 ---
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Code style and standards
+- Testing requirements
+- Pull request process
+- Feature suggestions
 
 ---
 
@@ -147,6 +262,7 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 ## Contact
 
-For questions, support, or feature requests, please create an issue in this repository or contact the TimeHarbor team.
-
----
+For questions, suggestions, or support:
+- **GitHub Issues:** [Create an issue](https://github.com/mieweb/timeharbor/issues) for bug reports or feature requests
+- **Email:** Contact the TimeHarbor team at [support email]
+- **Community:** Join discussions and connect with other users
