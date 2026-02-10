@@ -13,7 +13,7 @@ App.info({
   author: 'MIE Web',
   email: 'support@mieweb.com',
   website: 'https://github.com/mieweb/timeharbor',
-  version: '1.0.0'
+  version: '1.0.3'
 });
 
 // iOS Configuration
