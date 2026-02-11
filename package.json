@@ -11,7 +11,7 @@
     "@babel/runtime": "^7.28.6",
     "@tailwindcss/postcss": "^4.1.7",
     "ag-grid-community": "^31.3.4",
-    "axios": "^1.13.3",
+    "axios": "^1.13.5",
     "cheerio": "^1.2.0",
     "firebase-admin": "^13.6.0",
     "jquery": "^3.6.0",
