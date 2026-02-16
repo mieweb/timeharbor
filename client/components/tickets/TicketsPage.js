@@ -79,12 +79,14 @@ const ticketManager = {
 
 // Session management functions
 const sessionManager = {
-  // Start a session
+  // Start a session; returns true on success, false on error
   startSession: async (teamId) => {
     try {
       await utils.meteorCall('clockEventStart', teamId);
+      return true;
     } catch (error) {
       utils.handleError(error, 'Failed to start session');
+      return false;
     }
   },
 
@@ -435,7 +437,7 @@ Template.tickets.events({
     }
   },
   
-  'click #clockInBtn'(e, t) {
+  async 'click #clockInBtn'(e, t) {
     const teamId = t.selectedTeamId.get();
     const user = Meteor.user();
     const firstName = user?.profile?.firstName;
@@ -448,7 +450,10 @@ Template.tickets.events({
       return;
     }
     
-    sessionManager.startSession(teamId);
+    const success = await sessionManager.startSession(teamId);
+    if (success) {
+      document.getElementById('clockInSuccessModal').showModal();
+    }
   },
   
   async 'submit #profileNameForm'(e, t) {
@@ -466,20 +471,35 @@ Template.tickets.events({
       // Save the profile
       await utils.meteorCall('updateUserProfile', { firstName, lastName });
       
-      // Close the modal
+      // Close the profile modal
       document.getElementById('profileNameModal').close();
       
       // Clear the form
       e.target.reset();
       
-      // Now proceed with clock-in
+      // Now proceed with clock-in and show success modal on success
       const teamId = t.selectedTeamId.get();
-      sessionManager.startSession(teamId);
+      const success = await sessionManager.startSession(teamId);
+      if (success) {
+        document.getElementById('clockInSuccessModal').showModal();
+      }
     } catch (error) {
       utils.handleError(error, 'Failed to save profile');
     }
   },
   
+  'click #clockInModalNewTicket'(e, t) {
+    document.getElementById('clockInSuccessModal').close();
+    t.showCreateTicketForm.set(true);
+    // Scroll create ticket form into view after Blaze re-renders
+    Tracker.afterFlush(() => {
+      const form = document.getElementById('createTicketForm');
+      if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  },
+  'click #clockInModalExistingTicket'(e, t) {
+    document.getElementById('clockInSuccessModal').close();
+  },
   async 'click #clockOutBtn'(e, t) {
     const teamId = t.selectedTeamId.get();
     

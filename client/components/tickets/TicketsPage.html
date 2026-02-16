@@ -137,6 +137,28 @@
     </div>
   {{/if}}
 
+  <!-- Clock In Success Modal -->
+  <dialog id="clockInSuccessModal" class="modal">
+    <div class="modal-box">
+      <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-lg text-success">✅ You successfully clocked in!</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-circle shrink-0" onclick="document.getElementById('clockInSuccessModal').close()" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <p class="text-base-content/80 mt-2 mb-4">Which tickets are you working on today?</p>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <button type="button" id="clockInModalNewTicket" class="btn btn-primary flex-1">New ticket</button>
+        <button type="button" id="clockInModalExistingTicket" class="btn btn-outline btn-primary flex-1">Existing ticket</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button type="button" onclick="document.getElementById('clockInSuccessModal').close()">close</button>
+    </form>
+  </dialog>
+
   <!-- Clock Out Confirmation Modal -->
   <dialog id="clockOutModal" class="modal">
     <div class="modal-box">
