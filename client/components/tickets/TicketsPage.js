@@ -160,6 +160,8 @@ Template.tickets.onCreated(function () {
   this.showTitleField = new ReactiveVar(false);
   this.createTicketLoadingTitle = new ReactiveVar(false);
   this.ticketToDelete = new ReactiveVar(null);
+  /** True when create modal was opened from clock-in → "New ticket" (auto-start ticket after create) */
+  this.createTicketFromClockInNewTicket = new ReactiveVar(false);
 
   // Auto-clock-out: Check every second when timer reaches 10:00:00
   this.autorun(() => {
@@ -249,6 +251,12 @@ Template.tickets.helpers({
   },
   highlightExistingTickets() {
     return Template.instance().highlightExistingTickets.get();
+  },
+  /** Class string for the play/start circle when "Existing ticket" highlight is active */
+  activateTicketHighlightClass() {
+    return Template.instance().highlightExistingTickets.get()
+      ? 'ring-4 ring-primary ring-offset-2 ring-offset-base-100 animate-pulse'
+      : '';
   },
   createTicketTitle() {
     return Template.instance().createTicketTitle.get();
@@ -365,6 +373,7 @@ Template.tickets.events({
   },
   'click #showCreateTicketForm'(e, t) {
     t.editingTicket.set(null);
+    t.createTicketFromClockInNewTicket.set(false);
     t.createTicketTitle.set('');
     t.showTitleField.set(false);
     t.createTicketLoadingTitle.set(false);
@@ -377,7 +386,7 @@ Template.tickets.events({
           t.editingTicket.set(null);
           t.createTicketTitle.set('');
           t.showTitleField.set(false);
-          t.createTicketLoadingTitle.set(false);
+          t.createTicketFromClockInNewTicket.set(false);
           modal.removeEventListener('close', onClose);
         };
         modal.addEventListener('close', onClose);
@@ -393,7 +402,7 @@ Template.tickets.events({
     t.editingTicket.set(null);
     t.createTicketTitle.set('');
     t.showTitleField.set(false);
-    t.createTicketLoadingTitle.set(false);
+    t.createTicketFromClockInNewTicket.set(false);
   },
   'click #createTicketModalBackdropClose'(e, t) {
     document.getElementById('createTicketModal')?.close();
@@ -401,7 +410,7 @@ Template.tickets.events({
     t.editingTicket.set(null);
     t.createTicketTitle.set('');
     t.showTitleField.set(false);
-    t.createTicketLoadingTitle.set(false);
+    t.createTicketFromClockInNewTicket.set(false);
   },
   'click #cancelCreateTicket'(e, t) {
     document.getElementById('createTicketModal')?.close();
@@ -409,7 +418,7 @@ Template.tickets.events({
     t.editingTicket.set(null);
     t.createTicketTitle.set('');
     t.showTitleField.set(false);
-    t.createTicketLoadingTitle.set(false);
+    t.createTicketFromClockInNewTicket.set(false);
   },
   'input #createTicketTitle'(e, t) {
     t.createTicketTitle.set(e.target.value);
@@ -531,12 +540,21 @@ Template.tickets.events({
         });
       } else {
         // Create new ticket
-        await utils.meteorCall('createTicket', {
-          teamId: t.selectedTeamId.get(),
+        const teamId = t.selectedTeamId.get();
+        const newTicketId = await utils.meteorCall('createTicket', {
+          teamId,
           title: finalTitle,
           github,
           accumulatedTime: 0
         });
+        const fromClockInNewTicket = t.createTicketFromClockInNewTicket.get();
+        if (fromClockInNewTicket && newTicketId) {
+          const clockEvent = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+          if (clockEvent) {
+            await ticketManager.startTicket(newTicketId, t, clockEvent);
+          }
+        }
+        t.createTicketFromClockInNewTicket.set(false);
       }
       document.getElementById('createTicketModal')?.close();
       t.showCreateTicketForm.set(false);
@@ -626,6 +644,7 @@ Template.tickets.events({
     t.createTicketTitle.set('');
     t.showTitleField.set(false);
     t.createTicketLoadingTitle.set(false);
+    t.createTicketFromClockInNewTicket.set(true);
     t.showCreateTicketForm.set(true);
     Tracker.afterFlush(() => {
       const modal = document.getElementById('createTicketModal');
@@ -635,7 +654,7 @@ Template.tickets.events({
           t.editingTicket.set(null);
           t.createTicketTitle.set('');
           t.showTitleField.set(false);
-          t.createTicketLoadingTitle.set(false);
+          t.createTicketFromClockInNewTicket.set(false);
           modal.removeEventListener('close', onClose);
         };
         modal.addEventListener('close', onClose);

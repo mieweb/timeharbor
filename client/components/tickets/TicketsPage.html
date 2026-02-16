@@ -37,12 +37,12 @@
     <!-- Create/Edit Ticket modal is below (Add Ticket popup) -->
     
     <!-- Tickets vertical list - Modern compact design -->
-    <div id="existingTicketsList" class="rounded-lg transition-all duration-300 {{#if highlightExistingTickets}}ring-4 ring-primary ring-offset-2 ring-offset-base-100 animate-pulse{{/if}}">
+    <div id="existingTicketsList" class="rounded-lg transition-all duration-300">
       <div class="space-y-1">
       {{#each tickets}}
         <div class="ticket-row bg-base-100 border-b border-base-300 py-3 px-3 sm:px-4 flex items-center gap-3 hover:bg-base-200/50 transition-colors {{#if isActive _id}}bg-primary/5 border-l-4 border-l-primary{{/if}} {{ticketRowRefClass github}}" data-github-url="{{githubLink github}}">
-          <!-- Play/Start button on left -->
-          <button class="activate-ticket btn btn-circle btn-sm btn-ghost flex-shrink-0 {{#if isActive _id}}text-primary{{else}}text-base-content/60{{/if}}" 
+          <!-- Play/Start button on left - highlight only this circle when "Existing ticket" is chosen -->
+          <button class="activate-ticket btn btn-circle btn-sm btn-ghost flex-shrink-0 {{#if isActive _id}}text-primary{{else}}text-base-content/60{{/if}} {{activateTicketHighlightClass}}" 
             data-id="{{_id}}"
             title="{{getButtonTooltip _id}}">
             {{#if isActive _id}}
@@ -167,7 +167,7 @@
           </svg>
         </button>
       </div>
-      <p class="text-base-content/80 mt-2 mb-4">Which tickets are you working on today?</p>
+      <p class="text-base-content/80 mt-2 mb-4">Which ticket are you going to work on today? Let's track tickets</p>
       <div class="flex flex-col sm:flex-row gap-2">
         <button type="button" id="clockInModalNewTicket" class="btn btn-primary flex-1">New ticket</button>
         <button type="button" id="clockInModalExistingTicket" class="btn btn-outline btn-primary flex-1">Existing ticket</button>
