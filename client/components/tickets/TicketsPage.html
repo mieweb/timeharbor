@@ -57,40 +57,77 @@
       </form>
     {{/if}}
     
-    <!-- Tickets grid - responsive columns -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+    <!-- Tickets vertical list - Modern compact design -->
+    <div class="space-y-1">
       {{#each tickets}}
-        <div class="card bg-base-100 shadow-md p-3 flex flex-col {{#if isActive _id}}border-2 border-primary{{/if}}">
-          <div class="flex justify-between items-start mb-2 gap-2">
-            <div class="ticket-title text-sm sm:text-base font-bold line-clamp-2 flex-1" title="{{title}}">{{title}}</div>
-            <div class="flex gap-1 shrink-0">
-              <button class="edit-ticket-btn btn btn-ghost btn-xs btn-square" data-id="{{_id}}" title="Edit Ticket">
-                <i class="fa-solid fa-pen text-primary text-xs"></i>
-              </button>
-              <button class="delete-ticket-btn btn btn-ghost btn-xs btn-square text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Ticket">
-                <i class="fa-solid fa-trash text-xs"></i>
-              </button>
-            </div>
-          </div>
-          <div class="ticket-time mb-2">
-            <span class="badge badge-sm {{#if isActive _id}}badge-primary{{else}}bg-gray-700 text-white{{/if}}">
-              {{formatTime displayTime}}
-            </span>
-          </div>
-          <div class="flex flex-col gap-1 mt-auto">
-            {{#if hasReferenceUrl github}}
-              <a href="{{githubLink github}}" target="_blank" rel="noopener noreferrer" class="ticket-reference-link link text-primary hover:text-primary-focus text-xs sm:text-sm truncate inline-flex items-center justify-center min-h-[44px] py-2 px-3 -mx-1 rounded border border-primary/30 hover:bg-primary/10 touch-manipulation">Reference →</a>
+        <div class="bg-base-100 border-b border-base-300 py-3 px-3 sm:px-4 flex items-center gap-3 hover:bg-base-200/50 transition-colors {{#if isActive _id}}bg-primary/5 border-l-4 border-l-primary{{/if}}">
+          <!-- Play/Start button on left -->
+          <button class="activate-ticket btn btn-circle btn-sm btn-ghost flex-shrink-0 {{#if isActive _id}}text-primary{{else}}text-base-content/60{{/if}}" 
+            data-id="{{_id}}"
+            title="{{getButtonTooltip _id}}">
+            {{#if isActive _id}}
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 6h12v12H6z"/>
+              </svg>
+            {{else}}
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
             {{/if}}
-            <button class="activate-ticket {{getButtonClasses _id}} btn-sm w-full" 
-              data-id="{{_id}}"
-              title="{{getButtonTooltip _id}}">
+          </button>
+          
+          <!-- Ticket info - compact layout -->
+          <div class="flex-1 min-w-0">
+            <!-- First line: ID, Status, Time -->
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="text-xs text-base-content/60 font-mono">{{shortTicketId _id}}</span>
               {{#if isActive _id}}
-                Stop
-              {{else}}
-                Start
+                <span class="badge badge-xs badge-info text-white">In Progress</span>
               {{/if}}
-            </button>
+              <span class="badge badge-xs {{#if isActive _id}}badge-primary{{else}}bg-base-300 text-base-content{{/if}}">
+                {{formatTime displayTime}}
+              </span>
+            </div>
+            <!-- Second line: Title -->
+            <div class="font-semibold text-sm sm:text-base text-base-content truncate" title="{{title}}">{{title}}</div>
           </div>
+          
+          <!-- Action menu on right -->
+          <div class="dropdown dropdown-end flex-shrink-0">
+            <button class="btn btn-ghost btn-xs btn-square text-base-content/60 hover:text-base-content" tabindex="0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+            <ul class="dropdown-content menu bg-base-100 rounded-box shadow-lg border border-base-300 z-50 w-36 p-1">
+              <li>
+                <button class="edit-ticket-btn text-xs sm:text-sm py-2" data-id="{{_id}}">
+                  <i class="fa-solid fa-pen text-primary text-xs"></i>
+                  Edit
+                </button>
+              </li>
+              <li>
+                <button class="delete-ticket-btn text-xs sm:text-sm text-error py-2" data-id="{{_id}}">
+                  <i class="fa-solid fa-trash text-xs"></i>
+                  Delete
+                </button>
+              </li>
+              {{#if hasReferenceUrl github}}
+              <li>
+                <a href="{{githubLink github}}" target="_blank" rel="noopener noreferrer" class="text-xs sm:text-sm py-2">
+                  <i class="fa-solid fa-external-link text-primary text-xs"></i>
+                  View Reference
+                </a>
+              </li>
+              {{/if}}
+            </ul>
+          </div>
+        </div>
+      {{else}}
+        <div class="text-center py-12 text-base-content opacity-60">
+          <div class="text-4xl mb-2">📋</div>
+          <p>No tickets found</p>
+          <p class="text-sm mt-1">Create your first ticket to get started</p>
         </div>
       {{/each}}
     </div>

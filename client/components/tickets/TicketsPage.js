@@ -292,6 +292,10 @@ Template.tickets.helpers({
     if (isActive) return 'Click to stop this activity';
     if (hasActiveSession) return 'Click to start this activity';
     return 'Start a session first to begin activities';
+  },
+  shortTicketId(ticketId) {
+    if (!ticketId) return '';
+    return ticketId.substring(0, 8);
   }
 });
 
