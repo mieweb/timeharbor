@@ -34,33 +34,13 @@
       {{/if}}
     </div>
     
-    {{#if showCreateTicketForm}}
-      <form id="createTicketForm" class="card bg-base-100 shadow p-3 sm:p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="title" placeholder="Ticket Title" class="input input-bordered input-sm sm:input-md" required />
-        <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered input-sm sm:input-md" />
-        <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary btn-sm sm:btn-md">Create</button>
-          <button type="button" id="cancelCreateTicket" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
-        </div>
-      </form>
-    {{/if}}
-    
-    {{#if showEditTicketForm}}
-      <form id="editTicketForm" class="card bg-base-100 shadow p-3 sm:p-4 mb-4 flex flex-col gap-2">
-        <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
-        <input type="text" name="title" value="{{editingTicket.title}}" placeholder="Ticket Title" class="input input-bordered input-sm sm:input-md" required />
-        <input type="text" name="github" value="{{editingTicket.github}}" placeholder="Reference Link or Notes" class="input input-bordered input-sm sm:input-md" />
-        <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary btn-sm sm:btn-md">Update</button>
-          <button type="button" id="cancelEditTicket" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
-        </div>
-      </form>
-    {{/if}}
+    <!-- Create/Edit Ticket modal is below (Add Ticket popup) -->
     
     <!-- Tickets vertical list - Modern compact design -->
-    <div class="space-y-1">
+    <div id="existingTicketsList" class="rounded-lg transition-all duration-300 {{#if highlightExistingTickets}}ring-4 ring-primary ring-offset-2 ring-offset-base-100 animate-pulse{{/if}}">
+      <div class="space-y-1">
       {{#each tickets}}
-        <div class="bg-base-100 border-b border-base-300 py-3 px-3 sm:px-4 flex items-center gap-3 hover:bg-base-200/50 transition-colors {{#if isActive _id}}bg-primary/5 border-l-4 border-l-primary{{/if}}">
+        <div class="ticket-row bg-base-100 border-b border-base-300 py-3 px-3 sm:px-4 flex items-center gap-3 hover:bg-base-200/50 transition-colors {{#if isActive _id}}bg-primary/5 border-l-4 border-l-primary{{/if}} {{ticketRowRefClass github}}" data-github-url="{{githubLink github}}">
           <!-- Play/Start button on left -->
           <button class="activate-ticket btn btn-circle btn-sm btn-ghost flex-shrink-0 {{#if isActive _id}}text-primary{{else}}text-base-content/60{{/if}}" 
             data-id="{{_id}}"
@@ -112,14 +92,6 @@
                   Delete
                 </button>
               </li>
-              {{#if hasReferenceUrl github}}
-              <li>
-                <a href="{{githubLink github}}" target="_blank" rel="noopener noreferrer" class="text-xs sm:text-sm py-2">
-                  <i class="fa-solid fa-external-link text-primary text-xs"></i>
-                  View Reference
-                </a>
-              </li>
-              {{/if}}
             </ul>
           </div>
         </div>
@@ -130,12 +102,59 @@
           <p class="text-sm mt-1">Create your first ticket to get started</p>
         </div>
       {{/each}}
+      </div>
     </div>
   {{else}}
     <div class="alert alert-info mt-4">
       <p>Create or join a project to start tracking your activities and time.</p>
     </div>
   {{/if}}
+
+  <!-- Add/Edit Ticket Modal: shows GitHub link first, then title after paste/type -->
+  <dialog id="createTicketModal" class="modal">
+    <div class="modal-box">
+      <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-lg">{{#if editingTicket}}Edit Ticket{{else}}Add Ticket{{/if}}</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-circle shrink-0" id="closeCreateTicketModal" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <p class="text-base-content/80 mt-1 mb-4 flex items-center gap-2">
+        <span class="text-success">●</span> {{#if editingTicket}}Update ticket details.{{else}}Create a new ticket to track your work.{{/if}}
+      </p>
+      <form id="createTicketForm" class="flex flex-col gap-4">
+        {{#if editingTicket}}
+          <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
+        {{/if}}
+        <div class="form-control">
+          <label class="label" for="createTicketGithub">
+            <span class="label-text">GitHub issue link</span>
+          </label>
+          <input type="text" id="createTicketGithub" name="github" value="{{#if editingTicket}}{{editingTicket.github}}{{/if}}" placeholder="https://..." class="input input-bordered w-full" autocomplete="off" />
+          {{#if createTicketLoadingTitle}}
+            <p class="text-sm text-base-content/60 mt-1">Fetching title…</p>
+          {{/if}}
+        </div>
+        {{#if showTitleField}}
+          <div class="form-control">
+            <label class="label" for="createTicketTitle">
+              <span class="label-text">Title</span>
+            </label>
+            <input type="text" id="createTicketTitle" name="title" value="{{createTicketTitle}}" placeholder="Enter ticket title" class="input input-bordered w-full" required />
+          </div>
+        {{/if}}
+        <div class="flex gap-2 mt-2">
+          <button type="submit" class="btn btn-primary flex-1">{{#if editingTicket}}Update{{else}}Create Ticket{{/if}}</button>
+          <button type="button" id="cancelCreateTicket" class="btn btn-outline">Cancel</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button type="button" id="createTicketModalBackdropClose">close</button>
+    </form>
+  </dialog>
 
   <!-- Clock In Success Modal -->
   <dialog id="clockInSuccessModal" class="modal">
@@ -200,6 +219,37 @@
     </div>
     <form method="dialog" class="modal-backdrop">
       <button>close</button>
+    </form>
+  </dialog>
+
+  <!-- Delete Ticket Confirmation Modal -->
+  <dialog id="deleteTicketModal" class="modal">
+    <div class="modal-box">
+      <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-lg">Delete Ticket</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-circle shrink-0" id="closeDeleteTicketModal" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      {{#if ticketToDelete}}
+        <div class="bg-error/10 border border-error/20 rounded-lg p-4 mt-4 mb-4 flex items-start gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-error shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <p class="text-error font-medium">
+            Are you sure you want to delete <strong>{{ticketToDelete.title}}</strong>? This action cannot be undone.
+          </p>
+        </div>
+      {{/if}}
+      <div class="flex gap-2 mt-2">
+        <button type="button" id="cancelDeleteTicket" class="btn btn-ghost flex-1">Cancel</button>
+        <button type="button" id="confirmDeleteTicket" class="btn btn-error flex-1">Delete Ticket</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button type="button" id="deleteTicketModalBackdropClose">close</button>
     </form>
   </dialog>
 </template>

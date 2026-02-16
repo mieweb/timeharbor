@@ -115,6 +115,37 @@ const sessionManager = {
   }
 };
 
+const HIGHLIGHT_DURATION_MS = 2000;
+
+function processCreateTicketGithubInput(value, templateInstance) {
+  const trimmed = (value || '').trim();
+  const isEditing = templateInstance.editingTicket.get();
+  
+  if (!trimmed) {
+    // When editing, keep title field visible even if GitHub is cleared
+    if (!isEditing) {
+      templateInstance.showTitleField.set(false);
+      templateInstance.createTicketTitle.set('');
+    }
+    templateInstance.createTicketLoadingTitle.set(false);
+    return;
+  }
+  const isUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://');
+  if (isUrl) {
+    templateInstance.createTicketLoadingTitle.set(true);
+    Meteor.call('extractUrlTitle', trimmed, (err, result) => {
+      templateInstance.createTicketLoadingTitle.set(false);
+      if (!err && result?.title) {
+        templateInstance.createTicketTitle.set(result.title);
+        templateInstance.showTitleField.set(true);
+      }
+    });
+  } else {
+    templateInstance.createTicketTitle.set(trimmed);
+    templateInstance.showTitleField.set(true);
+  }
+}
+
 Template.tickets.onCreated(function () {
   this.showCreateTicketForm = new ReactiveVar(false);
   this.showEditTicketForm = new ReactiveVar(false);
@@ -124,6 +155,11 @@ Template.tickets.onCreated(function () {
   this.clockedIn = new ReactiveVar(false);
   this.autoClockOutTriggered = new ReactiveVar(false); // Track if auto-clock-out was triggered
   this.searchQuery = new ReactiveVar(''); // Initialize search query
+  this.highlightExistingTickets = new ReactiveVar(false);
+  this.createTicketTitle = new ReactiveVar('');
+  this.showTitleField = new ReactiveVar(false);
+  this.createTicketLoadingTitle = new ReactiveVar(false);
+  this.ticketToDelete = new ReactiveVar(null);
 
   // Auto-clock-out: Check every second when timer reaches 10:00:00
   this.autorun(() => {
@@ -208,6 +244,21 @@ Template.tickets.helpers({
   editingTicket() {
     return Template.instance().editingTicket.get();
   },
+  ticketToDelete() {
+    return Template.instance().ticketToDelete.get();
+  },
+  highlightExistingTickets() {
+    return Template.instance().highlightExistingTickets.get();
+  },
+  createTicketTitle() {
+    return Template.instance().createTicketTitle.get();
+  },
+  showTitleField() {
+    return Template.instance().showTitleField.get();
+  },
+  createTicketLoadingTitle() {
+    return Template.instance().createTicketLoadingTitle.get();
+  },
   tickets() {
     const teamId = Template.instance().selectedTeamId.get();
     if (!teamId) return [];
@@ -239,6 +290,10 @@ Template.tickets.helpers({
   hasReferenceUrl(github) {
     if (!github || typeof github !== 'string') return false;
     return github.trim().length > 0;
+  },
+  ticketRowRefClass(github) {
+    if (!github || typeof github !== 'string') return '';
+    return github.trim().length > 0 ? 'cursor-pointer' : '';
   },
   isClockedIn() {
     return Template.instance().clockedIn.get();
@@ -309,29 +364,67 @@ Template.tickets.events({
     t.searchQuery.set(e.target.value);
   },
   'click #showCreateTicketForm'(e, t) {
+    t.editingTicket.set(null);
+    t.createTicketTitle.set('');
+    t.showTitleField.set(false);
+    t.createTicketLoadingTitle.set(false);
     t.showCreateTicketForm.set(true);
+    Tracker.afterFlush(() => {
+      const modal = document.getElementById('createTicketModal');
+      if (modal) {
+        const onClose = () => {
+          t.showCreateTicketForm.set(false);
+          t.editingTicket.set(null);
+          t.createTicketTitle.set('');
+          t.showTitleField.set(false);
+          t.createTicketLoadingTitle.set(false);
+          modal.removeEventListener('close', onClose);
+        };
+        modal.addEventListener('close', onClose);
+        modal.showModal();
+        const form = document.getElementById('createTicketForm');
+        if (form) form.reset();
+      }
+    });
+  },
+  'click #closeCreateTicketModal'(e, t) {
+    document.getElementById('createTicketModal')?.close();
+    t.showCreateTicketForm.set(false);
+    t.editingTicket.set(null);
+    t.createTicketTitle.set('');
+    t.showTitleField.set(false);
+    t.createTicketLoadingTitle.set(false);
+  },
+  'click #createTicketModalBackdropClose'(e, t) {
+    document.getElementById('createTicketModal')?.close();
+    t.showCreateTicketForm.set(false);
+    t.editingTicket.set(null);
+    t.createTicketTitle.set('');
+    t.showTitleField.set(false);
+    t.createTicketLoadingTitle.set(false);
   },
   'click #cancelCreateTicket'(e, t) {
+    document.getElementById('createTicketModal')?.close();
     t.showCreateTicketForm.set(false);
-  },
-  'click #cancelEditTicket'(e, t) {
-    t.showEditTicketForm.set(false);
     t.editingTicket.set(null);
+    t.createTicketTitle.set('');
+    t.showTitleField.set(false);
+    t.createTicketLoadingTitle.set(false);
   },
-  'blur [name="title"]'(e) {
-    extractUrlTitle(e.target.value, e.target);
+  'input #createTicketTitle'(e, t) {
+    t.createTicketTitle.set(e.target.value);
   },
-  'paste [name="title"]'(e) {
-    setTimeout(() => extractUrlTitle(e.target.value, e.target), 0);
+  'input #createTicketGithub'(e, t) {
+    processCreateTicketGithubInput(e.target.value, t);
   },
-  
-  'click .ticket-reference-link'(e, t) {
-    const href = e.currentTarget.getAttribute('href');
-    if (href && href !== '#') {
-      e.preventDefault();
-      e.stopPropagation();
-      openExternalUrl(href);
-    }
+  'paste #createTicketGithub'(e, t) {
+    setTimeout(() => processCreateTicketGithubInput(t.find('#createTicketGithub')?.value || '', t), 0);
+  },
+  'click .ticket-row'(e, t) {
+    if (e.target.closest('.activate-ticket') || e.target.closest('.dropdown')) return;
+    const row = e.currentTarget;
+    const url = row.getAttribute('data-github-url');
+    if (url) openExternalUrl(url);
   },
   'click .edit-ticket-btn'(e, t) {
     e.preventDefault();
@@ -340,81 +433,120 @@ Template.tickets.events({
     const ticket = Tickets.findOne(ticketId);
     if (ticket) {
       t.editingTicket.set(ticket);
-      t.showEditTicketForm.set(true);
-      t.showCreateTicketForm.set(false);
+      t.showCreateTicketForm.set(true);
+      // Pre-fill form with existing ticket data
+      t.createTicketTitle.set(ticket.title || '');
+      t.showTitleField.set(true);
+      t.createTicketLoadingTitle.set(false);
+      Tracker.afterFlush(() => {
+        const modal = document.getElementById('createTicketModal');
+        if (modal) {
+          const onClose = () => {
+            t.showCreateTicketForm.set(false);
+            t.editingTicket.set(null);
+            t.createTicketTitle.set('');
+            t.showTitleField.set(false);
+            t.createTicketLoadingTitle.set(false);
+            modal.removeEventListener('close', onClose);
+          };
+          modal.addEventListener('close', onClose);
+          modal.showModal();
+          const form = document.getElementById('createTicketForm');
+          if (form) {
+            form.reset();
+            const githubInput = form.querySelector('#createTicketGithub');
+            const titleInput = form.querySelector('#createTicketTitle');
+            if (githubInput && ticket.github) githubInput.value = ticket.github;
+            if (titleInput && ticket.title) titleInput.value = ticket.title;
+          }
+        }
+      });
     }
   },
 
-  async 'click .delete-ticket-btn'(e, t) {
+  'click .delete-ticket-btn'(e, t) {
     e.preventDefault();
     e.stopPropagation();
     const ticketId = e.currentTarget.dataset.id;
     const ticket = Tickets.findOne(ticketId);
     if (!ticket) return;
 
-    const confirmed = confirm(`Are you sure you want to delete ticket "${ticket.title}"? This cannot be undone.`);
-    if (!confirmed) return;
-
-    try {
-      await utils.meteorCall('deleteTicket', ticketId);
-    } catch (error) {
-      utils.handleError(error, 'Error deleting ticket');
-    }
+    t.ticketToDelete.set(ticket);
+    Tracker.afterFlush(() => {
+      const modal = document.getElementById('deleteTicketModal');
+      if (modal) {
+        modal.showModal();
+      }
+    });
   },
+  'click #cancelDeleteTicket'(e, t) {
+    document.getElementById('deleteTicketModal')?.close();
+    t.ticketToDelete.set(null);
+  },
+  'click #confirmDeleteTicket'(e, t) {
+    const ticket = t.ticketToDelete.get();
+    if (!ticket) return;
 
-  async 'submit #editTicketForm'(e, t) {
-    e.preventDefault();
-
-    const formData = {
-      ticketId: e.target.ticketId.value,
-      title: e.target.title.value?.trim(),
-      github: e.target.github.value?.trim()
+    const deleteTicket = async () => {
+      try {
+        await utils.meteorCall('deleteTicket', ticket._id);
+        document.getElementById('deleteTicketModal')?.close();
+        t.ticketToDelete.set(null);
+      } catch (error) {
+        utils.handleError(error, 'Error deleting ticket');
+      }
     };
 
-    if (!formData.title) {
-      alert('Ticket title is required.');
-      return;
-    }
-
-    try {
-      await utils.meteorCall('updateTicket', formData.ticketId, {
-        title: formData.title,
-        github: formData.github
-      });
-
-      t.showEditTicketForm.set(false);
-      t.editingTicket.set(null);
-    } catch (error) {
-      utils.handleError(error, 'Error updating ticket');
-    }
+    deleteTicket();
+  },
+  'click #closeDeleteTicketModal'(e, t) {
+    document.getElementById('deleteTicketModal')?.close();
+    t.ticketToDelete.set(null);
+  },
+  'click #deleteTicketModalBackdropClose'(e, t) {
+    document.getElementById('deleteTicketModal')?.close();
+    t.ticketToDelete.set(null);
   },
 
   async 'submit #createTicketForm'(e, t) {
     e.preventDefault();
+    const editingTicket = t.editingTicket.get();
+    const github = (e.target.github?.value || '').trim();
+    const titleInput = e.target.title;
+    const title = titleInput ? titleInput.value.trim() : '';
+    const titleFromState = t.createTicketTitle.get();
+    const finalTitle = title || titleFromState;
     
-    const formData = {
-      teamId: t.selectedTeamId.get(),
-      title: e.target.title.value.trim(),
-      github: e.target.github.value.trim()
-    };
-    
-    if (!formData.title) {
-      alert('Ticket title is required.');
+    if (!finalTitle) {
+      alert('Please paste a GitHub issue link to auto-fill the title, or enter a title.');
       return;
     }
     
     try {
-      const ticketId = await utils.meteorCall('createTicket', { 
-        teamId: formData.teamId, 
-        title: formData.title, 
-        github: formData.github, 
-        accumulatedTime: 0
-      });
-      
+      if (editingTicket) {
+        // Update existing ticket
+        await utils.meteorCall('updateTicket', editingTicket._id, {
+          title: finalTitle,
+          github
+        });
+      } else {
+        // Create new ticket
+        await utils.meteorCall('createTicket', {
+          teamId: t.selectedTeamId.get(),
+          title: finalTitle,
+          github,
+          accumulatedTime: 0
+        });
+      }
+      document.getElementById('createTicketModal')?.close();
       t.showCreateTicketForm.set(false);
+      t.editingTicket.set(null);
+      t.createTicketTitle.set('');
+      t.showTitleField.set(false);
+      t.createTicketLoadingTitle.set(false);
       e.target.reset();
     } catch (error) {
-      utils.handleError(error, 'Error creating ticket');
+      utils.handleError(error, editingTicket ? 'Error updating ticket' : 'Error creating ticket');
     }
   },
   
@@ -490,15 +622,36 @@ Template.tickets.events({
   
   'click #clockInModalNewTicket'(e, t) {
     document.getElementById('clockInSuccessModal').close();
+    t.editingTicket.set(null);
+    t.createTicketTitle.set('');
+    t.showTitleField.set(false);
+    t.createTicketLoadingTitle.set(false);
     t.showCreateTicketForm.set(true);
-    // Scroll create ticket form into view after Blaze re-renders
     Tracker.afterFlush(() => {
-      const form = document.getElementById('createTicketForm');
-      if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const modal = document.getElementById('createTicketModal');
+      if (modal) {
+        const onClose = () => {
+          t.showCreateTicketForm.set(false);
+          t.editingTicket.set(null);
+          t.createTicketTitle.set('');
+          t.showTitleField.set(false);
+          t.createTicketLoadingTitle.set(false);
+          modal.removeEventListener('close', onClose);
+        };
+        modal.addEventListener('close', onClose);
+        modal.showModal();
+        document.getElementById('createTicketForm')?.reset();
+      }
     });
   },
   'click #clockInModalExistingTicket'(e, t) {
     document.getElementById('clockInSuccessModal').close();
+    t.highlightExistingTickets.set(true);
+    Tracker.afterFlush(() => {
+      const el = document.getElementById('existingTicketsList');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    setTimeout(() => t.highlightExistingTickets.set(false), HIGHLIGHT_DURATION_MS);
   },
   async 'click #clockOutBtn'(e, t) {
     const teamId = t.selectedTeamId.get();
