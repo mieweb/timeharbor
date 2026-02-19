@@ -1,5 +1,5 @@
 import { Meteor } from 'meteor/meteor';
-import { check } from 'meteor/check';
+import { check, Match } from 'meteor/check';
 import { ClockEvents, Tickets, Teams } from '../../collections.js';
 import { stopTicketInClockEvent, formatDurationText } from '../utils/ClockEventHelpers.js';
 import { notifyTeamAdmins } from '../utils/pushNotifications.js';
@@ -57,8 +57,9 @@ export const clockEventMethods = {
     return clockEventId;
   },
 
-  async clockEventStop(teamId) {
+  async clockEventStop(teamId, youtubeShortLink) {
     check(teamId, String);
+    check(youtubeShortLink, Match.Maybe(String));
     if (!this.userId) throw new Meteor.Error('not-authorized');
     
     // Get user info for notification
@@ -118,10 +119,11 @@ export const clockEventMethods = {
       });
       await Promise.all(ticketUpdates);
 
-      // Mark clock event as ended
-      await ClockEvents.updateAsync(clockEvent._id, {
-        $set: { endTime: new Date() },
-      });
+      // Mark clock event as ended (optionally with today's work showcase link)
+      const setFields = { endTime: new Date() };
+      const link = typeof youtubeShortLink === 'string' ? youtubeShortLink.trim() : '';
+      if (link) setFields.youtubeShortLink = link;
+      await ClockEvents.updateAsync(clockEvent._id, { $set: setFields });
       
       // Send push notification to team admins
       try {

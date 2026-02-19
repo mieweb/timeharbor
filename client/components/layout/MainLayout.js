@@ -301,15 +301,14 @@ if (Template.mainLayout) {
       }
       const active = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
       if (active) {
-        let totalWorkTime = 0;
         const now = Date.now();
-        totalWorkTime = Math.floor((now - active.startTimestamp) / 1000);
-        const success = await sessionManager.stopSession(teamId);
-        if (success) {
-          const el = document.getElementById('layoutClockOutTime');
-          if (el) el.textContent = formatTimeHoursMinutes(totalWorkTime);
-          document.getElementById('layoutClockOutModal')?.showModal();
-        }
+        const totalWorkTime = Math.floor((now - active.startTimestamp) / 1000);
+        const t = Template.instance();
+        t.clockOutTeamId = teamId;
+        t.clockOutTotalWorkTime = totalWorkTime;
+        const input = document.getElementById('layoutClockOutYoutubeLink');
+        if (input) input.value = '';
+        document.getElementById('layoutClockOutYoutubeModal')?.showModal();
       } else {
         const user = Meteor.user();
         const firstName = user?.profile?.firstName;
@@ -322,6 +321,34 @@ if (Template.mainLayout) {
         if (success) {
           document.getElementById('layoutClockInSuccessModal')?.showModal();
         }
+      }
+    },
+    async 'click #layoutClockOutYoutubeSubmit'(event, t) {
+      event.preventDefault();
+      const teamId = t.clockOutTeamId;
+      const totalWorkTime = t.clockOutTotalWorkTime ?? 0;
+      const input = document.getElementById('layoutClockOutYoutubeLink');
+      const link = input?.value?.trim() || null;
+      document.getElementById('layoutClockOutYoutubeModal')?.close();
+      if (!teamId) return;
+      const success = await sessionManager.stopSession(teamId, link);
+      if (success) {
+        const el = document.getElementById('layoutClockOutTime');
+        if (el) el.textContent = formatTimeHoursMinutes(totalWorkTime);
+        document.getElementById('layoutClockOutModal')?.showModal();
+      }
+    },
+    async 'click #layoutClockOutYoutubeSkip'(event, t) {
+      event.preventDefault();
+      const teamId = t.clockOutTeamId;
+      const totalWorkTime = t.clockOutTotalWorkTime ?? 0;
+      document.getElementById('layoutClockOutYoutubeModal')?.close();
+      if (!teamId) return;
+      const success = await sessionManager.stopSession(teamId, null);
+      if (success) {
+        const el = document.getElementById('layoutClockOutTime');
+        if (el) el.textContent = formatTimeHoursMinutes(totalWorkTime);
+        document.getElementById('layoutClockOutModal')?.showModal();
       }
     },
     'submit #layoutProfileNameForm'(event) {

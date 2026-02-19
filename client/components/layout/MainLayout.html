@@ -194,6 +194,18 @@
     </div>
     <form method="dialog" class="modal-backdrop bg-black/50"><button type="button" onclick="document.getElementById('layoutClockInSuccessModal').close()">close</button></form>
   </dialog>
+  <dialog id="layoutClockOutYoutubeModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Clock out</h3>
+      <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">Can you paste your YouTube short link for today's work?</p>
+      <input type="text" id="layoutClockOutYoutubeLink" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://youtube.com/shorts/..." autocomplete="off" />
+      <div class="flex gap-3 mt-4">
+        <button type="button" id="layoutClockOutYoutubeSkip" class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Skip</button>
+        <button type="button" id="layoutClockOutYoutubeSubmit" class="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">Submit</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button">close</button></form>
+  </dialog>
   <dialog id="layoutClockOutModal" class="modal">
     <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md text-center">
       <h3 class="font-bold text-lg text-green-600 dark:text-green-400 mb-4">Clock Out Successful!</h3>

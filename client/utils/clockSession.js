@@ -35,7 +35,7 @@ export const sessionManager = {
     }
   },
 
-  async stopSession(teamId) {
+  async stopSession(teamId, youtubeShortLink) {
     try {
       const clockEvent = ClockEvents.findOne({
         userId: Meteor.userId(),
@@ -51,7 +51,7 @@ export const sessionManager = {
       for (const ticket of runningTickets) {
         await stopTicket(ticket._id, clockEvent);
       }
-      await meteorCall('clockEventStop', teamId);
+      await meteorCall('clockEventStop', teamId, youtubeShortLink || null);
       return true;
     } catch (error) {
       console.error('Failed to stop session', error);

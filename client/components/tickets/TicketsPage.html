@@ -232,6 +232,12 @@
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Today</span>
               <span class="text-lg font-mono font-semibold text-blue-700 dark:text-blue-300">{{formatTime ticketHistoryData.todaySeconds}}</span>
             </div>
+            {{#if ticketHistoryData.todayWorkShowcaseLink}}
+            <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Today's work showcase</span>
+              <a href="{{ticketHistoryData.todayWorkShowcaseLink}}" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all">{{ticketHistoryData.todayWorkShowcaseLink}}</a>
+            </div>
+            {{/if}}
           </div>
         {{/if}}
         <div class="flex justify-end mt-4">

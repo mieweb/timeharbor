@@ -330,12 +330,25 @@ export const ticketMethods = {
       }
     }
 
+    // Today's work showcase link (from any clock-out today with a link)
+    const todayEventWithLink = await ClockEvents.findOneAsync(
+      {
+        userId: this.userId,
+        teamId: ticket.teamId,
+        endTime: { $gte: new Date(dayStart), $lte: new Date(dayEnd) },
+        youtubeShortLink: { $exists: true, $ne: '' }
+      },
+      { sort: { endTime: -1 }, fields: { youtubeShortLink: 1 } }
+    );
+    const todayWorkShowcaseLink = todayEventWithLink?.youtubeShortLink || null;
+
     return {
       ticketId,
       title: ticket.title,
       createdAt: ticket.createdAt,
       totalSeconds,
-      todaySeconds
+      todaySeconds,
+      todayWorkShowcaseLink
     };
   },
 }; 
