@@ -34,71 +34,149 @@
       {{/if}}
     </div>
     
-    {{#if showCreateTicketForm}}
-      <form id="createTicketForm" class="card bg-base-100 shadow p-3 sm:p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="title" placeholder="Ticket Title" class="input input-bordered input-sm sm:input-md" required />
-        <input type="text" name="github" placeholder="Reference Link or Notes" class="input input-bordered input-sm sm:input-md" />
-        <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary btn-sm sm:btn-md">Create</button>
-          <button type="button" id="cancelCreateTicket" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
-        </div>
-      </form>
-    {{/if}}
+    <!-- Create/Edit Ticket modal is below (Add Ticket popup) -->
     
-    {{#if showEditTicketForm}}
-      <form id="editTicketForm" class="card bg-base-100 shadow p-3 sm:p-4 mb-4 flex flex-col gap-2">
-        <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
-        <input type="text" name="title" value="{{editingTicket.title}}" placeholder="Ticket Title" class="input input-bordered input-sm sm:input-md" required />
-        <input type="text" name="github" value="{{editingTicket.github}}" placeholder="Reference Link or Notes" class="input input-bordered input-sm sm:input-md" />
-        <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary btn-sm sm:btn-md">Update</button>
-          <button type="button" id="cancelEditTicket" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
-        </div>
-      </form>
-    {{/if}}
-    
-    <!-- Tickets grid - responsive columns -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+    <!-- Tickets vertical list - Modern compact design -->
+    <div id="existingTicketsList" class="rounded-lg transition-all duration-300">
+      <div class="space-y-1">
       {{#each tickets}}
-        <div class="card bg-base-100 shadow-md p-3 flex flex-col {{#if isActive _id}}border-2 border-primary{{/if}}">
-          <div class="flex justify-between items-start mb-2 gap-2">
-            <div class="ticket-title text-sm sm:text-base font-bold line-clamp-2 flex-1" title="{{title}}">{{title}}</div>
-            <div class="flex gap-1 shrink-0">
-              <button class="edit-ticket-btn btn btn-ghost btn-xs btn-square" data-id="{{_id}}" title="Edit Ticket">
-                <i class="fa-solid fa-pen text-primary text-xs"></i>
-              </button>
-              <button class="delete-ticket-btn btn btn-ghost btn-xs btn-square text-red-600 hover:text-red-800" data-id="{{_id}}" title="Delete Ticket">
-                <i class="fa-solid fa-trash text-xs"></i>
-              </button>
-            </div>
-          </div>
-          <div class="ticket-time mb-2">
-            <span class="badge badge-sm {{#if isActive _id}}badge-primary{{else}}bg-gray-700 text-white{{/if}}">
-              {{formatTime displayTime}}
-            </span>
-          </div>
-          <div class="flex flex-col gap-1 mt-auto">
-            {{#if hasReferenceUrl github}}
-              <a href="{{githubLink github}}" target="_blank" rel="noopener noreferrer" class="ticket-reference-link link text-primary hover:text-primary-focus text-xs sm:text-sm truncate inline-flex items-center justify-center min-h-[44px] py-2 px-3 -mx-1 rounded border border-primary/30 hover:bg-primary/10 touch-manipulation">Reference →</a>
+        <div class="ticket-row bg-base-100 border-b border-base-300 py-3 px-3 sm:px-4 flex items-center gap-3 hover:bg-base-200/50 transition-colors {{#if isActive _id}}bg-primary/5 border-l-4 border-l-primary{{/if}} {{ticketRowRefClass github}}" data-github-url="{{githubLink github}}">
+          <!-- Play/Start button on left - highlight only this circle when "Existing ticket" is chosen -->
+          <button class="activate-ticket btn btn-circle btn-sm btn-ghost flex-shrink-0 {{#if isActive _id}}text-primary{{else}}text-base-content/60{{/if}} {{activateTicketHighlightClass}}" 
+            data-id="{{_id}}"
+            title="{{getButtonTooltip _id}}">
+            {{#if isActive _id}}
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 6h12v12H6z"/>
+              </svg>
+            {{else}}
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
             {{/if}}
-            <button class="activate-ticket {{getButtonClasses _id}} btn-sm w-full" 
-              data-id="{{_id}}"
-              title="{{getButtonTooltip _id}}">
+          </button>
+          
+          <!-- Ticket info - compact layout -->
+          <div class="flex-1 min-w-0">
+            <!-- First line: ID, Status, Time -->
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="text-xs text-base-content/60 font-mono">{{shortTicketId _id}}</span>
               {{#if isActive _id}}
-                Stop
-              {{else}}
-                Start
+                <span class="badge badge-xs badge-info text-white">In Progress</span>
               {{/if}}
-            </button>
+              <span class="badge badge-xs {{#if isActive _id}}badge-primary{{else}}bg-base-300 text-base-content{{/if}}">
+                {{formatTime displayTime}}
+              </span>
+            </div>
+            <!-- Second line: Title -->
+            <div class="font-semibold text-sm sm:text-base text-base-content truncate" title="{{title}}">{{title}}</div>
           </div>
+          
+          <!-- Action menu on right -->
+          <div class="dropdown dropdown-end flex-shrink-0">
+            <button class="btn btn-ghost btn-xs btn-square text-base-content/60 hover:text-base-content" tabindex="0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+            <ul class="dropdown-content menu bg-base-100 rounded-box shadow-lg border border-base-300 z-50 w-36 p-1">
+              <li>
+                <button class="edit-ticket-btn text-xs sm:text-sm py-2" data-id="{{_id}}">
+                  <i class="fa-solid fa-pen text-primary text-xs"></i>
+                  Edit
+                </button>
+              </li>
+              <li>
+                <button class="delete-ticket-btn text-xs sm:text-sm text-error py-2" data-id="{{_id}}">
+                  <i class="fa-solid fa-trash text-xs"></i>
+                  Delete
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      {{else}}
+        <div class="text-center py-12 text-base-content opacity-60">
+          <div class="text-4xl mb-2">📋</div>
+          <p>No tickets found</p>
+          <p class="text-sm mt-1">Create your first ticket to get started</p>
         </div>
       {{/each}}
+      </div>
     </div>
   {{else}}
     <div class="alert alert-info mt-4">
       <p>Create or join a project to start tracking your activities and time.</p>
     </div>
   {{/if}}
+
+  <!-- Add/Edit Ticket Modal: shows GitHub link first, then title after paste/type -->
+  <dialog id="createTicketModal" class="modal">
+    <div class="modal-box">
+      <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-lg">{{#if editingTicket}}Edit Ticket{{else}}Add Ticket{{/if}}</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-circle shrink-0" id="closeCreateTicketModal" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <p class="text-base-content/80 mt-1 mb-4 flex items-center gap-2">
+        <span class="text-success">●</span> {{#if editingTicket}}Update ticket details.{{else}}Create a new ticket to track your work.{{/if}}
+      </p>
+      <form id="createTicketForm" class="flex flex-col gap-4">
+        {{#if editingTicket}}
+          <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
+        {{/if}}
+        <div class="form-control">
+          <label class="label" for="createTicketGithub">
+            <span class="label-text">GitHub issue link</span>
+          </label>
+          <input type="text" id="createTicketGithub" name="github" value="{{#if editingTicket}}{{editingTicket.github}}{{/if}}" placeholder="https://..." class="input input-bordered w-full" autocomplete="off" />
+          {{#if createTicketLoadingTitle}}
+            <p class="text-sm text-base-content/60 mt-1">Fetching title…</p>
+          {{/if}}
+        </div>
+        {{#if showTitleField}}
+          <div class="form-control">
+            <label class="label" for="createTicketTitle">
+              <span class="label-text">Title</span>
+            </label>
+            <input type="text" id="createTicketTitle" name="title" value="{{createTicketTitle}}" placeholder="Enter ticket title" class="input input-bordered w-full" required />
+          </div>
+        {{/if}}
+        <div class="flex gap-2 mt-2">
+          <button type="submit" class="btn btn-primary flex-1">{{#if editingTicket}}Update{{else}}Create Ticket{{/if}}</button>
+          <button type="button" id="cancelCreateTicket" class="btn btn-outline">Cancel</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button type="button" id="createTicketModalBackdropClose">close</button>
+    </form>
+  </dialog>
+
+  <!-- Clock In Success Modal -->
+  <dialog id="clockInSuccessModal" class="modal">
+    <div class="modal-box">
+      <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-lg text-success">✅ You successfully clocked in!</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-circle shrink-0" onclick="document.getElementById('clockInSuccessModal').close()" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <p class="text-base-content/80 mt-2 mb-4">Which ticket are you going to work on today? Let's track tickets</p>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <button type="button" id="clockInModalNewTicket" class="btn btn-primary flex-1">New ticket</button>
+        <button type="button" id="clockInModalExistingTicket" class="btn btn-outline btn-primary flex-1">Existing ticket</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button type="button" onclick="document.getElementById('clockInSuccessModal').close()">close</button>
+    </form>
+  </dialog>
 
   <!-- Clock Out Confirmation Modal -->
   <dialog id="clockOutModal" class="modal">
@@ -141,6 +219,37 @@
     </div>
     <form method="dialog" class="modal-backdrop">
       <button>close</button>
+    </form>
+  </dialog>
+
+  <!-- Delete Ticket Confirmation Modal -->
+  <dialog id="deleteTicketModal" class="modal">
+    <div class="modal-box">
+      <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-lg">Delete Ticket</h3>
+        <button type="button" class="btn btn-ghost btn-sm btn-circle shrink-0" id="closeDeleteTicketModal" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      {{#if ticketToDelete}}
+        <div class="bg-error/10 border border-error/20 rounded-lg p-4 mt-4 mb-4 flex items-start gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-error shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <p class="text-error font-medium">
+            Are you sure you want to delete <strong>{{ticketToDelete.title}}</strong>? This action cannot be undone.
+          </p>
+        </div>
+      {{/if}}
+      <div class="flex gap-2 mt-2">
+        <button type="button" id="cancelDeleteTicket" class="btn btn-ghost flex-1">Cancel</button>
+        <button type="button" id="confirmDeleteTicket" class="btn btn-error flex-1">Delete Ticket</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button type="button" id="deleteTicketModalBackdropClose">close</button>
     </form>
   </dialog>
 </template>
