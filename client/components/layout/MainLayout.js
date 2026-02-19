@@ -324,14 +324,26 @@ if (Template.mainLayout) {
         icon.className = newTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
       }
     },
-    'click #logoutBtn'(event, instance) {
+    'click #logoutBtn, click #logoutBtnMobile'(event) {
       event.preventDefault();
-      
-      // Early return if already loading or user cancels
-      if (isLogoutLoading.get() || !confirm('Are you sure you want to log out?')) {
-        return;
-      }
-      
+
+      // Close mobile menu if open
+      closeMobileMenu();
+
+      // Open styled logout confirm modal
+      document.getElementById('layoutLogoutModal')?.showModal();
+    },
+    'click #layoutLogoutCancel'(event) {
+      event.preventDefault();
+      document.getElementById('layoutLogoutModal')?.close();
+    },
+    'click #layoutLogoutConfirm'(event) {
+      event.preventDefault();
+
+      if (isLogoutLoading.get()) return;
+
+      document.getElementById('layoutLogoutModal')?.close();
+
       // Start logout process
       isLogoutLoading.set(true);
       Meteor.logout(handleLogoutResult);
