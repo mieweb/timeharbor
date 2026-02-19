@@ -2,7 +2,7 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import 'meteor/accounts-password';
 import { check } from 'meteor/check';
-import { Tickets, Teams, Sessions, ClockEvents } from '../collections.js';
+import { Tickets, Teams, Sessions, ClockEvents, Notifications } from '../collections.js';
 // Import authentication methods
 import { authMethods } from './methods/auth.js';
 // Import team methods
@@ -251,7 +251,7 @@ Meteor.publish('teamMembers', async function (teamIds) {
       { admins: this.userId },
     ],
   }).fetchAsync();
-  const userIds = Array.from(new Set(teams.flatMap(team => team.members || [])));
+  const userIds = Array.from(new Set(teams.flatMap(team => [...(team.members || []), ...(team.admins || [])].filter(Boolean))));
   return Meteor.users.find(
     { _id: { $in: userIds } },
     { fields: { 'emails.address': 1, 'profile': 1, 'username': 1 } }
@@ -345,6 +345,14 @@ Meteor.publish('usersByIds', async function (userIds) {
       'username': 1
     }
   });
+});
+
+Meteor.publish('notifications.inbox', function () {
+  if (!this.userId) return this.ready();
+  return Notifications.find(
+    { userId: this.userId },
+    { sort: { createdAt: -1 }, limit: 200 }
+  );
 });
 
 Meteor.methods({

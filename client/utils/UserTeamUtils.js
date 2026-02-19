@@ -1,8 +1,13 @@
 import { Teams } from '../../collections.js';
 
-// Get all teams for the current user
+// Get all teams for the current user (member or admin - must match server userTeams publication)
 export const getUserTeams = () => {
-    return Teams.find({members: Meteor.userId()}).fetch();
+    return Teams.find({
+        $or: [
+            { members: Meteor.userId() },
+            { admins: Meteor.userId() }
+        ]
+    }).fetch();
 };
 
 // Get team name from team ID

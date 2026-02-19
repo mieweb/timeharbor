@@ -3,7 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { currentScreen } from '../auth/AuthPage.js';
 import { currentRouteTemplate } from '../../routes.js';
-import { ClockEvents, Teams } from '../../../collections.js';
+import { ClockEvents, Teams, Notifications } from '../../../collections.js';
 import { dateToLocalString } from '../../utils/DateUtils.js';
 import { Session } from 'meteor/session';
 import { sessionManager } from '../../utils/clockSession.js';
@@ -70,7 +70,8 @@ if (Template.mainLayout) {
         // Subscribe to common data when user is logged in
         const teamsHandle = this.subscribe('userTeams');
         const clockEventsHandle = this.subscribe('clockEventsForUser');
-        
+        this.subscribe('notifications.inbox');
+
         isTeamsLoading.set(!teamsHandle.ready());
         isClockEventsLoading.set(!clockEventsHandle.ready());
 
@@ -176,6 +177,13 @@ if (Template.mainLayout) {
     },
     userTeamsList() {
       return Teams.find({}).fetch();
+    },
+    unreadNotificationCount() {
+      return Notifications.find({ userId: Meteor.userId(), read: false }).count();
+    },
+    unreadNotificationBadge() {
+      const n = Notifications.find({ userId: Meteor.userId(), read: false }).count();
+      return n > 99 ? '99+' : n;
     },
     currentTeamName() {
       const id = selectedTeamId.get();

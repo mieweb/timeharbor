@@ -1,6 +1,6 @@
 import webpush from 'web-push';
 import { Meteor } from 'meteor/meteor';
-import { Teams } from '../../collections.js';
+import { Teams, Notifications } from '../../collections.js';
 
 
 // VAPID keys for Web Push
@@ -198,7 +198,30 @@ async function sendWebPushNotification(subscription, payload) {
 
 
 /**
-* Send notifications to all team admins/leaders
+ * Save the same notification to each team admin's inbox (so they can see it in the app later).
+ * @param {String} teamId - The team ID
+ * @param {Object} notificationData - Same shape as push payload: title, body, data
+ */
+export async function saveNotificationsToInbox(teamId, notificationData) {
+  const team = await Teams.findOneAsync(teamId);
+  if (!team) return;
+  const adminIds = [...(team.admins || []), team.leader].filter(Boolean);
+  const now = new Date();
+  const inserts = adminIds.map((userId) => ({
+    userId,
+    title: notificationData.title || 'Time Harbor',
+    body: notificationData.body || '',
+    data: notificationData.data || {},
+    read: false,
+    createdAt: now
+  }));
+  if (inserts.length > 0) {
+    await Notifications.rawCollection().insertMany(inserts);
+  }
+}
+
+/**
+* Send notifications to all team admins/leaders (push + save to inbox)
 * @param {String} teamId - The team ID
 * @param {Object} notificationData - The notification data
 */
@@ -207,17 +230,17 @@ export async function notifyTeamAdmins(teamId, notificationData) {
     const team = await Teams.findOneAsync(teamId);
     if (!team) return;
 
+    // Save to inbox for all admins (same content they get as push)
+    await saveNotificationsToInbox(teamId, notificationData);
 
     // Get all admin and leader user IDs
     const adminIds = [...(team.admins || []), team.leader].filter(Boolean);
-
 
     // Get users with push subscriptions
     const users = await Meteor.users.find({
       _id: { $in: adminIds },
       'profile.pushSubscription': { $exists: true }
     }).fetchAsync();
-
 
     const results = [];
     for (const user of users) {
@@ -227,7 +250,6 @@ export async function notifyTeamAdmins(teamId, notificationData) {
           subscription,
           notificationData
         );
-
 
         // If subscription expired, remove it
         if (result.expired) {
@@ -239,11 +261,9 @@ export async function notifyTeamAdmins(teamId, notificationData) {
           });
         }
 
-
         results.push({ userId: user._id, ...result });
       }
     }
-
 
     return results;
   } catch (error) {

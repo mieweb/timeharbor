@@ -12,6 +12,8 @@ import './components/admin/admin.html';
 import './components/timesheet/TimesheetPage.html';
 import './components/member/MemberActivityPage.html';
 import './components/guide/UserGuide.html';
+import './components/notifications/NotificationInboxPage.html';
+import './components/profile/ProfilePage.html';
 
 // Import component JS files
 import './components/auth/AuthPage.js';
@@ -24,6 +26,8 @@ import './components/admin/admin.js';
 import './components/timesheet/TimesheetPage.js';
 import './components/member/MemberActivityPage.js';
 import './components/guide/UserGuide.js';
+import './components/notifications/NotificationInboxPage.js';
+import './components/profile/ProfilePage.js';
 
 // Import routing configuration
 import './routes.js';

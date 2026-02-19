@@ -8,12 +8,6 @@
           <p class="text-gray-500 dark:text-gray-400">Manage and track your activities</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
-          <label for="teamSelect" class="sr-only">Team</label>
-          <select id="teamSelect" class="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[140px]">
-            {{#each userTeams}}
-              <option {{teamOptionAttrs _id}}>{{name}}</option>
-            {{/each}}
-          </select>
           <button id="showCreateTicketForm" type="button" class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm font-medium text-sm">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
             <span>New Ticket</span>
@@ -39,7 +33,7 @@
                 <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
               </div>
               <!-- Play/Stop button -->
-              <button type="button" class="activate-ticket shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all {{#if isActive _id}}bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40{{else}}bg-gray-100 text-gray-400 hover:bg-blue-100 hover:text-blue-600 dark:bg-gray-700 dark:text-gray-500 dark:hover:bg-blue-900/30 dark:hover:text-blue-400{{/if}} {{#unless isClockedInForCurrentTeam}}opacity-50 cursor-not-allowed{{else}}cursor-pointer{{/unless}} {{activateTicketHighlightClass}}" data-id="{{_id}}" title="{{getButtonTooltip _id}}" aria-label="{{getButtonTooltip _id}}">
+              <button type="button" class="activate-ticket shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all {{activateTicketButtonClass _id}} {{activateTicketHighlightClass}}" data-id="{{_id}}" title="{{getButtonTooltip _id}}" aria-label="{{getButtonTooltip _id}}" {{activateTicketDisabledAttrs _id}}>
                 {{#if isActive _id}}
                   <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>
                 {{else}}
@@ -56,6 +50,10 @@
                   <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{formatTime displayTime}}</span>
                 </div>
                 <h3 class="font-medium text-gray-900 dark:text-white truncate text-sm md:text-base" title="{{title}}">{{title}}</h3>
+                <div class="flex items-center gap-1.5 mt-1">
+                  <span class="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-[10px] font-medium text-gray-600 dark:text-gray-300 shrink-0" title="{{assigneeName}}">{{assigneeInitial}}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 truncate">{{assigneeName}}</span>
+                </div>
                 {{#if isActive _id}}
                   <p class="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 animate-pulse mt-0.5">Running</p>
                 {{/if}}
@@ -66,6 +64,20 @@
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
                 </button>
                 <ul class="dropdown-content menu bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 z-50 w-36 p-1">
+                  {{#if isTeamAdminForSelectedTeam}}
+                    <li>
+                      <button type="button" class="assign-ticket-btn flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left" data-id="{{_id}}">
+                        <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                        Assign
+                      </button>
+                    </li>
+                  {{/if}}
+                  <li>
+                    <button type="button" class="show-ticket-history-btn flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left" data-id="{{_id}}">
+                      <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      History
+                    </button>
+                  </li>
                   <li>
                     <button type="button" class="edit-ticket-btn flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left" data-id="{{_id}}">
                       <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -159,6 +171,76 @@
     </div>
     <form method="dialog" class="modal-backdrop bg-black/50">
       <button type="button" id="deleteTicketModalBackdropClose">close</button>
+    </form>
+  </dialog>
+
+  <!-- Assign Ticket Modal (admin only) -->
+  <dialog id="assignTicketModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-lg text-gray-900 dark:text-white">Assign Ticket</h3>
+        <button type="button" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0" id="closeAssignTicketModal" aria-label="Close">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      {{#if ticketIdForAssign}}
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-4">Select a team member to assign <span class="font-semibold text-gray-900 dark:text-white">{{ticketTitleForAssign}}</span> to.</p>
+        <div class="space-y-2 max-h-[280px] overflow-y-auto">
+          <button type="button" class="assign-to-member-btn w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left" data-user-id="">
+            <span class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300 shrink-0">—</span>
+            <span class="text-sm font-medium text-gray-900 dark:text-white">Unassigned</span>
+          </button>
+          {{#each teamMembersForAssign}}
+            <button type="button" class="assign-to-member-btn w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left" data-user-id="{{_id}}">
+              <span class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-sm font-medium text-blue-600 dark:text-blue-400 shrink-0">{{initial}}</span>
+              <span class="text-sm font-medium text-gray-900 dark:text-white">{{name}}</span>
+            </button>
+          {{/each}}
+        </div>
+        <div class="flex justify-end mt-4">
+          <button type="button" id="cancelAssignTicket" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-medium">Cancel</button>
+        </div>
+      {{/if}}
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50">
+      <button type="button">close</button>
+    </form>
+  </dialog>
+
+  <!-- Ticket History Modal -->
+  <dialog id="ticketHistoryModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-lg text-gray-900 dark:text-white">Ticket History</h3>
+        <button type="button" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0" id="closeTicketHistoryModal" aria-label="Close">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      {{#if ticketIdForHistory}}
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-4 truncate" title="{{ticketTitleForHistory}}">{{ticketTitleForHistory}}</p>
+        {{#if ticketHistoryLoading}}
+          <p class="text-sm text-gray-500 dark:text-gray-400 py-4">Loading…</p>
+        {{else if ticketHistoryError}}
+          <p class="text-sm text-red-600 dark:text-red-400 py-4">{{ticketHistoryError}}</p>
+        {{else if ticketHistoryData}}
+          <div class="space-y-4 py-2">
+            <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total time (creation → today)</span>
+              <span class="text-lg font-mono font-semibold text-gray-900 dark:text-white">{{formatTime ticketHistoryData.totalSeconds}}</span>
+            </div>
+            <div class="flex items-center justify-between p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Today</span>
+              <span class="text-lg font-mono font-semibold text-blue-700 dark:text-blue-300">{{formatTime ticketHistoryData.todaySeconds}}</span>
+            </div>
+          </div>
+        {{/if}}
+        <div class="flex justify-end mt-4">
+          <button type="button" id="closeTicketHistoryBtn" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 text-sm font-medium">Close</button>
+        </div>
+      {{/if}}
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50">
+      <button type="button" id="ticketHistoryModalBackdropClose">close</button>
     </form>
   </dialog>
 </template>

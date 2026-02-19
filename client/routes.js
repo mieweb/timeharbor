@@ -92,6 +92,26 @@ FlowRouter.route('/guide', {
   }
 });
 
+// Notifications inbox route
+FlowRouter.route('/notifications', {
+  name: 'notifications',
+  action() {
+    requireAuth(this, FlowRouter.go);
+    currentScreen.set('mainLayout');
+    currentRouteTemplate.set('notificationInbox');
+  }
+});
+
+// Profile route
+FlowRouter.route('/profile', {
+  name: 'profile',
+  action() {
+    requireAuth(this, FlowRouter.go);
+    currentScreen.set('mainLayout');
+    currentRouteTemplate.set('profilePage');
+  }
+});
+
 // 404 fallback
 FlowRouter.route('*', {
   name: 'notFound',
@@ -125,6 +145,15 @@ export const navigateToRoute = (routeName, params = {}) => {
       break;
     case 'memberActivity':
       FlowRouter.go(`/member/${params.teamId}/${params.userId}`);
+      break;
+    case 'notifications':
+      FlowRouter.go('/notifications');
+      break;
+    case 'profile':
+      FlowRouter.go('/profile');
+      break;
+    case 'userGuide':
+      FlowRouter.go('/guide');
       break;
     default:
       FlowRouter.go('/');

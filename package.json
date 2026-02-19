@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "start": "meteor run",
+    "generate-icons": "node scripts/generate-app-icons.js",
     "test": "meteor test --once --driver-package meteortesting:mocha",
     "test-app": "TEST_WATCH=1 meteor test --full-app --driver-package meteortesting:mocha",
     "visualize": "meteor --production --extra-packages bundle-visualizer"
@@ -10,8 +11,6 @@
   "dependencies": {
     "@babel/runtime": "^7.28.6",
     "@tailwindcss/postcss": "^4.1.7",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "ag-grid-community": "^31.3.4",
     "axios": "^1.13.3",
     "cheerio": "^1.2.0",
@@ -19,6 +18,8 @@
     "jquery": "^3.6.0",
     "meteor-node-stubs": "^1.2.1",
     "postcss-load-config": "^6.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "web-push": "^3.6.7"
   },
   "meteor": {
@@ -32,6 +33,7 @@
     "autoprefixer": "^10.4.21",
     "daisyui": "^5.0.35",
     "postcss": "^8.5.3",
+    "sharp": "^0.33.5",
     "tailwindcss": "^4.1.7"
   }
 }

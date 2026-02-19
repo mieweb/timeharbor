@@ -1,5 +1,5 @@
 import { Meteor } from 'meteor/meteor';
-import { check } from 'meteor/check';
+import { check, Match } from 'meteor/check';
 import { Tickets, Teams, ClockEvents } from '../../collections.js';
 import axios from 'axios';
 import cheerio from 'cheerio';
@@ -48,13 +48,14 @@ export const ticketMethods = {
     const team = await Teams.findOneAsync({ _id: teamId, members: this.userId });
     if (!team) throw new Meteor.Error('not-authorized', 'You are not a member of this team');
     
-    // Create the ticket
+    // Create the ticket (creator is initial assignee)
     const ticketId = await Tickets.insertAsync({
       teamId,
       title,
       github,
       accumulatedTime,
       createdBy: this.userId,
+      assignedTo: this.userId,
       createdAt: new Date(),
     });
 
@@ -235,5 +236,106 @@ export const ticketMethods = {
     );
 
     return result;
+  },
+
+  /**
+   * Assign a ticket to a team member (team admin only).
+   * assignedToUserId can be null to unassign.
+   */
+  async assignTicket(ticketId, assignedToUserId) {
+    check(ticketId, String);
+    check(assignedToUserId, Match.Maybe(String));
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
+
+    const team = await Teams.findOneAsync({ _id: ticket.teamId });
+    if (!team) throw new Meteor.Error('not-found', 'Team not found');
+
+    const isAdmin = Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isAdmin) throw new Meteor.Error('forbidden', 'Only team admins can assign tickets');
+
+    if (assignedToUserId) {
+      const isMemberOrAdmin = [
+        ...(team.members || []),
+        ...(team.admins || [])
+      ].includes(assignedToUserId);
+      if (!isMemberOrAdmin) throw new Meteor.Error('invalid-argument', 'Assignee must be a member of the team');
+    }
+
+    await Tickets.updateAsync(ticketId, {
+      $set: {
+        assignedTo: assignedToUserId || null,
+        updatedAt: new Date()
+      }
+    });
+    return true;
+  },
+
+  /**
+   * Get time history for a ticket: total hours worked (creation to today) and hours worked today.
+   */
+  async getTicketTimeHistory(ticketId) {
+    check(ticketId, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+
+    const ticket = await Tickets.findOneAsync(ticketId);
+    if (!ticket) throw new Meteor.Error('not-found', 'Ticket not found');
+
+    const team = await Teams.findOneAsync({
+      _id: ticket.teamId,
+      $or: [{ members: this.userId }, { admins: this.userId }]
+    });
+    if (!team) throw new Meteor.Error('not-authorized', 'Not a member of this team');
+
+    const now = Date.now();
+    const today = new Date(now);
+    const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0).getTime();
+    const dayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).getTime();
+
+    let totalSeconds = ticket.accumulatedTime || 0;
+    if (ticket.startTimestamp) {
+      totalSeconds += Math.floor((now - ticket.startTimestamp) / 1000);
+    }
+
+    let todaySeconds = 0;
+    const events = await ClockEvents.find({
+      userId: this.userId,
+      teamId: ticket.teamId,
+      'tickets.ticketId': ticketId
+    }).fetchAsync();
+
+    for (const event of events) {
+      const entry = event.tickets && event.tickets.find(t => t.ticketId === ticketId);
+      if (!entry) continue;
+      const sessions = entry.sessions || [];
+      for (const s of sessions) {
+        const start = s.startTimestamp;
+        const end = s.endTimestamp != null ? s.endTimestamp : now;
+        const overlapStart = Math.max(start, dayStart);
+        const overlapEnd = Math.min(end, dayEnd);
+        if (overlapStart < overlapEnd) {
+          todaySeconds += Math.floor((overlapEnd - overlapStart) / 1000);
+        }
+      }
+      if (entry.startTimestamp) {
+        const start = entry.startTimestamp;
+        const end = now;
+        const overlapStart = Math.max(start, dayStart);
+        const overlapEnd = Math.min(end, dayEnd);
+        if (overlapStart < overlapEnd) {
+          todaySeconds += Math.floor((overlapEnd - overlapStart) / 1000);
+        }
+      }
+    }
+
+    return {
+      ticketId,
+      title: ticket.title,
+      createdAt: ticket.createdAt,
+      totalSeconds,
+      todaySeconds
+    };
   },
 }; 

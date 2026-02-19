@@ -335,7 +335,14 @@ Template.home.helpers({
   isTeamAdmin() {
     return Teams.findOne({ admins: Meteor.userId() });
   },
-  
+  // Show push notification card only for team admins who haven't enabled push yet
+  showPushNotificationCardOnHome() {
+    const isAdmin = !!Teams.findOne({ admins: Meteor.userId() });
+    if (!isAdmin) return false;
+    const user = Meteor.user();
+    const pushEnabled = !!(user?.profile?.pushSubscription);
+    return !pushEnabled;
+  },
   isFirstTimeUser() {
     const userClockEvents = ClockEvents.find({ userId: Meteor.userId() }).count();
     const userTeams = Teams.find({ members: Meteor.userId() }).count();

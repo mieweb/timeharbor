@@ -16,6 +16,21 @@ App.info({
   version: '1.0.0'
 });
 
+// App Icon (generate sizes with: npm run generate-icons)
+App.icons({
+  'iphone': 'resources/icons/icon-60.png',
+  'iphone_2x': 'resources/icons/icon-120.png',
+  'iphone_3x': 'resources/icons/icon-180.png',
+  'ipad': 'resources/icons/icon-76.png',
+  'ipad_2x': 'resources/icons/icon-152.png',
+  'android_ldpi': 'resources/icons/icon-36.png',
+  'android_mdpi': 'resources/icons/icon-48.png',
+  'android_hdpi': 'resources/icons/icon-72.png',
+  'android_xhdpi': 'resources/icons/icon-96.png',
+  'android_xxhdpi': 'resources/icons/icon-144.png',
+  'android_xxxhdpi': 'resources/icons/icon-192.png'
+});
+
 // iOS Configuration
 App.setPreference('deployment-target', '13.0', 'ios'); // Bump to 13.0 for better support
 App.setPreference('SwiftVersion', '5.0', 'ios');
