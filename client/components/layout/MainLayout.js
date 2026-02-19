@@ -5,6 +5,8 @@ import { currentScreen } from '../auth/AuthPage.js';
 import { currentRouteTemplate } from '../../routes.js';
 import { ClockEvents, Teams } from '../../../collections.js';
 import { dateToLocalString } from '../../utils/DateUtils.js';
+import { Session } from 'meteor/session';
+import { sessionManager } from '../../utils/clockSession.js';
 
 const MESSAGE_TIMEOUT = 3000;
 const ERROR_PREFIX = 'Logout failed: ';
@@ -12,11 +14,32 @@ const ERROR_PREFIX = 'Logout failed: ';
 const isLogoutLoading = new ReactiveVar(false);
 const logoutMessage = new ReactiveVar('');
 
+const STORAGE_TEAM_ID = 'timeharbor-current-team-id';
+export const selectedTeamId = new ReactiveVar(null);
+
 export const currentTime = new ReactiveVar(Date.now());
 setInterval(() => currentTime.set(Date.now()), 1000);
 
 export const isTeamsLoading = new ReactiveVar(true);
 export const isClockEventsLoading = new ReactiveVar(true);
+
+function formatSessionDuration(seconds) {
+  if (typeof seconds !== 'number' || seconds < 0) return { duration: '0:00', format: 'mm:ss' };
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return { duration: `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`, format: 'h:mm:ss' };
+  }
+  return { duration: `${m}:${String(s).padStart(2, '0')}`, format: 'mm:ss' };
+}
+
+function formatTimeHoursMinutes(seconds) {
+  if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return '0:00';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${h}:${String(m).padStart(2, '0')}`;
+}
 
 const handleLogoutResult = (error) => {
   isLogoutLoading.set(false);
@@ -36,6 +59,9 @@ if (Template.mainLayout) {
     this.midnightWarningKeys = new Set();
     this.midnightAutoClockOut = new Set();
 
+    const savedTeamId = typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_TEAM_ID);
+    if (savedTeamId) selectedTeamId.set(savedTeamId);
+
     this.autorun(() => {
       if (!Meteor.userId()) {
         currentScreen.set('authPage');
@@ -45,12 +71,17 @@ if (Template.mainLayout) {
         const teamsHandle = this.subscribe('userTeams');
         const clockEventsHandle = this.subscribe('clockEventsForUser');
         
-        // Update loading states
         isTeamsLoading.set(!teamsHandle.ready());
         isClockEventsLoading.set(!clockEventsHandle.ready());
 
         if (!currentRouteTemplate.get()) {
           currentRouteTemplate.set('home');
+        }
+        const teams = Teams.find({}).fetch();
+        if (teams.length > 0 && !selectedTeamId.get()) {
+          const first = teams[0]._id;
+          selectedTeamId.set(first);
+          if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_TEAM_ID, first);
         }
       }
     });
@@ -116,7 +147,6 @@ if (Template.mainLayout) {
 
   Template.mainLayout.helpers({
     main() {
-      // All routes now use Flow Router
       return currentRouteTemplate.get();
     },
     currentUser() {
@@ -133,7 +163,47 @@ if (Template.mainLayout) {
     },
     isTeamAdmin() {
       return !!Teams.findOne({ admins: Meteor.userId() });
-    }
+    },
+    currentPath() {
+      const route = FlowRouter.current();
+      return (route && route.path) ? route.path : '/';
+    },
+    isActiveRoute(pathOrRoute) {
+      const current = FlowRouter.current();
+      const path = (current && current.path) ? current.path : '/';
+      if (pathOrRoute === '/' || pathOrRoute === 'home') return path === '/';
+      return path === pathOrRoute || path === '/' + pathOrRoute;
+    },
+    userTeamsList() {
+      return Teams.find({}).fetch();
+    },
+    currentTeamName() {
+      const id = selectedTeamId.get();
+      if (!id) return null;
+      const team = Teams.findOne(id);
+      return team ? team.name : null;
+    },
+    activeClockEvent() {
+      return ClockEvents.findOne({ userId: Meteor.userId(), endTime: null });
+    },
+    sessionDuration() {
+      const event = ClockEvents.findOne({ userId: Meteor.userId(), endTime: null });
+      if (!event || !event.startTimestamp) return { duration: '0:00', format: 'mm:ss' };
+      const now = currentTime.get();
+      const elapsed = Math.floor((now - event.startTimestamp) / 1000);
+      const prev = event.accumulatedTime || 0;
+      return formatSessionDuration(prev + elapsed);
+    },
+    isSessionActive() {
+      return !!ClockEvents.findOne({ userId: Meteor.userId(), endTime: null });
+    },
+    currentTeamSelected(teamId) {
+      return selectedTeamId.get() === teamId;
+    },
+    optionAttrs(teamId) {
+      const selected = selectedTeamId.get() === teamId;
+      return { value: teamId, ...(selected ? { selected: true } : {}) };
+    },
   });
 
   // Helper to close mobile menu
@@ -213,7 +283,92 @@ if (Template.mainLayout) {
       // Start logout process
       isLogoutLoading.set(true);
       Meteor.logout(handleLogoutResult);
-    }
+    },
+    async 'click #layoutClockBtn, click #layoutClockBtnMobile'(event) {
+      event.preventDefault();
+      const teamId = selectedTeamId.get();
+      if (!teamId) {
+        alert('Please select a team first.');
+        return;
+      }
+      const active = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
+      if (active) {
+        let totalWorkTime = 0;
+        const now = Date.now();
+        totalWorkTime = Math.floor((now - active.startTimestamp) / 1000);
+        const success = await sessionManager.stopSession(teamId);
+        if (success) {
+          const el = document.getElementById('layoutClockOutTime');
+          if (el) el.textContent = formatTimeHoursMinutes(totalWorkTime);
+          document.getElementById('layoutClockOutModal')?.showModal();
+        }
+      } else {
+        const user = Meteor.user();
+        const firstName = user?.profile?.firstName;
+        const lastName = user?.profile?.lastName;
+        if (!firstName || !lastName) {
+          document.getElementById('layoutProfileNameModal')?.showModal();
+          return;
+        }
+        const success = await sessionManager.startSession(teamId);
+        if (success) {
+          document.getElementById('layoutClockInSuccessModal')?.showModal();
+        }
+      }
+    },
+    'submit #layoutProfileNameForm'(event) {
+      event.preventDefault();
+      const form = event.target;
+      const firstName = (form.firstName?.value || '').trim();
+      const lastName = (form.lastName?.value || '').trim();
+      if (!firstName || !lastName) {
+        alert('First name and last name are required.');
+        return;
+      }
+      Meteor.call('updateUserProfile', { firstName, lastName }, (err) => {
+        if (err) {
+          alert('Failed to save profile: ' + (err.reason || err.message));
+          return;
+        }
+        document.getElementById('layoutProfileNameModal')?.close();
+        form.reset();
+        const teamId = selectedTeamId.get();
+        if (teamId) {
+          sessionManager.startSession(teamId).then((success) => {
+            if (success) {
+              document.getElementById('layoutClockInSuccessModal')?.showModal();
+            }
+          });
+        }
+      });
+    },
+    'click #layoutClockInModalNewTicket'(event) {
+      document.getElementById('layoutClockInSuccessModal')?.close();
+      FlowRouter.go('/tickets');
+      if (typeof Session !== 'undefined') {
+        Session.set('openCreateTicketModal', true);
+      }
+    },
+    'click #layoutClockInModalExistingTicket'(event) {
+      document.getElementById('layoutClockInSuccessModal')?.close();
+      FlowRouter.go('/tickets');
+      if (typeof Session !== 'undefined') {
+        Session.set('highlightExistingTickets', true);
+      }
+    },
+    'change #teamSwitcherSelect'(event) {
+      const teamId = event.target.value;
+      if (teamId) {
+        selectedTeamId.set(teamId);
+        if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_TEAM_ID, teamId);
+      }
+    },
+    'click [data-nav-href]'(event) {
+      event.preventDefault();
+      const href = event.currentTarget.getAttribute('data-nav-href');
+      closeMobileMenu();
+      if (href) FlowRouter.go(href);
+    },
   });
 
   // Update theme icon on template render

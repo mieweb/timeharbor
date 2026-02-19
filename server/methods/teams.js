@@ -39,7 +39,7 @@ export const teamMethods = {
       code,
       createdAt: new Date(),
     });
-    return teamId;
+    return { teamId, code };
   },
 
   async getUsers(userIds) {
@@ -145,6 +145,45 @@ export const teamMethods = {
 
     // Remove user from admins array
     await Teams.updateAsync(teamId, { $set: { admins: remainingAdmins } });
+  },
+
+  // Admin-only: remove a member from the team (cannot remove self; must leave at least one admin)
+  async removeTeamMember(teamId, userId) {
+    check(teamId, String);
+    check(userId, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+
+    const isRequesterAdmin =
+      Array.isArray(team.admins) && team.admins.includes(this.userId);
+    if (!isRequesterAdmin) {
+      throw new Meteor.Error('forbidden', 'Only admins can remove members');
+    }
+
+    if (userId === this.userId) {
+      throw new Meteor.Error('bad-request', 'You cannot remove yourself; use Leave Team or delete the team');
+    }
+
+    if (!Array.isArray(team.members) || !team.members.includes(userId)) {
+      throw new Meteor.Error('bad-request', 'User is not a member of this team');
+    }
+
+    const admins = Array.isArray(team.admins) ? team.admins : [];
+    const remainingAdmins = admins.filter((id) => id !== userId);
+    if (remainingAdmins.length === 0) {
+      throw new Meteor.Error('bad-request', 'Team must have at least one admin. Promote another member to admin first.');
+    }
+
+    await Teams.updateAsync(teamId, {
+      $pull: { members: userId, admins: userId },
+    });
   },
 
   // Admin-only: set a password for a team member

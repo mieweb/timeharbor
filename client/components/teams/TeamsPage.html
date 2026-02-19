@@ -1,149 +1,248 @@
 <template name="teams">
-  <h3 class="text-lg sm:text-xl font-semibold mb-4">Teams</h3>
-  {{#if selectedTeam}}
-    <div class="card bg-base-100 shadow p-4 sm:p-6 mb-6">
-      <div class="flex flex-col gap-4">
-        <!-- Header with back button and team name -->
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center gap-3">
-            <button id="backToTeams" class="btn btn-outline btn-sm">&larr; Back</button>
-            <div class="min-w-0 flex-1">
-              <h4 class="text-lg sm:text-xl font-bold leading-tight truncate">{{selectedTeam.name}}</h4>
-              <div class="text-xs sm:text-sm text-base-content/70">Team settings & collaborators</div>
-            </div>
+  <div class="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+    <!-- Header: same as TimeharborApp -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Teams</h1>
+        {{#if selectedTeam}}
+          <div class="flex items-center gap-2 px-2 md:px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <span class="text-xs md:text-sm font-mono text-gray-600 dark:text-gray-300">Code: {{selectedTeam.code}}</span>
+            <button type="button" id="copyTeamCode" class="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded" title="Copy Team Code">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            </button>
           </div>
+        {{/if}}
+      </div>
+    </div>
 
-          <!-- Join code - stacks on mobile -->
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-sm text-base-content/70">Join code:</span>
-            <code class="bg-base-200 px-2 py-1 rounded font-mono text-sm">{{selectedTeam.code}}</code>
-            <button id="copyTeamCode" class="btn btn-sm btn-outline">Copy</button>
-          </div>
+    <!-- Join / Create buttons: same as TimeharborApp -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+      <button type="button" id="showJoinTeamForm" class="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3 p-4 md:p-6 rounded-xl border-2 border-blue-100 dark:border-blue-900 hover:border-blue-500 dark:hover:border-blue-500 bg-blue-50 dark:bg-blue-900/20 transition-all group text-left">
+        <div class="p-2 md:p-3 bg-blue-100 dark:bg-blue-800 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-700 transition-colors shrink-0">
+          <svg class="w-5 h-5 md:w-6 md:h-6 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
         </div>
+        <div class="text-center md:text-left">
+          <h3 class="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Join a Team</h3>
+          <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">Find your team and start collaborating</p>
+          <p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 md:hidden">Find &amp; join</p>
+        </div>
+      </button>
+      <button type="button" id="showCreateTeamForm" class="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3 p-4 md:p-6 rounded-xl border-2 border-purple-100 dark:border-purple-900 hover:border-purple-500 dark:hover:border-purple-500 bg-purple-50 dark:bg-purple-900/20 transition-all group text-left">
+        <div class="p-2 md:p-3 bg-purple-100 dark:bg-purple-800 rounded-full group-hover:bg-purple-200 dark:group-hover:bg-purple-700 transition-colors shrink-0">
+          <svg class="w-5 h-5 md:w-6 md:h-6 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+        </div>
+        <div class="text-center md:text-left">
+          <h3 class="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Create a Team</h3>
+          <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden md:block">Set up a new workspace for your team</p>
+          <p class="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 md:hidden">New workspace</p>
+        </div>
+      </button>
+    </div>
 
-        <div class="card bg-base-200/50 border border-base-300">
-          <div class="card-body p-3 sm:p-4">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-              <div>
-                <h5 class="font-semibold text-sm sm:text-base">Collaborators</h5>
-                <div class="text-xs text-base-content/60">
+    <!-- Your Team: single card for current team (from header switcher) -->
+    <div>
+      <h2 class="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">Your Team</h2>
+      {{#if selectedTeam}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-blue-500 dark:border-blue-500 transition-all overflow-hidden">
+          <div class="p-4 md:p-6">
+            <div class="flex justify-between items-start mb-4 md:mb-6">
+              <div class="flex-1 min-w-0 mr-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">{{selectedTeam.name}}</h3>
                   {{#if currentUserIsAdminForSelectedTeam}}
-                    Manage member roles
-                  {{else}}
-                    Only admins can manage roles
+                    <span class="px-2 py-0.5 text-xs md:text-sm font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-full shrink-0">Admin</span>
                   {{/if}}
                 </div>
+                <p class="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1 md:mt-2">{{selectedTeam.members.length}} members</p>
               </div>
               {{#if currentUserIsAdminForSelectedTeam}}
-                <span class="badge badge-secondary badge-outline badge-sm sm:badge-md w-fit">Admin</span>
-              {{else}}
-                <span class="badge badge-ghost badge-sm sm:badge-md w-fit">Member</span>
+                <div class="flex items-center gap-1 md:gap-2 shrink-0">
+                  <button type="button" id="openEditTeam" class="p-1.5 md:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Edit Team">
+                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                  </button>
+                  <button type="button" id="openDeleteTeam" class="p-1.5 md:p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete Team">
+                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                </div>
               {{/if}}
             </div>
 
-            <!-- Member list - single column on mobile -->
-            <div class="space-y-2">
-              {{#each selectedTeam.members}}
-                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 rounded-lg border border-base-300 bg-base-100 p-3">
-                  <!-- Member info -->
-                  <div class="min-w-0 flex-1 flex items-center gap-2">
+            <div class="border-t border-gray-100 dark:border-gray-700 pt-4 md:pt-6">
+              <h4 class="text-base md:text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3 md:mb-4">Collaborators</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {{#each selectedTeam.members}}
+                  <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shrink-0" aria-hidden="true">{{memberInitial this}}</div>
                     <div class="flex-1 min-w-0">
-                      <div 
-                        class="font-medium truncate cursor-pointer hover:text-primary transition-colors member-name-link text-sm sm:text-base" 
-                        data-user-id="{{this.id}}">
-                        {{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}
+                      <button type="button" class="member-name-link block font-medium text-gray-900 dark:text-white truncate text-left w-full hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-user-id="{{this.id}}">{{#if this.name}}{{this.name}}{{else}}{{this.email}}{{/if}}</button>
+                      <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{#if this.email}}{{this.email}}{{/if}}</p>
+                      <div class="flex items-center gap-1.5 mt-1">
+                        {{#if this.isAdmin}}
+                          <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Admin</span>
+                        {{else}}
+                          <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">Member</span>
+                        {{/if}}
                       </div>
                     </div>
-                    {{#if this.isAdmin}}
-                      <span class="badge badge-secondary badge-sm">Admin</span>
-                    {{else}}
-                      <span class="badge badge-ghost badge-sm">Member</span>
-                    {{/if}}
-                  </div>
-
-                  <!-- Actions - wrap on mobile -->
-                  {{#if currentUserIsAdminForSelectedTeam}}
-                    <div class="flex flex-wrap items-center gap-1 sm:gap-2">
-                      {{#unless (isCurrentUser this.id)}}
-                        <button
-                          class="btn btn-xs btn-outline set-password-btn"
-                          data-id="{{this.id}}">
-                          Password
-                        </button>
-                      {{/unless}}
-                      {{#if this.isAdmin}}
+                    {{#if currentUserIsAdminForSelectedTeam}}
+                      <div class="flex items-center gap-1 shrink-0">
                         {{#unless (isCurrentUser this.id)}}
-                          <button
-                            class="btn btn-xs btn-outline btn-error remove-admin-btn"
-                            data-id="{{this.id}}">
-                            Remove
+                          <button type="button" class="set-password-btn p-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors" data-id="{{this.id}}" title="Set password">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                          </button>
+                          {{#if this.isAdmin}}
+                            <button type="button" class="remove-admin-btn p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" data-id="{{this.id}}" title="Remove admin">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            </button>
+                          {{else}}
+                            <button type="button" class="make-admin-btn p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" data-id="{{this.id}}" title="Make admin">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            </button>
+                          {{/if}}
+                          <button type="button" class="remove-member-btn p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" data-id="{{this.id}}" title="Remove member">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                           </button>
                         {{else}}
-                          <span class="badge badge-primary badge-outline badge-sm">You</span>
+                          <span class="px-2 py-0.5 text-xs font-medium rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">You</span>
                         {{/unless}}
-                      {{else}}
-                        <button
-                          class="btn btn-xs btn-outline btn-success make-admin-btn"
-                          data-id="{{this.id}}">
-                          Make admin
-                        </button>
-                      {{/if}}
-                    </div>
-                  {{/if}}
-                </div>
-              {{/each}}
+                      </div>
+                    {{/if}}
+                  </div>
+                {{/each}}
+              </div>
             </div>
           </div>
         </div>
+      {{else}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 text-center text-gray-500 dark:text-gray-400">
+          <p>Select a team from the header switcher, or create / join a team above.</p>
+        </div>
+      {{/if}}
+    </div>
+  </div>
+
+  <!-- Join Team Modal -->
+  <dialog id="joinTeamModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg text-gray-900 dark:text-white">Join a Team</h3>
+        <button type="button" id="closeJoinModal" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Enter the 6-digit code provided by your team admin to join.</p>
+      {{#if joinError}}
+        <div class="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 mb-4">{{joinError}}</div>
+      {{/if}}
+      <form id="joinTeamForm">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="joinTeamCodeInput">Team Code</label>
+        <input type="text" id="joinTeamCodeInput" name="teamCode" placeholder="e.g. ABC12XYZ" maxlength="8" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white font-mono text-center tracking-widest uppercase text-lg mb-4" />
+        <div class="flex justify-end gap-3">
+          <button type="button" id="closeJoinModal2" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Join Team</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button" id="joinModalBackdrop">close</button></form>
+  </dialog>
+
+  <!-- Create Team Modal (step 1: name; step 2: success + code) -->
+  <dialog id="createTeamModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      {{#if createdTeamCode}}
+        <div class="text-center space-y-6 py-2">
+          <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
+            <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Team Created!</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Share this code with your team members</p>
+          </div>
+          <div class="flex items-center justify-between gap-4 p-4 bg-gray-100 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
+            <span class="font-mono text-2xl font-bold tracking-widest text-gray-900 dark:text-white">{{createdTeamCode}}</span>
+            <button type="button" id="copyCreatedCode" class="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Copy Code">Copy</button>
+          </div>
+          <button type="button" id="createTeamDone" class="w-full px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium rounded-lg hover:opacity-90 transition-opacity">Done</button>
+        </div>
+      {{else}}
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-lg text-gray-900 dark:text-white">Create a Team</h3>
+          <button type="button" id="closeCreateModal" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Give your new team a name. You'll get a code to share with your members.</p>
+        <form id="createTeamForm">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="createTeamNameInput">Team Name</label>
+          <input type="text" id="createTeamNameInput" name="teamName" value="" placeholder="e.g. Engineering Team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700/50 dark:text-white mb-4" />
+          <div class="flex justify-end gap-3">
+            <button type="button" id="closeCreateModal2" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">Create Team</button>
+          </div>
+        </form>
+      {{/if}}
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button" id="createModalBackdrop">close</button></form>
+  </dialog>
+
+  <!-- Edit Team Modal -->
+  <dialog id="editTeamModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg text-gray-900 dark:text-white">Edit Team</h3>
+        <button type="button" id="closeEditModal" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <form id="editTeamForm">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editTeamNameInput">Team Name</label>
+        <input type="text" id="editTeamNameInput" name="teamName" value="{{editingTeamName}}" placeholder="e.g. Engineering Team" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white mb-4" />
+        <div class="flex justify-end gap-3">
+          <button type="button" id="closeEditModal2" class="edit-modal-cancel px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Save Changes</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button" id="editModalBackdrop">close</button></form>
+  </dialog>
+
+  <!-- Delete Team Modal -->
+  <dialog id="deleteTeamModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg text-gray-900 dark:text-white">Delete Team</h3>
+        <button type="button" id="closeDeleteModal" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      {{#if selectedTeam}}
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Are you sure you want to delete <strong>{{selectedTeam.name}}</strong>? This action cannot be undone.</p>
+      {{/if}}
+      <div class="flex justify-end gap-3">
+        <button type="button" id="closeDeleteModal2" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">Cancel</button>
+        <button type="button" id="confirmDeleteTeam" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Delete Team</button>
       </div>
     </div>
-  {{else}}
-    <!-- Action buttons -->
-    <div class="flex flex-wrap gap-2 sm:gap-4 mb-4">
-      <button id="showCreateTeamForm" class="btn btn-primary btn-sm sm:btn-md">Create Team</button>
-      <button id="showJoinTeamForm" class="btn btn-neutral btn-sm sm:btn-md">Join Team</button>
-    </div>
-    
-    {{#if showCreateTeam}}
-      <form id="createTeamForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="teamName" placeholder="Team Name" class="input input-bordered input-sm sm:input-md" required />
-        <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary btn-sm sm:btn-md">Create</button>
-          <button type="button" id="cancelCreateTeam" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
-        </div>
-      </form>
-    {{/if}}
-    
-    {{#if showJoinTeam}}
-      <form id="joinTeamForm" class="card bg-base-100 shadow p-4 mb-4 flex flex-col gap-2">
-        <input type="text" name="teamCode" placeholder="Enter Team Code" class="input input-bordered input-sm sm:input-md" required />
-        <div class="flex gap-2">
-          <button type="submit" class="btn btn-neutral btn-sm sm:btn-md">Join</button>
-          <button type="button" id="cancelJoinTeam" class="btn btn-outline btn-sm sm:btn-md">Cancel</button>
-        </div>
-      </form>
-    {{/if}}
-    
-    <!-- Team list -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-      {{#each userTeams}}
-        <div class="card bg-base-100 shadow p-3 sm:p-4">
-          <div class="flex items-center justify-between gap-2">
-            <a href="#" class="link team-link text-base sm:text-lg font-semibold truncate flex-1" data-id="{{_id}}">{{name}}</a>
-            {{#if isAdmin _id}}
-              <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-                <button class="edit-team-btn btn btn-ghost btn-xs sm:btn-sm btn-square" data-id="{{_id}}" title="Edit Team">
-                  <i class="fa-solid fa-pen text-primary text-xs sm:text-sm"></i>
-                </button>
-                <button class="delete-team-btn btn btn-ghost btn-xs sm:btn-sm btn-square text-error" data-id="{{_id}}" title="Delete Team">
-                  <i class="fa-solid fa-trash text-xs sm:text-sm"></i>
-                </button>
-              </div>
-            {{/if}}
-          </div>
-        </div>
-      {{/each}}
-    </div>
-  {{/if}}
-</template>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button" id="deleteModalBackdrop">close</button></form>
+  </dialog>
 
+  <!-- Remove Member Modal -->
+  <dialog id="removeMemberModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg text-gray-900 dark:text-white">Remove Team Member</h3>
+        <button type="button" id="closeRemoveMemberModal" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      {{#if memberToRemove}}
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Are you sure you want to remove <strong>{{memberToRemove.name}}</strong> from the team? They will lose access to all team resources.</p>
+      {{/if}}
+      <div class="flex justify-end gap-3">
+        <button type="button" id="closeRemoveMemberModal2" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">Cancel</button>
+        <button type="button" id="confirmRemoveMember" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Remove Member</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button" id="removeMemberModalBackdrop">close</button></form>
+  </dialog>
+</template>
