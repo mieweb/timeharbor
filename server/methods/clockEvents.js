@@ -151,6 +151,24 @@ export const clockEventMethods = {
     }
   },
 
+  async clockEventUpdateYoutubeLink(clockEventId, youtubeShortLink) {
+    check(clockEventId, String);
+    check(youtubeShortLink, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    const clockEvent = await ClockEvents.findOneAsync({ _id: clockEventId, userId: this.userId });
+    if (!clockEvent) {
+      throw new Meteor.Error('not-found', 'Clock event not found');
+    }
+    
+    const link = typeof youtubeShortLink === 'string' ? youtubeShortLink.trim() : '';
+    if (link) {
+      await ClockEvents.updateAsync(clockEventId, {
+        $set: { youtubeShortLink: link }
+      });
+    }
+  },
+
   async clockEventAddTicket(clockEventId, ticketId, now) {
     check(clockEventId, String);
     check(ticketId, String);

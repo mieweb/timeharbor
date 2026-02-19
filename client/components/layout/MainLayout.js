@@ -13,6 +13,7 @@ const ERROR_PREFIX = 'Logout failed: ';
 
 const isLogoutLoading = new ReactiveVar(false);
 const logoutMessage = new ReactiveVar('');
+const profileDropdownOpen = new ReactiveVar(false);
 
 const STORAGE_TEAM_ID = 'timeharbor-current-team-id';
 export const selectedTeamId = new ReactiveVar(null);
@@ -212,6 +213,20 @@ if (Template.mainLayout) {
       const selected = selectedTeamId.get() === teamId;
       return { value: teamId, ...(selected ? { selected: true } : {}) };
     },
+    profileDropdownOpen() {
+      return profileDropdownOpen.get();
+    },
+    userInitials() {
+      const user = Meteor.user();
+      if (!user) return '?';
+      const first = user.profile?.firstName?.trim();
+      const last = user.profile?.lastName?.trim();
+      if (first && last) return `${(first[0] || '').toUpperCase()}${(last[0] || '').toUpperCase()}`;
+      if (first) return first.slice(0, 2).toUpperCase();
+      const email = user.emails?.[0]?.address || user.profile?.email || '';
+      if (email) return email.slice(0, 2).toUpperCase();
+      return '?';
+    },
   });
 
   // Helper to close mobile menu
@@ -231,10 +246,39 @@ if (Template.mainLayout) {
   };
 
   Template.mainLayout.events({
-    // Mobile menu toggle
-    'click #mobileMenuToggle'(event) {
+    // Mobile: open slide-out menu from bottom nav "Menu"
+    'click #mobileMenuOpen'(event) {
       event.preventDefault();
       openMobileMenu();
+    },
+    // Mobile profile dropdown
+    'click #mobileProfileBtn'(event) {
+      event.preventDefault();
+      profileDropdownOpen.set(!profileDropdownOpen.get());
+    },
+    'click #mobileProfileDropdownBackdrop'() {
+      profileDropdownOpen.set(false);
+    },
+    'click [data-action="goNotifications"]'(event) {
+      event.preventDefault();
+      profileDropdownOpen.set(false);
+      FlowRouter.go('/notifications');
+    },
+    'click [data-action="switchTeam"]'(event) {
+      event.preventDefault();
+      profileDropdownOpen.set(false);
+      document.getElementById('mobileTeamSwitcherModal')?.showModal();
+    },
+    'click .mobile-team-option'(event) {
+      const teamId = event.currentTarget.getAttribute('data-team-id');
+      if (teamId) {
+        selectedTeamId.set(teamId);
+        if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_TEAM_ID, teamId);
+      }
+      document.getElementById('mobileTeamSwitcherModal')?.close();
+    },
+    'click #mobileTeamSwitcherCancel'() {
+      document.getElementById('mobileTeamSwitcherModal')?.close();
     },
     
     // Close menu when clicking backdrop
@@ -306,6 +350,16 @@ if (Template.mainLayout) {
         const t = Template.instance();
         t.clockOutTeamId = teamId;
         t.clockOutTotalWorkTime = totalWorkTime;
+        t.clockOutEventId = active._id;
+        
+        // Stop clock immediately first (clock stops right away)
+        const success = await sessionManager.stopSession(teamId, null);
+        if (!success) {
+          alert('Failed to clock out. Please try again.');
+          return;
+        }
+        
+        // Clock is now stopped - show YouTube link modal
         const input = document.getElementById('layoutClockOutYoutubeLink');
         if (input) input.value = '';
         document.getElementById('layoutClockOutYoutubeModal')?.showModal();
@@ -325,31 +379,36 @@ if (Template.mainLayout) {
     },
     async 'click #layoutClockOutYoutubeSubmit'(event, t) {
       event.preventDefault();
-      const teamId = t.clockOutTeamId;
+      const clockEventId = t.clockOutEventId;
       const totalWorkTime = t.clockOutTotalWorkTime ?? 0;
       const input = document.getElementById('layoutClockOutYoutubeLink');
       const link = input?.value?.trim() || null;
       document.getElementById('layoutClockOutYoutubeModal')?.close();
-      if (!teamId) return;
-      const success = await sessionManager.stopSession(teamId, link);
-      if (success) {
-        const el = document.getElementById('layoutClockOutTime');
-        if (el) el.textContent = formatTimeHoursMinutes(totalWorkTime);
-        document.getElementById('layoutClockOutModal')?.showModal();
+      
+      if (clockEventId && link) {
+        // Update the already-stopped clock event with YouTube link
+        Meteor.call('clockEventUpdateYoutubeLink', clockEventId, link, (err) => {
+          if (err) {
+            console.error('Failed to update YouTube link:', err);
+            // Don't show error to user, it's optional
+          }
+        });
       }
+      
+      // Show success modal after YouTube link is handled
+      const el = document.getElementById('layoutClockOutTime');
+      if (el) el.textContent = formatTimeHoursMinutes(totalWorkTime);
+      document.getElementById('layoutClockOutModal')?.showModal();
     },
     async 'click #layoutClockOutYoutubeSkip'(event, t) {
       event.preventDefault();
-      const teamId = t.clockOutTeamId;
       const totalWorkTime = t.clockOutTotalWorkTime ?? 0;
       document.getElementById('layoutClockOutYoutubeModal')?.close();
-      if (!teamId) return;
-      const success = await sessionManager.stopSession(teamId, null);
-      if (success) {
-        const el = document.getElementById('layoutClockOutTime');
-        if (el) el.textContent = formatTimeHoursMinutes(totalWorkTime);
-        document.getElementById('layoutClockOutModal')?.showModal();
-      }
+      
+      // Show success modal
+      const el = document.getElementById('layoutClockOutTime');
+      if (el) el.textContent = formatTimeHoursMinutes(totalWorkTime);
+      document.getElementById('layoutClockOutModal')?.showModal();
     },
     'submit #layoutProfileNameForm'(event) {
       event.preventDefault();

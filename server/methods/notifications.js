@@ -169,5 +169,19 @@ export const notificationMethods = {
   async 'notifications.markAllAsRead'() {
     if (!this.userId) throw new Meteor.Error('not-authorized');
     await Notifications.updateAsync({ userId: this.userId, read: false }, { $set: { read: true } }, { multi: true });
+  },
+
+  /**
+   * Delete one or more notifications for the current user
+   */
+  async 'notifications.delete'(notificationIds) {
+    check(notificationIds, [String]);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    if (!notificationIds || notificationIds.length === 0) {
+      throw new Meteor.Error('invalid-argument', 'No notification IDs provided');
+    }
+    // Only delete notifications that belong to the current user
+    const result = await Notifications.removeAsync({ _id: { $in: notificationIds }, userId: this.userId });
+    return { success: true, deletedCount: result };
   }
 };

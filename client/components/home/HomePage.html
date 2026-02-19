@@ -1,5 +1,38 @@
 <template name="home">
   <div class="max-w-4xl mx-auto p-4 md:p-6 space-y-6 pb-20 md:pb-0">
+    <!-- Team Member Icons (Mobile Only) -->
+    <div class="md:hidden flex items-center gap-4 mb-4">
+      {{#each teamMembersForIcons}}
+        <div class="flex flex-col items-center gap-1">
+          <div class="relative">
+            {{#if youtubeShortLink}}
+              <a href="{{youtubeShortLink}}" target="_blank" rel="noopener noreferrer" class="block">
+                <div class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold shrink-0 ring-4 ring-green-400 ring-offset-0 cursor-pointer hover:ring-green-300 transition-all" style="box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.3);">
+                  {{initials}}
+                </div>
+              </a>
+            {{else}}
+              <div class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold shrink-0">
+                {{initials}}
+              </div>
+            {{/if}}
+            {{#if isCurrentUser}}
+              <div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-blue-500 border-2 border-white dark:border-gray-800 flex items-center justify-center z-20">
+                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+              </div>
+            {{/if}}
+            {{#if isOnline}}
+              <!-- Green dot on the circle edge (bottom-right of avatar) -->
+              <div class="absolute rounded-full bg-green-400 border-2 border-white dark:border-gray-800 z-20" style="width: 8px; height: 8px; right: 3px; bottom: 3px; transform: none; box-shadow: 0 0 6px rgba(74, 222, 128, 0.8);"></div>
+            {{/if}}
+          </div>
+          <span class="text-xs text-gray-600 dark:text-gray-400 text-center max-w-[60px] truncate">
+            {{#if isCurrentUser}}Your pulse{{else}}{{name}}{{/if}}
+          </span>
+        </div>
+      {{/each}}
+    </div>
+
     <!-- First Time User / No Data State -->
     {{#if isFirstTimeUser}}
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6">
@@ -177,3 +210,8 @@
     </div>
   </div>
 </template>
+
+
+
+
+

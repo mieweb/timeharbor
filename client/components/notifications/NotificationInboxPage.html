@@ -3,36 +3,77 @@
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
-        {{#if hasUnread}}
-          <button id="markAllReadBtn" type="button" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
-            Mark all as read
-          </button>
+        {{#if selectMode}}
+          <div class="flex items-center gap-2">
+            {{#if allSelected}}
+              <button id="notificationDeselectAllBtn" type="button" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">
+                Deselect all
+              </button>
+            {{else}}
+              <button id="notificationSelectAllBtn" type="button" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">
+                Select all
+              </button>
+            {{/if}}
+            <button id="notificationCancelSelectBtn" type="button" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">
+              Cancel
+            </button>
+          </div>
+        {{else}}
+          <div class="flex items-center gap-2">
+            {{#if hasUnread}}
+              <button id="markAllReadBtn" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-sm font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                Mark all read
+              </button>
+            {{/if}}
+            <button id="notificationSelectBtn" type="button" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">
+              Select
+            </button>
+          </div>
         {{/if}}
       </div>
+
+      {{#if hasSelected}}
+        <div class="mb-4 p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <button id="notificationClearSelection" type="button" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{selectedCount}} selected</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="notificationDeleteBtn" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors text-sm font-medium">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      {{/if}}
 
       {{#if hasNotifications}}
         <ul class="space-y-2" role="list">
           {{#each notifications}}
             <li>
-              <button type="button" class="notification-item w-full text-left p-3 md:p-4 rounded-xl border transition-colors {{#if read}}bg-gray-50 dark:bg-gray-700/30 border-gray-100 dark:border-gray-700{{else}}bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30{{/if}} hover:bg-gray-100 dark:hover:bg-gray-700/50" data-notification-id="{{_id}}" data-read="{{read}}">
-                <div class="flex items-start gap-3">
-                  <div class="shrink-0 mt-0.5 p-2 rounded-full {{#if isClockIn}}bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400{{else}}bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400{{/if}}">
-                    {{#if isClockIn}}
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    {{else}}
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m5 0v-6a2 2 0 00-2-2H7a2 2 0 00-2 2v6a2 2 0 002 2h5.5" /></svg>
+              <div class="notification-item-wrapper flex items-start gap-3 p-3 md:p-4 rounded-xl border transition-colors {{#if read}}bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700{{else}}bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30{{/if}} {{#unless ../selectMode}}hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer{{/unless}}" data-notification-id="{{_id}}" data-read="{{read}}">
+                {{#if ../selectMode}}
+                  <button type="button" class="notification-checkbox shrink-0 mt-0.5 w-6 h-6 min-w-[24px] min-h-[24px] border-2 flex items-center justify-center transition-all duration-200 rounded-sm {{#if isSelected}}bg-blue-600 border-blue-600{{else}}border-gray-400 dark:border-gray-500 bg-white dark:bg-gray-800 hover:border-blue-500{{/if}}" data-notification-id="{{_id}}" aria-label="{{#if isSelected}}Deselect notification{{else}}Select notification{{/if}}">
+                    {{#if isSelected}}
+                      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7" /></svg>
                     {{/if}}
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="font-semibold text-gray-900 dark:text-white text-sm md:text-base">{{title}}</p>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm mt-0.5">{{body}}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">{{timeAgo createdAt}}</p>
-                  </div>
-                  {{#unless read}}
-                    <span class="shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-2" aria-hidden="true"></span>
-                  {{/unless}}
+                  </button>
+                {{/if}}
+                <div class="shrink-0 mt-0.5 p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
-              </button>
+                <div class="min-w-0 flex-1">
+                  <p class="font-semibold text-gray-900 dark:text-white text-sm md:text-base">{{title}}</p>
+                  <p class="text-gray-600 dark:text-gray-400 text-sm mt-0.5">{{body}}</p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{timeAgo createdAt}}</p>
+                </div>
+                {{#unless read}}
+                  <span class="shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-2" aria-hidden="true"></span>
+                {{/unless}}
+              </div>
             </li>
           {{/each}}
         </ul>
@@ -40,7 +81,7 @@
         <div class="text-center py-12">
           <div class="text-4xl mb-4">🔔</div>
           <p class="text-gray-500 dark:text-gray-400">No notifications yet</p>
-          <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">When your team members clock in or out, you’ll see them here.</p>
+          <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">When your team members clock in or out, you'll see them here.</p>
         </div>
       {{/if}}
     </div>
