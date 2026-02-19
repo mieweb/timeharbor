@@ -1,7 +1,7 @@
 module.exports = {
   content: [
-    './client/**/*.{html,js,jsx}',
-    './imports/**/*.{js,jsx}',
+    './client/**/*.{html,js}',
+    './imports/**/*.{js}',
     './server/**/*.{js}',
     './collections.js',
   ],
