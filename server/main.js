@@ -2,7 +2,7 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import 'meteor/accounts-password';
 import { check } from 'meteor/check';
-import { Tickets, Teams, Sessions, ClockEvents, Notifications } from '../collections.js';
+import { Tickets, Teams, Sessions, ClockEvents, Notifications, Messages } from '../collections.js';
 // Import authentication methods
 import { authMethods } from './methods/auth.js';
 // Import team methods
@@ -10,6 +10,7 @@ import { teamMethods } from './methods/teams.js';
 // Import ticket and clock event methods
 import { ticketMethods } from './methods/tickets.js';
 import { clockEventMethods } from './methods/clockEvents.js';
+import { messageMethods } from './methods/messages.js';
 // Import calendar methods
 import './methods/calendar.js';
 // Import notification methods
@@ -190,18 +191,18 @@ Meteor.startup(async () => {
                   icon: '/timeharbor-icon.svg',
                   badge: '/timeharbor-icon.svg',
                   tag: `auto-clockout-admin-${clockEvent.userId}-${Date.now()}`,
-                  data: {
-                    type: 'clock-out',
-                    userId: clockEvent.userId,
-                    userName: userName,
-                    teamName: teamName,
-                    teamId: clockEvent.teamId,
-                    clockEventId: clockEvent._id,
-                    duration: durationText,
-                    autoClockOut: true,
-                    url: '/admin'
-                  }
-                });
+                    data: {
+                      type: 'clock-out',
+                      userId: clockEvent.userId,
+                      userName: userName,
+                      teamName: teamName,
+                      teamId: clockEvent.teamId,
+                      clockEventId: clockEvent._id,
+                      duration: durationText,
+                      autoClockOut: true,
+                      url: `/member/${clockEvent.teamId}/${clockEvent.userId}`
+                    }
+                  });
               } catch (error) {
                 console.error('Failed to send auto-clock-out notification to admins:', error);
               }
@@ -232,7 +233,10 @@ Meteor.publish('userTeams', function () {
 
 Meteor.publish('teamDetails', function (teamId) {
   // Only publish team details if the user is a member
-  return Teams.find({ _id: teamId, members: this.userId });
+  return Teams.find({
+    _id: teamId,
+    $or: [{ members: this.userId }, { admins: this.userId }]
+  });
 });
 
 Meteor.publish('teamMembers', async function (teamIds) {
@@ -286,11 +290,36 @@ Meteor.publish('clockEventsForTeams', async function (teamIds) {
   // Publish clock events for teams the user is a member of (admin or regular member)
   const allowedTeams = await Teams.find({
     _id: { $in: validTeamIds },
-    members: this.userId, // Check if user is a member (includes admins)
-    members: this.userId, // Check if user is a member (includes admins)
+    $or: [
+      { members: this.userId },
+      { admins: this.userId }
+    ],
   }).fetchAsync();
   const allowedTeamIds = allowedTeams.map(t => t._id);
   return ClockEvents.find({ teamId: { $in: allowedTeamIds } });
+});
+
+Meteor.publish('messages.thread', function ({ teamId, adminId, memberId }) {
+  check(teamId, String);
+  check(adminId, String);
+  check(memberId, String);
+  if (!this.userId) return this.ready();
+
+  if (this.userId !== adminId && this.userId !== memberId) {
+    return this.ready();
+  }
+
+  const team = Teams.findOne({ _id: teamId });
+  if (!team) return this.ready();
+  const isAdmin = Array.isArray(team.admins) && team.admins.includes(this.userId);
+  const isMember = Array.isArray(team.members) && team.members.includes(this.userId);
+  if (!isAdmin && !isMember) return this.ready();
+
+  return Messages.find({
+    teamId,
+    adminId,
+    memberId
+  }, { sort: { createdAt: 1 }, limit: 500 });
 });
 
 // Publish all tickets for a team for admin review (only for team admins)
@@ -361,6 +390,7 @@ Meteor.methods({
   ...ticketMethods,
   ...clockEventMethods,
   ...notificationMethods,
+  ...messageMethods,
 
   'participants.create'(name) {
     check(name, String);

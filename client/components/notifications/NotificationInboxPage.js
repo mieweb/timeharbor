@@ -90,7 +90,7 @@ Template.notificationInbox.events({
     const url = doc?.data?.url;
     Meteor.call('notifications.markAsRead', id, (err) => {
       if (err) return;
-      if (url && !read) FlowRouter.go(url);
+      if (url) FlowRouter.go(url);
     });
   },
   'click .notification-checkbox'(e, t) {

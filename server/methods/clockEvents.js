@@ -46,7 +46,7 @@ export const clockEventMethods = {
           teamName: teamName,
           teamId,
           clockEventId,
-          url: '/admin'
+          url: `/member/${teamId}/${this.userId}`
         }
       });
     } catch (error) {
@@ -133,17 +133,17 @@ export const clockEventMethods = {
           icon: '/timeharbor-icon.svg',
           badge: '/timeharbor-icon.svg',
           tag: `clockout-${this.userId}-${Date.now()}`,
-          data: {
-            type: 'clock-out',
-            userId: this.userId,
-            userName: userName,
-            teamName: teamName,
-            teamId,
-            clockEventId: clockEvent._id,
-            duration: durationText,
-            url: '/admin'
-          }
-        });
+        data: {
+          type: 'clock-out',
+          userId: this.userId,
+          userName: userName,
+          teamName: teamName,
+          teamId,
+          clockEventId: clockEvent._id,
+          duration: durationText,
+          url: `/member/${teamId}/${this.userId}`
+        }
+      });
       } catch (error) {
         // Don't fail the clock-out if notification fails
         console.error('Failed to send clock-out notification:', error);
