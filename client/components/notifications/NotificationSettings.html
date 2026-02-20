@@ -1,45 +1,41 @@
 <template name="notificationSettings">
-  <div class="card bg-base-100 shadow-lg mb-6">
-    <div class="card-body">
-      <h3 class="card-title">
-        <i class="fa-solid fa-bell text-primary"></i>
-        Push Notifications
-      </h3>
-      
-      {{#if notificationSupported}}
-        {{#if notificationEnabled}}
-          <div class="alert alert-success">
-            <i class="fa-solid fa-check-circle"></i>
-            <span>Notifications are enabled! You'll receive alerts when team members clock in/out.</span>
-          </div>
-          <button id="disableNotifications" class="btn btn-outline btn-error">
-            <i class="fa-solid fa-bell-slash"></i>
-            Disable Notifications
-          </button>
-        {{else}}
-          <div class="alert alert-info">
-            <i class="fa-solid fa-info-circle"></i>
-            <span>Enable push notifications to get notified when your team members clock in or clock out.</span>
-          </div>
-          <button id="enableNotifications" class="btn btn-primary">
-            <i class="fa-solid fa-bell"></i>
-            Enable Notifications
-          </button>
-        {{/if}}
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6">
+    <h2 class="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-bell text-blue-600 dark:text-blue-400" aria-hidden="true"></i>
+      Push Notifications
+    </h2>
+
+    {{#if notificationSupported}}
+      {{#if notificationEnabled}}
+        <div class="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 text-green-800 dark:text-green-200 text-sm mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-check-circle shrink-0" aria-hidden="true"></i>
+          <span>Notifications are enabled! You'll receive alerts when team members clock in/out.</span>
+        </div>
+        <button id="disableNotifications" type="button" class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+          <i class="fa-solid fa-bell-slash mr-2" aria-hidden="true"></i>
+          Disable Notifications
+        </button>
       {{else}}
-        <div class="alert alert-warning">
-          <i class="fa-solid fa-exclamation-triangle"></i>
-          <span>Push notifications are not supported in your browser. Try using Chrome, Firefox, or Edge.</span>
+        <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-200 text-sm mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-info-circle shrink-0" aria-hidden="true"></i>
+          <span>Enable push notifications to get notified when your team members clock in or clock out.</span>
         </div>
+        <button id="enableNotifications" type="button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+          <i class="fa-solid fa-bell mr-2" aria-hidden="true"></i>
+          Enable Notifications
+        </button>
       {{/if}}
-      
-      {{#if loading}}
-        <div class="flex justify-center mt-4">
-          <span class="loading loading-spinner loading-lg"></span>
-        </div>
-      {{/if}}
-    </div>
+    {{else}}
+      <div class="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm flex items-center gap-2">
+        <i class="fa-solid fa-exclamation-triangle shrink-0" aria-hidden="true"></i>
+        <span>Push notifications are not supported in your browser. Try using Chrome, Firefox, or Edge.</span>
+      </div>
+    {{/if}}
+
+    {{#if loading}}
+      <div class="flex justify-center mt-4">
+        <span class="inline-block w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" aria-hidden="true"></span>
+      </div>
+    {{/if}}
   </div>
 </template>
-
-

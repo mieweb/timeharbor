@@ -1,5 +1,5 @@
 import { Meteor } from 'meteor/meteor';
-import { check } from 'meteor/check';
+import { check, Match } from 'meteor/check';
 import { ClockEvents, Tickets, Teams } from '../../collections.js';
 import { stopTicketInClockEvent, formatDurationText } from '../utils/ClockEventHelpers.js';
 import { notifyTeamAdmins } from '../utils/pushNotifications.js';
@@ -46,7 +46,7 @@ export const clockEventMethods = {
           teamName: teamName,
           teamId,
           clockEventId,
-          url: '/admin'
+          url: `/member/${teamId}/${this.userId}`
         }
       });
     } catch (error) {
@@ -57,8 +57,9 @@ export const clockEventMethods = {
     return clockEventId;
   },
 
-  async clockEventStop(teamId) {
+  async clockEventStop(teamId, youtubeShortLink) {
     check(teamId, String);
+    check(youtubeShortLink, Match.Maybe(String));
     if (!this.userId) throw new Meteor.Error('not-authorized');
     
     // Get user info for notification
@@ -118,10 +119,11 @@ export const clockEventMethods = {
       });
       await Promise.all(ticketUpdates);
 
-      // Mark clock event as ended
-      await ClockEvents.updateAsync(clockEvent._id, {
-        $set: { endTime: new Date() },
-      });
+      // Mark clock event as ended (optionally with today's work showcase link)
+      const setFields = { endTime: new Date() };
+      const link = typeof youtubeShortLink === 'string' ? youtubeShortLink.trim() : '';
+      if (link) setFields.youtubeShortLink = link;
+      await ClockEvents.updateAsync(clockEvent._id, { $set: setFields });
       
       // Send push notification to team admins
       try {
@@ -131,21 +133,39 @@ export const clockEventMethods = {
           icon: '/timeharbor-icon.svg',
           badge: '/timeharbor-icon.svg',
           tag: `clockout-${this.userId}-${Date.now()}`,
-          data: {
-            type: 'clock-out',
-            userId: this.userId,
-            userName: userName,
-            teamName: teamName,
-            teamId,
-            clockEventId: clockEvent._id,
-            duration: durationText,
-            url: '/admin'
-          }
-        });
+        data: {
+          type: 'clock-out',
+          userId: this.userId,
+          userName: userName,
+          teamName: teamName,
+          teamId,
+          clockEventId: clockEvent._id,
+          duration: durationText,
+          url: `/member/${teamId}/${this.userId}`
+        }
+      });
       } catch (error) {
         // Don't fail the clock-out if notification fails
         console.error('Failed to send clock-out notification:', error);
       }
+    }
+  },
+
+  async clockEventUpdateYoutubeLink(clockEventId, youtubeShortLink) {
+    check(clockEventId, String);
+    check(youtubeShortLink, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    
+    const clockEvent = await ClockEvents.findOneAsync({ _id: clockEventId, userId: this.userId });
+    if (!clockEvent) {
+      throw new Meteor.Error('not-found', 'Clock event not found');
+    }
+    
+    const link = typeof youtubeShortLink === 'string' ? youtubeShortLink.trim() : '';
+    if (link) {
+      await ClockEvents.updateAsync(clockEventId, {
+        $set: { youtubeShortLink: link }
+      });
     }
   },
 

@@ -12,6 +12,8 @@ import './components/admin/admin.html';
 import './components/timesheet/TimesheetPage.html';
 import './components/member/MemberActivityPage.html';
 import './components/guide/UserGuide.html';
+import './components/notifications/NotificationInboxPage.html';
+import './components/profile/ProfilePage.html';
 
 // Import component JS files
 import './components/auth/AuthPage.js';
@@ -24,6 +26,8 @@ import './components/admin/admin.js';
 import './components/timesheet/TimesheetPage.js';
 import './components/member/MemberActivityPage.js';
 import './components/guide/UserGuide.js';
+import './components/notifications/NotificationInboxPage.js';
+import './components/profile/ProfilePage.js';
 
 // Import routing configuration
 import './routes.js';
@@ -39,17 +43,9 @@ Meteor.startup(() => {
     console.error('[Startup] Failed to initialize notifications:', err);
   });
 
-  // Check for saved theme preference or default to system preference
-  const savedTheme = localStorage.getItem('theme') ||
-    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  // Check for saved theme preference or default to light
+  const savedTheme = localStorage.getItem('theme') || 'light';
 
   // Apply theme to html element (DaisyUI uses data-theme attribute)
   document.documentElement.setAttribute('data-theme', savedTheme);
-
-  // Listen for system theme changes if no manual preference is set
-  if (!localStorage.getItem('theme')) {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-    });
-  }
 });

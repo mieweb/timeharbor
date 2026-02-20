@@ -3,6 +3,7 @@
 */
 import { Meteor } from 'meteor/meteor';
 import { Tracker } from 'meteor/tracker';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 
 
 // Check if running in Cordova
@@ -167,9 +168,17 @@ export async function initializeNotifications() {
     const mess = window.cordova?.plugins?.firebase?.messaging;
     if (!mess) return;
 
+    const navigateFromPayload = (payload) => {
+      const url = payload?.data?.url || payload?.url || payload?.notification?.click_action;
+      if (url) {
+        FlowRouter.go(url);
+      }
+    };
+
     // Setup background notification click handler
     mess.onBackgroundMessage((payload) => {
       console.log('[Push] Background message:', payload);
+      navigateFromPayload(payload);
     });
 
     // Setup foreground notification handler

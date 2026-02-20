@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "start": "meteor run",
+    "generate-icons": "node scripts/generate-app-icons.js",
     "test": "meteor test --once --driver-package meteortesting:mocha",
     "test-app": "TEST_WATCH=1 meteor test --full-app --driver-package meteortesting:mocha",
     "visualize": "meteor --production --extra-packages bundle-visualizer"
@@ -30,6 +31,7 @@
     "autoprefixer": "^10.4.21",
     "daisyui": "^5.0.35",
     "postcss": "^8.5.3",
+    "sharp": "^0.33.5",
     "tailwindcss": "^4.1.7"
   }
 }

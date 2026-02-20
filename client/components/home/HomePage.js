@@ -6,7 +6,7 @@ import { formatTime, formatTimeHoursMinutes, formatDate, formatTimestampHoursMin
 import { getTeamName, getUserEmail, getUserName } from '../../utils/UserTeamUtils.js';
 import { dateToLocalString, formatDateForDisplay, getTodayBoundaries, getWeekBoundaries, getDayBoundaries } from '../../utils/DateUtils.js';
 import { Grid } from 'ag-grid-community';
-import { isTeamsLoading } from '../layout/MainLayout.js';
+import { isTeamsLoading, selectedTeamId } from '../layout/MainLayout.js';
 import '../notifications/NotificationSettings.js';
 
 // Constants
@@ -155,6 +155,25 @@ Template.home.onCreated(function () {
     
     if (allMembers.length) {
       this.subscribe('usersByIds', allMembers);
+    }
+    
+    // Subscribe to current team members for icons
+    const currentTeamId = selectedTeamId.get();
+    if (currentTeamId) {
+      const currentTeam = Teams.findOne(currentTeamId);
+      if (currentTeam) {
+        const teamMemberIds = Array.from(new Set([
+          ...(currentTeam.members || []),
+          ...(currentTeam.admins || [])
+        ])).filter(Boolean);
+        
+        if (teamMemberIds.length) {
+          this.subscribe('usersByIds', teamMemberIds);
+        }
+        
+        // Subscribe to clock events for current team to show online status and YouTube shorts
+        this.subscribe('clockEventsForTeams', [currentTeamId]);
+      }
     }
   });
   
@@ -335,7 +354,14 @@ Template.home.helpers({
   isTeamAdmin() {
     return Teams.findOne({ admins: Meteor.userId() });
   },
-  
+  // Show push notification card only for team admins who haven't enabled push yet
+  showPushNotificationCardOnHome() {
+    const isAdmin = !!Teams.findOne({ admins: Meteor.userId() });
+    if (!isAdmin) return false;
+    const user = Meteor.user();
+    const pushEnabled = !!(user?.profile?.pushSubscription);
+    return !pushEnabled;
+  },
   isFirstTimeUser() {
     const userClockEvents = ClockEvents.find({ userId: Meteor.userId() }).count();
     const userTeams = Teams.find({ members: Meteor.userId() }).count();
@@ -451,6 +477,91 @@ Template.home.helpers({
   
   isPresetSelected(presetName) {
     return Template.instance().selectedPreset.get() === presetName;
+  },
+  
+  // Team member icons for mobile
+  teamMembersForIcons() {
+    const teamId = selectedTeamId.get();
+    if (!teamId) return [];
+    
+    const team = Teams.findOne(teamId);
+    if (!team) return [];
+    
+    const currentUserId = Meteor.userId();
+    const allMemberIds = Array.from(new Set([
+      ...(team.members || []),
+      ...(team.admins || [])
+    ])).filter(Boolean);
+    
+    // Get today's boundaries for YouTube short check
+    const todayBoundaries = getTodayBoundaries();
+    
+    const members = allMemberIds.map(userId => {
+      const user = Meteor.users.findOne(userId);
+      const name = getUserName(userId);
+      const firstName = user?.profile?.firstName?.trim() || '';
+      const lastName = user?.profile?.lastName?.trim() || '';
+      let initials = '?';
+      
+      if (firstName && lastName) {
+        initials = `${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}`;
+      } else if (firstName) {
+        initials = firstName.slice(0, 2).toUpperCase();
+      } else if (lastName) {
+        initials = lastName.slice(0, 2).toUpperCase();
+      } else {
+        const email = getUserEmail(userId);
+        if (email && email !== 'Unknown User') {
+          initials = email.slice(0, 2).toUpperCase();
+        }
+      }
+      
+      // Check if user is online (has active clock event)
+      const isOnline = !!ClockEvents.findOne({
+        userId,
+        teamId,
+        endTime: null
+      });
+      
+      // Check if user has YouTube short link for today
+      const todayEventWithShort = ClockEvents.findOne({
+        userId,
+        teamId,
+        startTimestamp: { $gte: todayBoundaries.start, $lte: todayBoundaries.end },
+        youtubeShortLink: { $exists: true, $ne: '' }
+      }, { sort: { endTime: -1 }, fields: { youtubeShortLink: 1 } });
+      
+      const youtubeShortLink = todayEventWithShort?.youtubeShortLink || null;
+      
+      return {
+        userId,
+        name,
+        initials,
+        isCurrentUser: userId === currentUserId,
+        isOnline,
+        youtubeShortLink
+      };
+    });
+    
+    // Sort: current user first, then others alphabetically
+    return members.sort((a, b) => {
+      if (a.isCurrentUser) return -1;
+      if (b.isCurrentUser) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  },
+  
+  userInitials() {
+    const user = Meteor.user();
+    const firstName = user?.profile?.firstName?.trim() || '';
+    const lastName = user?.profile?.lastName?.trim() || '';
+    if (firstName && lastName) {
+      return `${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}`;
+    }
+    if (firstName) return firstName.slice(0, 2).toUpperCase();
+    if (lastName) return lastName.slice(0, 2).toUpperCase();
+    const email = user?.emails?.[0]?.address || '';
+    return email ? email.slice(0, 2).toUpperCase() : '?';
   }
 });
 

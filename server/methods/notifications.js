@@ -1,5 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
+import { Notifications } from '../../collections.js';
 import { getVapidPublicKey, notifyUser } from '../utils/pushNotifications.js';
 
 
@@ -149,5 +150,38 @@ export const notificationMethods = {
       console.error('Error sending auto-clock-out notification to user:', error);
       throw new Meteor.Error('notification-failed', 'Failed to send notification');
     }
+  },
+
+  /**
+   * Mark a single notification as read (inbox)
+   */
+  async 'notifications.markAsRead'(notificationId) {
+    check(notificationId, String);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    const n = await Notifications.findOneAsync({ _id: notificationId, userId: this.userId });
+    if (!n) return;
+    await Notifications.updateAsync(notificationId, { $set: { read: true } });
+  },
+
+  /**
+   * Mark all notifications as read for the current user
+   */
+  async 'notifications.markAllAsRead'() {
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    await Notifications.updateAsync({ userId: this.userId, read: false }, { $set: { read: true } }, { multi: true });
+  },
+
+  /**
+   * Delete one or more notifications for the current user
+   */
+  async 'notifications.delete'(notificationIds) {
+    check(notificationIds, [String]);
+    if (!this.userId) throw new Meteor.Error('not-authorized');
+    if (!notificationIds || notificationIds.length === 0) {
+      throw new Meteor.Error('invalid-argument', 'No notification IDs provided');
+    }
+    // Only delete notifications that belong to the current user
+    const result = await Notifications.removeAsync({ _id: { $in: notificationIds }, userId: this.userId });
+    return { success: true, deletedCount: result };
   }
 };

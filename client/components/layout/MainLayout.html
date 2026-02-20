@@ -1,107 +1,274 @@
 <template name="mainLayout">
-  <header class="navbar bg-primary text-primary-content shadow mb-6 sticky top-0 z-50 px-2 sm:px-4">
-    <!-- Mobile: Hamburger menu button -->
-    <div class="flex-none md:hidden">
-      <button id="mobileMenuToggle" class="btn btn-ghost btn-square">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-      </button>
-    </div>
-    
-    <!-- Logo -->
-    <div class="flex-1">
-      <h2 class="text-lg sm:text-2xl font-bold">TimeHarbor</h2>
-    </div>
-    
-    <!-- Desktop: Horizontal nav -->
-    <nav class="hidden md:flex gap-2 lg:gap-4">
-      <a href="/" class="btn btn-ghost btn-sm lg:btn-md hover:bg-primary-focus">Home</a>
-      <a href="/teams" class="btn btn-ghost btn-sm lg:btn-md hover:bg-primary-focus">Teams</a>
-      <a href="/tickets" class="btn btn-ghost btn-sm lg:btn-md hover:bg-primary-focus">Tickets</a>
-      <a href="/calendar" class="btn btn-ghost btn-sm lg:btn-md hover:bg-primary-focus">Calendar</a>
-      {{#if isTeamAdmin}}
-        <a href="/admin" class="btn btn-ghost btn-sm lg:btn-md hover:bg-primary-focus">Admin</a>
-      {{/if}}
-    </nav>
-    
-    <!-- Right side: Theme toggle + Logout -->
-    <div class="flex-none flex items-center gap-1 sm:gap-2">
-      <button id="themeToggle" class="btn btn-ghost btn-sm btn-square" title="Toggle theme">
-        <i id="themeIcon" class="fa-solid fa-moon"></i>
-      </button>
-      <button id="logoutBtn" class="btn btn-outline btn-error btn-sm sm:btn-md" {{logoutBtnAttrs}}>
-        {{#if isLogoutLoading}}
-          <span class="loading loading-spinner loading-sm"></span>
-          <span class="hidden sm:inline">Logging out...</span>
-        {{else}}
-          <span class="hidden sm:inline">Logout</span>
-          <span class="sm:hidden">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-            </svg>
+  <!-- Desktop Header: TimeharborApp look -->
+  <header class="main-layout-header hidden md:flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-40 h-20">
+    <div class="flex items-center gap-12">
+      <h1 class="text-2xl font-bold text-blue-600 dark:text-blue-400">Timeharbor</h1>
+      <nav class="flex items-center gap-2" role="navigation" aria-label="Main navigation">
+        <a href="/" data-nav-href="/" class="main-layout-nav-link flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium {{#if isActiveRoute '/'}}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50{{/if}}" aria-current="{{#if isActiveRoute '/'}}page{{else}}false{{/if}}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          <span>Home</span>
+        </a>
+        <a href="/teams" data-nav-href="/teams" class="main-layout-nav-link flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium {{#if isActiveRoute '/teams'}}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50{{/if}}" aria-current="{{#if isActiveRoute '/teams'}}page{{else}}false{{/if}}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <span>Teams</span>
+        </a>
+        <a href="/tickets" data-nav-href="/tickets" class="main-layout-nav-link flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium {{#if isActiveRoute '/tickets'}}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50{{/if}}" aria-current="{{#if isActiveRoute '/tickets'}}page{{else}}false{{/if}}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+          <span>Tickets</span>
+        </a>
+        <a href="/calendar" data-nav-href="/calendar" class="main-layout-nav-link flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium {{#if isActiveRoute '/calendar'}}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50{{/if}}" aria-current="{{#if isActiveRoute '/calendar'}}page{{else}}false{{/if}}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <span>Calendar</span>
+        </a>
+        <a href="/notifications" data-nav-href="/notifications" class="main-layout-nav-link flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium {{#if isActiveRoute '/notifications'}}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50{{/if}}" aria-current="{{#if isActiveRoute '/notifications'}}page{{else}}false{{/if}}" aria-label="Notifications">
+          <span class="relative inline-flex">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            {{#if unreadNotificationCount}}
+              <span class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full">{{unreadNotificationBadge}}</span>
+            {{/if}}
           </span>
-        {{/if}}
-      </button>
-    </div>
-  </header>
-  
-  <!-- Mobile: Slide-out menu -->
-  <div id="mobileMenu" class="fixed inset-0 z-40 hidden">
-    <!-- Backdrop -->
-    <div id="mobileMenuBackdrop" class="absolute inset-0 bg-black/50"></div>
-    <!-- Menu panel -->
-    <div class="absolute left-0 top-0 bottom-0 w-64 bg-base-100 shadow-xl transform transition-transform">
-      <div class="p-4 bg-primary text-primary-content">
-        <h3 class="text-xl font-bold">Menu</h3>
-      </div>
-      <nav class="flex flex-col p-4 gap-2">
-        <a href="/" class="btn btn-ghost justify-start">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          Home
+          <span>Notifications</span>
         </a>
-        <a href="/teams" class="btn btn-ghost justify-start">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          Teams
-        </a>
-        <a href="/tickets" class="btn btn-ghost justify-start">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-          </svg>
-          Tickets
-        </a>
-        <a href="/calendar" class="btn btn-ghost justify-start">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          Calendar
+        <a href="/profile" data-nav-href="/profile" class="main-layout-nav-link flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium {{#if isActiveRoute '/profile'}}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50{{/if}}" aria-current="{{#if isActiveRoute '/profile'}}page{{else}}false{{/if}}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span>Profile</span>
         </a>
         {{#if isTeamAdmin}}
-          <a href="/admin" class="btn btn-ghost justify-start">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            Admin Review
+          <a href="/admin" data-nav-href="/admin" class="main-layout-nav-link flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium {{#if isActiveRoute '/admin'}}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50{{/if}}" aria-current="{{#if isActiveRoute '/admin'}}page{{else}}false{{/if}}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            <span>Admin</span>
           </a>
         {{/if}}
       </nav>
     </div>
+    <div class="flex items-center gap-3">
+      <label for="teamSwitcherSelect" class="sr-only">Switch team</label>
+      <select id="teamSwitcherSelect" class="main-layout-team-switcher flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors text-sm font-medium border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer" title="Switch Team" aria-label="Switch team">
+        {{#each userTeamsList}}
+          <option {{optionAttrs this._id}}>{{this.name}}</option>
+        {{/each}}
+      </select>
+      <button id="themeToggle" type="button" class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" title="Toggle theme" aria-label="Toggle dark mode">
+        <i id="themeIcon" class="fa-solid fa-moon" aria-hidden="true"></i>
+      </button>
+      <button id="logoutBtn" type="button" class="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm font-medium" {{logoutBtnAttrs}} aria-label="Sign out">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile: Top bar with logo and profile (dropdown: Notifications, Switch Team) -->
+  <div class="main-layout-mobile-header md:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 pt-safe flex justify-between items-center">
+    <h1 class="text-xl font-bold text-blue-600 dark:text-blue-400">Timeharbor</h1>
+    <div class="relative flex items-center gap-2">
+      <span class="text-xs text-gray-500 dark:text-gray-400">Team</span>
+      <span class="text-sm font-medium text-gray-900 dark:text-white">{{currentTeamName}}</span>
+      <button id="mobileProfileBtn" type="button" class="relative flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-semibold shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="Profile and options" aria-expanded="{{profileDropdownOpen}}">
+        {{userInitials}}
+        {{#if unreadNotificationCount}}<span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full">{{unreadNotificationBadge}}</span>{{/if}}
+      </button>
+      {{#if profileDropdownOpen}}
+        <div id="mobileProfileDropdownBackdrop" class="fixed inset-0 z-40" aria-hidden="true"></div>
+        <div id="mobileProfileDropdown" class="absolute right-0 top-full mt-1 z-50 w-56 py-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700" role="menu">
+          <a href="/notifications" data-action="goNotifications" class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            Notifications
+          </a>
+          <button type="button" data-action="switchTeam" class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-left" role="menuitem">
+            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+            Switch Team
+          </button>
+        </div>
+      {{/if}}
+    </div>
   </div>
-  
+
+  <!-- Mobile: Slide-out menu -->
+  <div id="mobileMenu" class="main-layout-mobile-menu fixed inset-0 z-40 hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
+    <div id="mobileMenuBackdrop" class="absolute inset-0 bg-black/50" aria-hidden="true"></div>
+    <div class="absolute left-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-800 shadow-xl">
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Menu</h2>
+      </div>
+      <nav class="flex flex-col p-4 gap-2" role="navigation" aria-label="Mobile navigation">
+        <a href="/" data-nav-href="/" class="flex items-center gap-2 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> Home </a>
+        <a href="/teams" data-nav-href="/teams" class="flex items-center gap-2 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Teams </a>
+        <a href="/tickets" data-nav-href="/tickets" class="flex items-center gap-2 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg> Tickets </a>
+        <a href="/calendar" data-nav-href="/calendar" class="flex items-center gap-2 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> Calendar </a>
+        <a href="/notifications" data-nav-href="/notifications" class="flex items-center gap-2 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <span class="relative inline-flex">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            {{#if unreadNotificationCount}}<span class="min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full">{{unreadNotificationBadge}}</span>{{/if}}
+          </span>
+          Notifications
+        </a>
+        <a href="/profile" data-nav-href="/profile" class="flex items-center gap-2 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> Profile </a>
+        {{#if isTeamAdmin}}
+          <a href="/admin" data-nav-href="/admin" class="flex items-center gap-2 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg> Admin </a>
+        {{/if}}
+        <button id="logoutBtnMobile" type="button" class="flex items-center gap-2 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" {{logoutBtnAttrs}} aria-label="Sign out">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          Sign Out
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Mobile: Team switcher modal (from profile dropdown "Switch Team") -->
+  <dialog id="mobileTeamSwitcherModal" class="rounded-2xl p-0 w-full max-w-sm shadow-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 md:hidden" aria-label="Switch team">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white">Switch Team</h2>
+    </div>
+    <ul class="max-h-64 overflow-y-auto p-2" role="list">
+      {{#each userTeamsList}}
+        <li>
+          <button type="button" class="mobile-team-option w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left {{#if currentTeamSelected _id}}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{{else}}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{{/if}}" data-team-id="{{_id}}">
+            <span class="font-medium">{{name}}</span>
+            {{#if currentTeamSelected _id}}<span class="ml-auto text-xs">Current</span>{{/if}}
+          </button>
+        </li>
+      {{/each}}
+    </ul>
+    <div class="p-2 border-t border-gray-200 dark:border-gray-700">
+      <button type="button" id="mobileTeamSwitcherCancel" class="w-full px-4 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</button>
+    </div>
+  </dialog>
+
   {{#if logoutMessage}}
-    <div class="alert alert-error mx-4 mb-4">
+    <div class="logout-message-alert mx-4 mt-20 md:mt-24 mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg" role="alert">
       <span>{{logoutMessage}}</span>
     </div>
   {{/if}}
-  
-  <main class="container mx-auto px-3 sm:px-4 pb-20 overflow-x-hidden">
+
+  <dialog id="layoutLogoutModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Sign out</h3>
+      <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">Are you sure you want to sign out?</p>
+      <div class="flex gap-3">
+        <button type="button" id="layoutLogoutCancel" class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Cancel</button>
+        <button type="button" id="layoutLogoutConfirm" class="flex-1 px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors text-sm" {{logoutBtnAttrs}}>Sign Out</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button">close</button></form>
+  </dialog>
+
+  <main class="main-layout-content container mx-auto px-3 sm:px-4 pt-28 md:pt-24 pb-20 md:pb-32 overflow-x-hidden min-h-screen">
     {{> Template.dynamic template=main}}
   </main>
-  <footer class="footer fixed bottom-0 left-0 right-0 p-2 sm:p-4 bg-base-200 text-base-content border-t border-base-300">
-    <p class="text-xs sm:text-sm">&copy; 2025 TimeHarbor - Your Personal Time Tracking Assistant</p>
+
+  <!-- Desktop Footer: TimeharborApp-style clock bar -->
+  <footer class="main-layout-desktop-footer hidden md:flex fixed bottom-0 right-0 left-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 justify-center items-center z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]" role="contentinfo">
+    <div class="flex items-center gap-4">
+      <button id="layoutClockBtn" type="button" class="main-layout-clock-btn flex items-center justify-center rounded-full transition-all shadow-md hover:shadow-lg w-14 h-14 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{#if isSessionActive}}bg-red-500 text-white hover:bg-red-600 animate-pulse{{else}}bg-blue-600 text-white hover:bg-blue-700{{/if}}" aria-label="{{#if isSessionActive}}Clock out{{else}}Clock in{{/if}}">
+        {{#if isSessionActive}}
+          <div class="flex flex-col items-center">
+            <span class="font-mono font-bold text-xs leading-none">{{sessionDuration.duration}}</span>
+            <span class="text-[9px] font-medium opacity-80 leading-none mt-0.5">{{sessionDuration.format}}</span>
+          </div>
+        {{else}}
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        {{/if}}
+      </button>
+      <div class="flex flex-col">
+        <span class="text-sm font-bold text-gray-900 dark:text-white">{{#if isSessionActive}}Session Active{{else}}Ready to Work?{{/if}}</span>
+        <span class="text-xs font-medium {{#if isSessionActive}}text-red-500{{else}}text-blue-600 dark:text-blue-400{{/if}}">{{#if isSessionActive}}Click to Clock Out{{else}}Click to Clock In{{/if}}</span>
+      </div>
+    </div>
   </footer>
+
+  <!-- Mobile: Bottom nav (TimeharborApp style) -->
+  <nav class="main-layout-bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 pb-safe md:hidden" role="navigation" aria-label="Bottom navigation">
+    <div class="flex items-center justify-around h-16 px-2">
+      <a href="/" data-nav-href="/" class="flex flex-col items-center justify-center w-full h-full space-y-1 min-h-[44px] {{#if isActiveRoute '/'}}text-blue-600 dark:text-blue-400{{else}}text-gray-500 dark:text-gray-400{{/if}}" aria-current="{{#if isActiveRoute '/'}}page{{else}}false{{/if}}">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+        <span class="text-[10px] font-medium">Home</span>
+      </a>
+      <a href="/teams" data-nav-href="/teams" class="flex flex-col items-center justify-center w-full h-full space-y-1 min-h-[44px] {{#if isActiveRoute '/teams'}}text-blue-600 dark:text-blue-400{{else}}text-gray-500 dark:text-gray-400{{/if}}" aria-current="{{#if isActiveRoute '/teams'}}page{{else}}false{{/if}}">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        <span class="text-[10px] font-medium">Teams</span>
+      </a>
+      <div class="relative -top-5 flex flex-col items-center">
+        <button id="layoutClockBtnMobile" type="button" class="main-layout-clock-btn flex flex-col items-center justify-center rounded-full text-white shadow-lg transition-all ring-4 ring-white dark:ring-gray-800 w-16 h-16 min-w-[44px] min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500 {{#if isSessionActive}}bg-red-500 hover:bg-red-600 animate-pulse{{else}}bg-blue-600 hover:bg-blue-700{{/if}}" aria-label="{{#if isSessionActive}}Clock out{{else}}Clock in{{/if}}">
+          {{#if isSessionActive}}
+            <span class="text-xs font-bold font-mono leading-none">{{sessionDuration.duration}}</span>
+            <span class="text-[8px] font-medium opacity-80 leading-none mt-0.5">{{sessionDuration.format}}</span>
+          {{else}}
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          {{/if}}
+        </button>
+        <span class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-medium whitespace-nowrap {{#if isSessionActive}}text-red-500{{else}}text-blue-600 dark:text-blue-400{{/if}}">{{#if isSessionActive}}Clock Out{{else}}Clock In{{/if}}</span>
+      </div>
+      <a href="/tickets" data-nav-href="/tickets" class="flex flex-col items-center justify-center w-full h-full space-y-1 min-h-[44px] {{#if isActiveRoute '/tickets'}}text-blue-600 dark:text-blue-400{{else}}text-gray-500 dark:text-gray-400{{/if}}" aria-current="{{#if isActiveRoute '/tickets'}}page{{else}}false{{/if}}">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+        <span class="text-[10px] font-medium">Tickets</span>
+      </a>
+      <button id="mobileMenuOpen" type="button" class="flex flex-col items-center justify-center w-full h-full space-y-1 min-h-[44px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300" aria-label="Open menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        <span class="text-[10px] font-medium">Menu</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Layout clock modals (same behaviour as tickets page clock) -->
+  <dialog id="layoutProfileNameModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-4">Complete Your Profile</h3>
+      <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">Please enter your first name and last name to continue.</p>
+      <form id="layoutProfileNameForm" class="flex flex-col gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
+          <input type="text" name="firstName" placeholder="Enter your first name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white text-sm" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name</label>
+          <input type="text" name="lastName" placeholder="Enter your last name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white text-sm" required />
+        </div>
+        <div class="flex gap-3 mt-2">
+          <button type="button" class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm" onclick="document.getElementById('layoutProfileNameModal').close()">Cancel</button>
+          <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">Save &amp; Clock In</button>
+        </div>
+      </form>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button">close</button></form>
+  </dialog>
+  <dialog id="layoutClockInSuccessModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-lg text-green-600 dark:text-green-400">You successfully clocked in!</h3>
+        <button type="button" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0" onclick="document.getElementById('layoutClockInSuccessModal').close()" aria-label="Close">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <p class="text-gray-600 dark:text-gray-300 mt-2 mb-4 text-sm">Which ticket are you going to work on? Create one or pick an existing ticket.</p>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button type="button" id="layoutClockInModalNewTicket" class="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">New ticket</button>
+        <button type="button" id="layoutClockInModalExistingTicket" class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Existing ticket</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button" onclick="document.getElementById('layoutClockInSuccessModal').close()">close</button></form>
+  </dialog>
+  <dialog id="layoutClockOutYoutubeModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+      <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Clock out</h3>
+      <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">Can you paste your YouTube short link for today's work?</p>
+      <input type="text" id="layoutClockOutYoutubeLink" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://youtube.com/shorts/..." autocomplete="off" />
+      <div class="flex gap-3 mt-4">
+        <button type="button" id="layoutClockOutYoutubeSkip" class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Skip</button>
+        <button type="button" id="layoutClockOutYoutubeSubmit" class="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">Submit</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button">close</button></form>
+  </dialog>
+  <dialog id="layoutClockOutModal" class="modal">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md text-center">
+      <h3 class="font-bold text-lg text-green-600 dark:text-green-400 mb-4">Clock Out Successful!</h3>
+      <div class="py-4">
+        <p class="text-gray-600 dark:text-gray-300 mb-2">You worked for:</p>
+        <p class="text-4xl font-bold text-blue-600 dark:text-blue-400 font-mono" id="layoutClockOutTime">0:00</p>
+      </div>
+      <button type="button" class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors" onclick="document.getElementById('layoutClockOutModal').close()">Close</button>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-black/50"><button type="button" onclick="document.getElementById('layoutClockOutModal').close()">close</button></form>
+  </dialog>
 </template>
