@@ -43,7 +43,9 @@
                   {{#if isActive _id}}
                     <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">In Progress</span>
                   {{/if}}
-                  <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{formatTime displayTime}}</span>
+                  {{#if isActive _id}}
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{formatTime sessionElapsed}}</span>
+                  {{/if}}
                 </div>
                 <h3 class="font-medium text-gray-900 dark:text-white truncate text-sm md:text-base" title="{{title}}">{{title}}</h3>
                 <div class="flex items-center gap-1.5 mt-1">
@@ -201,7 +203,7 @@
 
   <!-- Ticket History Modal -->
   <dialog id="ticketHistoryModal" class="modal">
-    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-w-md">
+    <div class="modal-box bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl w-full max-w-2xl">
       <div class="flex justify-between items-start gap-2">
         <h3 class="font-bold text-lg text-gray-900 dark:text-white">Ticket History</h3>
         <button type="button" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0" id="closeTicketHistoryModal" aria-label="Close">
@@ -209,26 +211,98 @@
         </button>
       </div>
       {{#if ticketIdForHistory}}
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-4 truncate" title="{{ticketTitleForHistory}}">{{ticketTitleForHistory}}</p>
         {{#if ticketHistoryLoading}}
           <p class="text-sm text-gray-500 dark:text-gray-400 py-4">Loading…</p>
         {{else if ticketHistoryError}}
           <p class="text-sm text-red-600 dark:text-red-400 py-4">{{ticketHistoryError}}</p>
         {{else if ticketHistoryData}}
           <div class="space-y-4 py-2">
+            <div class="space-y-3">
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Select range</span>
+              <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+                <select id="ticketHistoryRangeSelect" class="w-full sm:w-40 px-3 py-2 rounded-xl border-2 border-blue-500 bg-white dark:bg-gray-700/50 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                  {{#each ticketHistoryRangeOptions}}
+                    {{#if selected}}
+                      <option value="{{value}}" selected>{{label}}</option>
+                    {{else}}
+                      <option value="{{value}}">{{label}}</option>
+                    {{/if}}
+                  {{/each}}
+                </select>
+
+                {{#if isTicketHistoryCustomRange}}
+                  <input type="date" id="ticketHistoryCustomStartDate" value="{{ticketHistoryCustomStartDate}}" class="w-full sm:flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700/40 text-sm text-gray-900 dark:text-gray-100" {{ticketHistoryCustomRangeInputAttrs}} />
+                  <span class="text-sm text-gray-500 dark:text-gray-400 text-center sm:text-left">to</span>
+                  <input type="date" id="ticketHistoryCustomEndDate" value="{{ticketHistoryCustomEndDate}}" class="w-full sm:flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700/40 text-sm text-gray-900 dark:text-gray-100" {{ticketHistoryCustomRangeInputAttrs}} />
+                {{/if}}
+              </div>
+            </div>
             <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total time (creation → today)</span>
-              <span class="text-lg font-mono font-semibold text-gray-900 dark:text-white">{{formatTime ticketHistoryData.totalSeconds}}</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Total time spent so far</span>
+              <div class="text-right">
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ticketHistoryDisplayTotalLabel}}</div>
+                <div class="text-xs font-mono text-gray-500 dark:text-gray-400">{{formatTime ticketHistoryDisplayTotalSeconds}}</div>
+              </div>
             </div>
             <div class="flex items-center justify-between p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Today</span>
-              <span class="text-lg font-mono font-semibold text-blue-700 dark:text-blue-300">{{formatTime ticketHistoryData.todaySeconds}}</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Selected range ({{ticketHistoryData.rangeLabel}})</span>
+              <div class="text-right">
+                <div class="text-sm font-semibold text-blue-700 dark:text-blue-300">{{ticketHistoryDisplayRangeLabel}}</div>
+                <div class="text-xs font-mono text-blue-600/80 dark:text-blue-300/80">{{formatTime ticketHistoryDisplayRangeSeconds}}</div>
+              </div>
             </div>
-            {{#if ticketHistoryData.todayWorkShowcaseLink}}
+            {{#if ticketHistoryData.rangeWorkShowcaseLink}}
             <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Today's work showcase</span>
-              <a href="{{ticketHistoryData.todayWorkShowcaseLink}}" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all">{{ticketHistoryData.todayWorkShowcaseLink}}</a>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Work showcase ({{ticketHistoryData.rangeLabel}})</span>
+              <a href="{{ticketHistoryData.rangeWorkShowcaseLink}}" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all">{{ticketHistoryData.rangeWorkShowcaseLink}}</a>
             </div>
+            {{/if}}
+          </div>
+
+          <div class="space-y-4">
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Session Breakdown</h4>
+            {{#if hasTicketHistorySessions}}
+              <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-600">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300">
+                    <tr>
+                      <th class="text-left px-3 py-2 font-medium">Start</th>
+                      <th class="text-left px-3 py-2 font-medium">End</th>
+                      <th class="text-right px-3 py-2 font-medium">Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {{#each ticketHistoryData.selectedSessions}}
+                      <tr class="bg-white dark:bg-gray-800">
+                        <td class="px-3 py-2 text-gray-700 dark:text-gray-200">{{startTimeText}}</td>
+                        <td class="px-3 py-2 text-gray-700 dark:text-gray-200">{{endTimeText}}</td>
+                        <td class="px-3 py-2 text-right font-medium text-gray-900 dark:text-white">{{durationText}}</td>
+                      </tr>
+                    {{/each}}
+                  </tbody>
+                </table>
+              </div>
+            {{else}}
+              <p class="text-sm text-gray-500 dark:text-gray-400">No sessions found for the selected range.</p>
+            {{/if}}
+          </div>
+
+          <div class="space-y-4 mt-4">
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Daily Aggregation (All Days)</h4>
+            {{#if hasTicketHistoryDailyTotals}}
+              <ul class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {{#each ticketHistoryData.dailyTotals}}
+                  <li class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div>
+                      <p class="text-sm font-medium text-gray-800 dark:text-gray-100">{{dateLabel}}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">{{sessionCount}} session(s)</p>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{formatDurationText totalSeconds}}</span>
+                  </li>
+                {{/each}}
+              </ul>
+            {{else}}
+              <p class="text-sm text-gray-500 dark:text-gray-400">No daily history available yet.</p>
             {{/if}}
           </div>
         {{/if}}

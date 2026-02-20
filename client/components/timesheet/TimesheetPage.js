@@ -135,6 +135,71 @@ const getColumnDefinitions = (isEditable) => [
   }
 ];
 
+// Summary column definitions (grouped by day)
+const getSummaryColumnDefinitions = () => [
+  { 
+    headerName: 'Date', 
+    field: 'date', 
+    flex: 1, 
+    sortable: true, 
+    filter: 'agDateColumnFilter',
+    valueFormatter: p => formatDateForDisplay(p.value),
+    cellClass: 'font-medium'
+  },
+  { 
+    headerName: 'Total Hours', 
+    field: 'totalSeconds', 
+    flex: 1, 
+    sortable: true, 
+    filter: 'agNumberColumnFilter',
+    valueFormatter: p => (p.data?.hasActiveSession ? 'Running...' : formatTimeHoursMinutes(p.value)),
+    cellClass: 'text-info font-bold'
+  },
+  { 
+    headerName: 'Clock-in', 
+    field: 'firstClockIn', 
+    flex: 1, 
+    sortable: true, 
+    filter: 'agDateColumnFilter',
+    valueFormatter: p => p.value ? new Date(p.value).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'No activity'
+  },
+  { 
+    headerName: 'Clock-out', 
+    field: 'lastClockOut', 
+    flex: 1, 
+    sortable: true, 
+    filter: 'agDateColumnFilter',
+    valueFormatter: p => {
+      if (p.data?.hasActiveSession) return 'Not clocked out';
+      if (!p.value) return 'Not clocked out';
+      return new Date(p.value).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+  },
+  { 
+    headerName: 'Sessions', 
+    field: 'sessionCount', 
+    flex: 0.6, 
+    sortable: true, 
+    filter: 'agNumberColumnFilter',
+    cellClass: 'font-medium'
+  },
+  { 
+    headerName: 'Status', 
+    field: 'hasActiveSession', 
+    flex: 0.7, 
+    sortable: true, 
+    filter: 'agSetColumnFilter',
+    valueFormatter: p => p.value ? 'Active' : 'Completed',
+    cellRenderer: p => {
+      if (p.value) {
+        return '<span class="text-success font-semibold flex items-center gap-1"><span class="inline-block w-2 h-2 bg-success rounded-full animate-pulse"></span>Active</span>';
+      }
+      return '<span class="font-medium">Completed</span>';
+    },
+    filterParams: { values: ['Active', 'Completed'] }
+  }
+];
+
 // Utility functions
 const createDateRange = (startDateStr, endDateStr) => ({
   start: new Date(startDateStr + 'T00:00:00'),
@@ -309,6 +374,7 @@ Template.timesheet.onCreated(function () {
   instance.selectedPreset = new ReactiveVar('today');
   instance.editMode = new ReactiveVar(false);
   instance.canEdit = new ReactiveVar(false);
+  instance.detailMode = new ReactiveVar(false); // false = summary (daily totals), true = detailed (all sessions)
   instance.pendingEdits = new Map(); // eventId -> { startTimestamp?, endTimestamp? }
   
   // Helper to process a cell edit value
@@ -494,6 +560,46 @@ Template.timesheet.onCreated(function () {
       .sort((a, b) => b.startTime - a.startTime);
   };
   
+  // Compute daily summary (grouped by date)
+  instance.computeDailySummary = () => {
+    const sessions = instance.computeSessionData();
+    if (!sessions.length) return [];
+    
+    const dayMap = new Map();
+    sessions.forEach(session => {
+      const dateKey = session.date;
+      if (!dayMap.has(dateKey)) {
+        dayMap.set(dateKey, {
+          date: dateKey,
+          totalSeconds: 0,
+          firstClockIn: null,
+          lastClockOut: null,
+          hasActiveSession: false,
+          sessionCount: 0
+        });
+      }
+      const day = dayMap.get(dateKey);
+      day.sessionCount++;
+      day.totalSeconds += (session.duration || 0);
+      
+      if (session.isActive) day.hasActiveSession = true;
+      
+      const startMs = session.startTime instanceof Date ? session.startTime.getTime() : session.startTime;
+      if (startMs && (!day.firstClockIn || startMs < day.firstClockIn)) {
+        day.firstClockIn = startMs;
+      }
+      
+      if (session.endTime) {
+        const endMs = session.endTime instanceof Date ? session.endTime.getTime() : session.endTime;
+        if (endMs && (!day.lastClockOut || endMs > day.lastClockOut)) {
+          day.lastClockOut = endMs;
+        }
+      }
+    });
+    
+    return Array.from(dayMap.values()).sort((a, b) => b.date.localeCompare(a.date));
+  };
+  
   // Grid initialization
   instance.autorun(() => {
     if (!instance.userId) return;
@@ -517,17 +623,24 @@ Template.timesheet.onCreated(function () {
   // Reactive grid updates
   instance.autorun(() => {
     if (!instance.userId || !instance.gridApi) return;
+    instance.detailMode.get(); // reactive dependency
     instance.updateGridData();
   });
   
   // Optimized grid update method
   instance.updateGridData = () => {
-    const rows = instance.computeSessionData();
+    const isDetail = instance.detailMode.get();
+    const rows = isDetail ? instance.computeSessionData() : instance.computeDailySummary();
+    
     if (instance.gridApi) {
+      // Update column definitions based on view mode
+      const colDefs = isDetail ? getColumnDefinitions(instance.editMode.get()) : getSummaryColumnDefinitions();
       if (instance.gridApi.setGridOption) {
+        instance.gridApi.setGridOption('columnDefs', colDefs);
         instance.gridApi.setGridOption('rowData', rows);
-      } else if (instance.gridApi.setRowData) {
-        instance.gridApi.setRowData(rows);
+      } else {
+        if (instance.gridApi.setColumnDefs) instance.gridApi.setColumnDefs(colDefs);
+        if (instance.gridApi.setRowData) instance.gridApi.setRowData(rows);
       }
     }
     instance.updateSessionCount(rows.length);
@@ -580,6 +693,17 @@ Template.timesheet.helpers({
     const userId = Template.instance().userId;
     return userId ? getUserEmail(userId) : 'Unknown Email';
   },
+  userInitial: () => {
+    const userId = Template.instance().userId;
+    const name = userId ? getUserName(userId) : '';
+    if (name && name !== 'Unknown User') {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      return name.slice(0, 2).toUpperCase();
+    }
+    const email = userId ? getUserEmail(userId) : '';
+    return email && email !== 'Unknown Email' ? email.slice(0, 2).toUpperCase() : '?';
+  },
   isOwnTimesheet: () => {
     const userId = Template.instance().userId;
     return userId === Meteor.userId();
@@ -589,6 +713,21 @@ Template.timesheet.helpers({
   isPresetSelected: (presetName) => Template.instance().selectedPreset.get() === presetName,
   selectedPreset: () => Template.instance().selectedPreset.get(),
   isEditMode: () => Template.instance().editMode.get(),
+  isDetailMode: () => Template.instance().detailMode.get(),
+  
+  // Daily summary data for mobile cards (summary view)
+  dailySummaryData() {
+    return Template.instance().computeDailySummary();
+  },
+  
+  formatHoursForSummary(totalSeconds) {
+    return formatTimeHoursMinutes(totalSeconds || 0);
+  },
+  
+  formatTimeForSummary(timestamp) {
+    if (!timestamp) return '';
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  },
   
   // Mobile card view helpers
   sessionData() {
@@ -687,6 +826,14 @@ Template.timesheet.events({
     const currentEnd = t.endDate.get();
     t.startDate.set(currentStart);
     t.endDate.set(currentEnd);
+  },
+  
+  'click #toggleDetailMode': (e, t) => {
+    const newMode = !t.detailMode.get();
+    t.detailMode.set(newMode);
+    if (t.gridApi) {
+      t.updateGridData();
+    }
   },
   
   'click #editClockins': (e, t) => {
@@ -820,6 +967,21 @@ Template.timesheet.events({
       t.selectedPreset.set('custom');
       t.updateGridData();
     }
+  },
+
+  'change #timesheetRangeSelect': (e, t) => {
+    const range = e.currentTarget.value;
+    if (!range) return;
+    if (range === 'custom') {
+      t.selectedPreset.set('custom');
+      t.$('#start-date').focus();
+      return;
+    }
+    if (range === 'today') t.handleDatePreset(getToday(), getToday(), 'today');
+    if (range === 'yesterday') t.handleDatePreset(getYesterday(), getYesterday(), 'yesterday');
+    if (range === 'last7') t.handleDatePreset(getDaysAgo(6), getToday(), 'last7');
+    if (range === 'thisweek') t.handleDatePreset(getThisWeekStart(), getToday(), 'thisweek');
+    if (range === 'last14') t.handleDatePreset(getDaysAgo(13), getToday(), 'last14');
   },
   
   'click #preset-today': (e, t) => 

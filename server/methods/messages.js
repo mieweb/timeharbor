@@ -7,11 +7,12 @@ import { getUserDisplayName } from '../utils/userHelpers.js';
 const buildThreadId = (teamId, adminId, memberId) => `${teamId}:${adminId}:${memberId}`;
 
 export const messageMethods = {
-  async 'messages.send'({ teamId, toUserId, text, adminId }) {
+  async 'messages.send'({ teamId, toUserId, text, adminId, ticketId }) {
     check(teamId, String);
     check(toUserId, String);
     check(text, String);
     check(adminId, String);
+    if (ticketId !== undefined) check(ticketId, String);
     if (!this.userId) throw new Meteor.Error('not-authorized');
 
     const trimmed = text.trim();
@@ -50,7 +51,11 @@ export const messageMethods = {
       throw new Meteor.Error('not-authorized', 'Member not in team');
     }
 
-    const messageId = await Messages.insertAsync({
+    // Get sender name for display
+    const fromUser = await Meteor.users.findOneAsync(this.userId);
+    const senderName = getUserDisplayName(fromUser, 'Unknown');
+
+    const messageDoc = {
       threadId,
       teamId,
       adminId: threadAdminId,
@@ -58,17 +63,23 @@ export const messageMethods = {
       fromUserId: this.userId,
       toUserId,
       text: trimmed,
+      senderName,
       createdAt: new Date()
-    });
+    };
+    
+    // Add ticketId if provided
+    if (ticketId) {
+      messageDoc.ticketId = ticketId;
+    }
+
+    const messageId = await Messages.insertAsync(messageDoc);
 
     // Push notify recipient
     try {
-      const fromUser = await Meteor.users.findOneAsync(this.userId);
-      const fromName = getUserDisplayName(fromUser, 'Someone');
       const url = `/member/${teamId}/${memberId}?adminId=${threadAdminId}`;
       const notificationData = {
         title: 'Time Harbor',
-        body: `${fromName}: ${trimmed}`,
+        body: `${senderName}: ${trimmed}`,
         icon: '/timeharbor-icon.png',
         badge: '/timeharbor-icon.png',
         tag: `msg-${messageId}`,
@@ -78,6 +89,7 @@ export const messageMethods = {
           userId: memberId,
           adminId: threadAdminId,
           threadId,
+          ticketId: ticketId || null,
           url
         }
       };

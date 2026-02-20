@@ -18,6 +18,50 @@ const profileDropdownOpen = new ReactiveVar(false);
 const STORAGE_TEAM_ID = 'timeharbor-current-team-id';
 export const selectedTeamId = new ReactiveVar(null);
 
+const SECTION_META = [
+  { match: (path) => path === '/', title: 'Home', icon: 'fa-solid fa-house' },
+  { match: (path) => path.startsWith('/teams'), title: 'Teams', icon: 'fa-solid fa-people-group' },
+  { match: (path) => path.startsWith('/tickets'), title: 'Tickets', icon: 'fa-solid fa-ticket' },
+  { match: (path) => path.startsWith('/calendar'), title: 'Calendar', icon: 'fa-solid fa-calendar-days' },
+  { match: (path) => path.startsWith('/notifications'), title: 'Notifications', icon: 'fa-solid fa-bell' },
+  { match: (path) => path.startsWith('/profile'), title: 'Profile', icon: 'fa-solid fa-user' },
+  { match: (path) => path.startsWith('/admin'), title: 'Admin', icon: 'fa-solid fa-shield-halved' },
+  { match: (path) => path.startsWith('/timesheet'), title: 'Timesheet', icon: 'fa-solid fa-table-list' },
+  { match: (path) => path.startsWith('/member'), title: 'Member Activity', icon: 'fa-solid fa-chart-simple' },
+  { match: (path) => path.startsWith('/guide'), title: 'Guide', icon: 'fa-solid fa-book-open' },
+];
+
+function normalizeNavPath(pathOrRoute) {
+  if (!pathOrRoute || pathOrRoute === '/' || pathOrRoute === 'home') {
+    return '/';
+  }
+  return pathOrRoute.startsWith('/') ? pathOrRoute : `/${pathOrRoute}`;
+}
+
+function getCurrentPath() {
+  const current = FlowRouter.current();
+  const raw = (current && current.path) ? current.path : '/';
+  const withoutHash = raw.split('#')[0];
+  const withoutQuery = withoutHash.split('?')[0];
+  if (withoutQuery.length > 1 && withoutQuery.endsWith('/')) {
+    return withoutQuery.slice(0, -1);
+  }
+  return withoutQuery;
+}
+
+function getSectionMeta(path) {
+  const cleanPath = typeof path === 'string' ? path : '/';
+  const entry = SECTION_META.find(({ match }) => {
+    try {
+      return typeof match === 'function' ? match(cleanPath) : cleanPath === match;
+    } catch (error) {
+      console.error('Failed to match section meta', error);
+      return false;
+    }
+  });
+  return entry || SECTION_META[0];
+}
+
 export const currentTime = new ReactiveVar(Date.now());
 setInterval(() => currentTime.set(Date.now()), 1000);
 
@@ -171,10 +215,22 @@ if (Template.mainLayout) {
       return (route && route.path) ? route.path : '/';
     },
     isActiveRoute(pathOrRoute) {
-      const current = FlowRouter.current();
-      const path = (current && current.path) ? current.path : '/';
-      if (pathOrRoute === '/' || pathOrRoute === 'home') return path === '/';
-      return path === pathOrRoute || path === '/' + pathOrRoute;
+      FlowRouter.watchPathChange();
+      const path = getCurrentPath();
+      const target = normalizeNavPath(pathOrRoute);
+      if (target === '/') return path === '/';
+      if (path === target) return true;
+      const withSlash = `${target}/`;
+      const withQuery = `${target}?`;
+      return path.startsWith(withSlash) || path.startsWith(withQuery);
+    },
+    currentSectionTitle() {
+      FlowRouter.watchPathChange();
+      return getSectionMeta(getCurrentPath()).title;
+    },
+    currentSectionIcon() {
+      FlowRouter.watchPathChange();
+      return getSectionMeta(getCurrentPath()).icon || null;
     },
     userTeamsList() {
       return Teams.find({}).fetch();
@@ -474,6 +530,14 @@ if (Template.mainLayout) {
       const href = event.currentTarget.getAttribute('data-nav-href');
       closeMobileMenu();
       if (href) FlowRouter.go(href);
+    },
+    'click #mobileHeaderJoinTeam'(event) {
+      event.preventDefault();
+      Session.set('openJoinTeamModal', true);
+    },
+    'click #mobileHeaderCreateTeam'(event) {
+      event.preventDefault();
+      Session.set('openCreateTeamModal', true);
     },
   });
 

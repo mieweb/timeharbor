@@ -1,12 +1,14 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
+import { Session } from 'meteor/session';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { formatTime, formatTimeHoursMinutes, formatDate, formatTimestampHoursMinutes, calculateTotalTime } from '../../utils/TimeUtils.js';
 import { getTeamName, getUserEmail, getUserName } from '../../utils/UserTeamUtils.js';
 import { dateToLocalString, formatDateForDisplay, getTodayBoundaries, getWeekBoundaries, getDayBoundaries } from '../../utils/DateUtils.js';
 import { Grid } from 'ag-grid-community';
 import { isTeamsLoading, selectedTeamId } from '../layout/MainLayout.js';
+import { OPEN_TICKET_HISTORY_SESSION_KEY, OPEN_TICKET_HISTORY_RETURN_ROUTE_KEY } from '../../utils/UiStateKeys.js';
 import '../notifications/NotificationSettings.js';
 
 // Constants
@@ -15,6 +17,15 @@ const GRID_CONFIG = {
   PAGE_SIZES: [10, 20, 50, 100],
   DEFAULT_SORT_COLUMN: 'startTime',
   DEFAULT_SORT_ORDER: 'desc'
+};
+
+const HOME_TEXT = {
+  ticketsLabel: 'Tickets',
+  totalTodayLabel: 'Total today',
+  noTicketsLabel: 'No tickets for this day',
+  activeTicketLabel: 'Active ticket',
+  ticketHistoryLabel: 'View ticket history',
+  ticketLinkLabel: (title) => `Open GitHub issue for ${title}`
 };
 
 // Utility functions
@@ -230,6 +241,16 @@ Template.home.onCreated(function () {
           let lastClockOut = null;
           let hasActiveSession = false;
           const ticketMap = new Map();
+          const nowMs = Date.now();
+
+          const sessionOverlapsDay = (session) => {
+            if (!session?.startTimestamp) return false;
+            const sessionStart = session.startTimestamp;
+            const sessionEnd = session.endTimestamp ?? nowMs;
+            const overlapStart = Math.max(sessionStart, dayBoundaries.start);
+            const overlapEnd = Math.min(sessionEnd, dayBoundaries.end);
+            return overlapStart < overlapEnd;
+          };
 
           dayClockEvents.forEach(clockEvent => {
             const sessionStart = clockEvent.startTimestamp;
@@ -256,14 +277,24 @@ Template.home.onCreated(function () {
                 hasActiveSession = true;
               }
               
-              clockEvent.tickets?.forEach(ticket => {
-                const ticketDoc = Tickets.findOne(ticket.ticketId);
+              clockEvent.tickets?.forEach(ticketEntry => {
+                const ticketDoc = Tickets.findOne(ticketEntry.ticketId);
                 if (!ticketDoc) return;
+                const sessions = Array.isArray(ticketEntry.sessions) ? ticketEntry.sessions : [];
+                const hasOverlap = sessions.some(sessionOverlapsDay);
+                if (!hasOverlap) return;
+
+                const isActive = !clockEvent.endTime && sessions.some(session => session?.endTimestamp == null);
                 if (!ticketMap.has(ticketDoc._id)) {
                   ticketMap.set(ticketDoc._id, {
+                    id: ticketDoc._id,
                     title: ticketDoc.title,
-                    url: ticketDoc.github || null
+                    url: ticketDoc.github || null,
+                    isActive
                   });
+                } else if (isActive) {
+                  const existing = ticketMap.get(ticketDoc._id);
+                  ticketMap.set(ticketDoc._id, { ...existing, isActive: true });
                 }
               });
             }
@@ -373,19 +404,24 @@ Template.home.helpers({
     return Template.instance().computeTeamMemberSummary();
   },
   
-  formatDateForCard(dateStr) {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  },
-  
   formatHoursForCard(totalSeconds) {
     return formatTimeHoursMinutes(totalSeconds || 0);
   },
-  
-  formatTimeForCard(timestamp) {
-    if (!timestamp) return '';
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  hasTickets(tickets) {
+    return Array.isArray(tickets) && tickets.length > 0;
+  },
+
+  homeText(key) {
+    return HOME_TEXT[key] || '';
+  },
+
+  ticketHistoryAriaLabel(title) {
+    return `${HOME_TEXT.ticketHistoryLabel}: ${title || ''}`.trim();
+  },
+
+  ticketLinkAriaLabel(title) {
+    return HOME_TEXT.ticketLinkLabel(title || 'ticket');
   },
   
   // Personal dashboard helpers
@@ -646,6 +682,26 @@ Template.home.events({
     t.$('#end-date').val(sundayStr);
     t.selectedPreset.set('thisweek');
   },
+
+  'change #teamDashboardRangeSelect': (e, t) => {
+    const range = e.currentTarget.value;
+    if (!range) return;
+    if (range === 'custom') {
+      t.selectedPreset.set('custom');
+      t.$('#start-date').focus();
+      return;
+    }
+    const presetButtonMap = {
+      today: 'preset-today',
+      yesterday: 'preset-yesterday',
+      last7: 'preset-last7',
+      thisweek: 'preset-thisweek',
+      last14: 'preset-last14'
+    };
+    const targetButtonId = presetButtonMap[range];
+    const targetButton = targetButtonId ? document.getElementById(targetButtonId) : null;
+    if (targetButton) targetButton.click();
+  },
   
   'click #viewMyTimesheet': (e, t) => {
     FlowRouter.go(`/timesheet/${Meteor.userId()}`);
@@ -661,6 +717,16 @@ Template.home.events({
   
   'click #viewGuide': (e, t) => {
     FlowRouter.go('/guide');
+  },
+
+  'click .ticket-history-btn': (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const ticketId = e.currentTarget?.dataset?.ticketId;
+    if (!ticketId) return;
+    Session.set(OPEN_TICKET_HISTORY_RETURN_ROUTE_KEY, '/');
+    Session.set(OPEN_TICKET_HISTORY_SESSION_KEY, ticketId);
+    FlowRouter.go('/tickets');
   },
   
   // Mobile card click - navigate to user timesheet

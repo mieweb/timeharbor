@@ -1,7 +1,12 @@
 import { Meteor } from 'meteor/meteor';
-import { check } from 'meteor/check';
+import { check, Match } from 'meteor/check';
 import { Notifications } from '../../collections.js';
 import { getVapidPublicKey, notifyUser } from '../utils/pushNotifications.js';
+
+const idStr = (id) => {
+  if (!id) return '';
+  return typeof id === 'string' ? id : (id._str || id.toHexString?.() || String(id));
+};
 
 
 export const notificationMethods = {
@@ -156,11 +161,16 @@ export const notificationMethods = {
    * Mark a single notification as read (inbox)
    */
   async 'notifications.markAsRead'(notificationId) {
-    check(notificationId, String);
+    check(notificationId, Match.Any);
     if (!this.userId) throw new Meteor.Error('not-authorized');
-    const n = await Notifications.findOneAsync({ _id: notificationId, userId: this.userId });
-    if (!n) return;
-    await Notifications.updateAsync(notificationId, { $set: { read: true } });
+    if (notificationId === undefined || notificationId === null) {
+      throw new Meteor.Error('invalid-argument', 'notificationId is required');
+    }
+    const targetId = idStr(notificationId);
+    const notifications = await Notifications.find({ userId: this.userId }, { fields: { _id: 1 } }).fetchAsync();
+    const match = notifications.find((n) => idStr(n._id) === targetId);
+    if (!match) return;
+    await Notifications.updateAsync(match._id, { $set: { read: true } });
   },
 
   /**
@@ -175,13 +185,23 @@ export const notificationMethods = {
    * Delete one or more notifications for the current user
    */
   async 'notifications.delete'(notificationIds) {
-    check(notificationIds, [String]);
+    check(notificationIds, Match.Any);
     if (!this.userId) throw new Meteor.Error('not-authorized');
-    if (!notificationIds || notificationIds.length === 0) {
+    const idsInput = Array.isArray(notificationIds) ? notificationIds : [notificationIds];
+    if (!idsInput || idsInput.length === 0) {
       throw new Meteor.Error('invalid-argument', 'No notification IDs provided');
     }
+    // Normalize IDs and resolve against user's actual notification IDs (supports string + ObjectID records)
+    const requestedIds = new Set(idsInput.map(id => idStr(id)).filter(Boolean));
+    const userNotifications = await Notifications.find({ userId: this.userId }, { fields: { _id: 1 } }).fetchAsync();
+    const removableIds = userNotifications
+      .filter((n) => requestedIds.has(idStr(n._id)))
+      .map((n) => n._id);
+    if (removableIds.length === 0) {
+      return { success: true, deletedCount: 0 };
+    }
     // Only delete notifications that belong to the current user
-    const result = await Notifications.removeAsync({ _id: { $in: notificationIds }, userId: this.userId });
+    const result = await Notifications.removeAsync({ _id: { $in: removableIds }, userId: this.userId });
     return { success: true, deletedCount: result };
   }
 };

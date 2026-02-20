@@ -207,17 +207,20 @@ export async function saveNotificationsToInbox(teamId, notificationData) {
   if (!team) return;
   const adminIds = [...(team.admins || []), team.leader].filter(Boolean);
   const now = new Date();
-  const inserts = adminIds.map((userId) => ({
-    userId,
-    title: notificationData.title || 'Time Harbor',
-    body: notificationData.body || '',
-    data: notificationData.data || {},
-    read: false,
-    createdAt: now
-  }));
-  if (inserts.length > 0) {
-    await Notifications.rawCollection().insertMany(inserts);
-  }
+  if (adminIds.length === 0) return;
+
+  await Promise.all(
+    adminIds.map((userId) =>
+      Notifications.insertAsync({
+        userId,
+        title: notificationData.title || 'Time Harbor',
+        body: notificationData.body || '',
+        data: notificationData.data || {},
+        read: false,
+        createdAt: now
+      })
+    )
+  );
 }
 
 /**

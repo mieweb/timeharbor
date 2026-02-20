@@ -1,8 +1,9 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Tracker } from 'meteor/tracker';
+import { Session } from 'meteor/session';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
-import { Teams } from '../../../collections.js';
+import { Teams, ClockEvents } from '../../../collections.js';
 import { selectedTeamId } from '../layout/MainLayout.js';
 
 Template.teams.onCreated(function () {
@@ -17,6 +18,12 @@ Template.teams.onCreated(function () {
   this.isRemoveMemberModalOpen = new ReactiveVar(false);
   this.editingTeamName = new ReactiveVar('');
   this.memberToRemove = new ReactiveVar(null);
+
+  // Search & Add member
+  this.isSearchOpen = new ReactiveVar(false);
+  this.memberSearchQuery = new ReactiveVar('');
+  this.addMemberError = new ReactiveVar(null);
+  this.addMemberSuccess = new ReactiveVar(null);
 
   // Use header's selected team as "current team"
   this.autorun(() => {
@@ -39,6 +46,32 @@ Template.teams.onCreated(function () {
       this.selectedTeamUsers.set([]);
     }
   });
+
+  // Listen for mobile header join/create signals
+  this.autorun(() => {
+    if (Session.get('openJoinTeamModal')) {
+      Session.set('openJoinTeamModal', false);
+      const instance = this;
+      instance.joinError.set(null);
+      instance.isJoinModalOpen.set(true);
+      Tracker.afterFlush(() => {
+        document.getElementById('joinTeamModal')?.showModal();
+        const input = document.getElementById('joinTeamCodeInput');
+        if (input) { input.value = ''; input.focus(); }
+      });
+    }
+    if (Session.get('openCreateTeamModal')) {
+      Session.set('openCreateTeamModal', false);
+      const instance = this;
+      instance.createdTeamCode.set(null);
+      instance.isCreateModalOpen.set(true);
+      Tracker.afterFlush(() => {
+        document.getElementById('createTeamModal')?.showModal();
+        const input = document.getElementById('createTeamNameInput');
+        if (input) { input.value = ''; input.focus(); }
+      });
+    }
+  });
 });
 
 Template.teams.helpers({
@@ -54,6 +87,7 @@ Template.teams.helpers({
     const membersWithRoles = users.map((user) => ({
       ...user,
       isAdmin: admins.includes(user.id),
+      isOnline: !!ClockEvents.findOne({ userId: user.id, teamId: id, endTime: null }),
     }));
 
     return {
@@ -112,10 +146,33 @@ Template.teams.helpers({
   memberToRemove() {
     return Template.instance().memberToRemove.get();
   },
+  isSearchOpen() {
+    return Template.instance().isSearchOpen.get();
+  },
+  memberSearchQuery() {
+    return Template.instance().memberSearchQuery.get();
+  },
+  filteredMembers() {
+    const team = Template.teams.__helpers.get('selectedTeam').call(this);
+    if (!team) return [];
+    const query = (Template.instance().memberSearchQuery.get() || '').trim().toLowerCase();
+    if (!query) return team.members;
+    return team.members.filter(m => {
+      const name = (m.name || '').toLowerCase();
+      const email = (m.email || '').toLowerCase();
+      return name.includes(query) || email.includes(query);
+    });
+  },
+  addMemberError() {
+    return Template.instance().addMemberError.get();
+  },
+  addMemberSuccess() {
+    return Template.instance().addMemberSuccess.get();
+  },
 });
 
 Template.teams.events({
-  'click #showJoinTeamForm'(e, t) {
+  'click .join-team-trigger'(e, t) {
     t.joinError.set(null);
     t.isJoinModalOpen.set(true);
     Tracker.afterFlush(() => {
@@ -127,7 +184,7 @@ Template.teams.events({
       }
     });
   },
-  'click #showCreateTeamForm'(e, t) {
+  'click .create-team-trigger'(e, t) {
     t.createdTeamCode.set(null);
     t.isCreateModalOpen.set(true);
     Tracker.afterFlush(() => {
@@ -199,7 +256,7 @@ Template.teams.events({
       setTimeout(() => { btn.textContent = orig; }, 2000);
     }).catch(() => alert('Failed to copy'));
   },
-  'click #copyTeamCode'(e, t) {
+  'click .copyTeamCode, click #copyTeamCode'(e, t) {
     const teamId = selectedTeamId.get();
     const joinCode = Teams.findOne(teamId)?.code;
     if (joinCode) {
@@ -358,5 +415,52 @@ Template.teams.events({
     const userId = e.currentTarget.getAttribute('data-user-id');
     const teamId = selectedTeamId.get();
     if (userId && teamId) FlowRouter.go(`/member/${teamId}/${userId}`);
+  },
+  // Search members
+  'click #openMemberSearch'(e, t) {
+    t.isSearchOpen.set(true);
+    Tracker.afterFlush(() => {
+      document.getElementById('memberSearchInput')?.focus();
+    });
+  },
+  'click #clearMemberSearch'(e, t) {
+    t.memberSearchQuery.set('');
+    t.isSearchOpen.set(false);
+  },
+  'input #memberSearchInput'(e, t) {
+    t.memberSearchQuery.set(e.target.value);
+  },
+  // Add member modal
+  'click #openAddMemberModal'(e, t) {
+    t.addMemberError.set(null);
+    t.addMemberSuccess.set(null);
+    Tracker.afterFlush(() => {
+      document.getElementById('addMemberModal')?.showModal();
+      const input = document.getElementById('addMemberEmailInput');
+      if (input) { input.value = ''; input.focus(); }
+    });
+  },
+  'click #closeAddMemberModal, click #closeAddMemberModal2, click #addMemberModalBackdrop'(e, t) {
+    document.getElementById('addMemberModal')?.close();
+    t.addMemberError.set(null);
+    t.addMemberSuccess.set(null);
+  },
+  'submit #addMemberForm'(e, t) {
+    e.preventDefault();
+    const email = (e.target.memberEmail?.value || '').trim().toLowerCase();
+    if (!email) return;
+    const teamId = selectedTeamId.get();
+    if (!teamId) return;
+    t.addMemberError.set(null);
+    t.addMemberSuccess.set(null);
+    Meteor.call('inviteTeamMember', teamId, email, (err, result) => {
+      if (err) {
+        t.addMemberError.set(err.reason || err.message);
+        return;
+      }
+      t.addMemberSuccess.set(result || 'Invite sent successfully!');
+      const input = document.getElementById('addMemberEmailInput');
+      if (input) input.value = '';
+    });
   },
 });

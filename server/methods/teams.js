@@ -2,8 +2,9 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import 'meteor/accounts-password';
 import { check } from 'meteor/check';
-import { Teams } from '../../collections.js';
+import { Teams, Notifications } from '../../collections.js';
 import { getUserDisplayName, getUserDisplayEmail } from '../utils/userHelpers.js';
+import { notifyUser } from '../utils/pushNotifications.js';
 
 function generateTeamCode() {
   return Math.random().toString(36).substr(2, 8).toUpperCase();
@@ -184,6 +185,73 @@ export const teamMethods = {
     await Teams.updateAsync(teamId, {
       $pull: { members: userId, admins: userId },
     });
+  },
+
+  // Invite a user to join the team by email — sends in-app + push notification
+  async inviteTeamMember(teamId, email) {
+    check(teamId, String);
+    check(email, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+
+    const team = await Teams.findOneAsync(teamId);
+    if (!team) {
+      throw new Meteor.Error('not-found', 'Team not found');
+    }
+
+    // Only team members can invite
+    if (!Array.isArray(team.members) || !team.members.includes(this.userId)) {
+      throw new Meteor.Error('forbidden', 'You must be a member of this team to invite others');
+    }
+
+    // Find the invited user by email
+    const invitedUser = await Meteor.users.findOneAsync({
+      $or: [
+        { 'emails.address': { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
+        { 'services.google.email': { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } }
+      ]
+    });
+
+    if (!invitedUser) {
+      throw new Meteor.Error('not-found', 'No user found with that email. They need to sign up first.');
+    }
+
+    if (team.members.includes(invitedUser._id)) {
+      throw new Meteor.Error('already-member', 'This user is already a member of the team.');
+    }
+
+    // Get inviter name
+    const inviter = await Meteor.users.findOneAsync(this.userId);
+    const inviterName = getUserDisplayName(inviter, 'Someone');
+
+    const title = 'Team Invite';
+    const body = `${inviterName} invited you to join their team "${team.name}" using this code "${team.code}"`;
+
+    // Create in-app notification
+    await Notifications.insertAsync({
+      userId: invitedUser._id,
+      title,
+      body,
+      data: {
+        type: 'team-invite',
+        teamId: team._id,
+        teamCode: team.code,
+        inviterId: this.userId,
+      },
+      read: false,
+      createdAt: new Date(),
+    });
+
+    // Send push notification
+    try {
+      await notifyUser(invitedUser._id, { title, body });
+    } catch (err) {
+      console.error('Failed to send invite push notification:', err);
+    }
+
+    return `Invite sent to ${email}!`;
   },
 
   // Admin-only: set a password for a team member

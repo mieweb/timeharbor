@@ -2,12 +2,14 @@ import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Tracker } from 'meteor/tracker';
 import { Session } from 'meteor/session';
+import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
 import { Teams, Tickets, ClockEvents } from '../../../collections.js';
 import { currentTime, selectedTeamId } from '../layout/MainLayout.js';
 import { formatTime, formatDurationText } from '../../utils/TimeUtils.js';
 import { sessionManager } from '../../utils/clockSession.js';
 import { extractUrlTitle, openExternalUrl, normalizeReferenceUrl } from '../../utils/UrlUtils.js';
 import { getUserTeams, getUserName } from '../../utils/UserTeamUtils.js';
+import { OPEN_TICKET_HISTORY_SESSION_KEY, OPEN_TICKET_HISTORY_RETURN_ROUTE_KEY } from '../../utils/UiStateKeys.js';
 
 // Utility functions
 const utils = {
@@ -82,6 +84,119 @@ const ticketManager = {
 
 const HIGHLIGHT_DURATION_MS = 2000;
 
+const TICKET_HISTORY_DEFAULT_RANGE = 'today';
+const TICKET_HISTORY_RANGES = [
+  { value: 'today', label: 'Today' },
+  { value: 'thisWeek', label: 'This Week' },
+  { value: 'thisMonth', label: 'This Month' },
+  { value: 'thisQuarter', label: 'This Quarter' },
+  { value: 'thisYear', label: 'This Year' },
+  { value: 'custom', label: 'Custom' }
+];
+
+function formatHistoryClockTime(timestamp) {
+  if (typeof timestamp !== 'number') return '—';
+  return new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function getLiveHistoryDeltaSeconds(historyData, nowMs) {
+  if (!historyData?.hasRunningSession || typeof historyData.generatedAt !== 'number') return 0;
+  return Math.max(0, Math.floor((nowMs - historyData.generatedAt) / 1000));
+}
+
+function getLiveRangeDeltaSeconds(historyData, nowMs) {
+  if (!historyData?.hasRunningSession || typeof historyData.generatedAt !== 'number') return 0;
+  if (typeof historyData.rangeStart !== 'number' || typeof historyData.rangeEnd !== 'number') return 0;
+
+  const overlapStart = Math.max(historyData.generatedAt, historyData.rangeStart);
+  const overlapEnd = Math.min(nowMs, historyData.rangeEnd);
+  if (overlapStart >= overlapEnd) return 0;
+  return Math.floor((overlapEnd - overlapStart) / 1000);
+}
+
+function buildTicketHistoryOptions(templateInstance) {
+  const rangeType = templateInstance.ticketHistoryRangeType?.get() || TICKET_HISTORY_DEFAULT_RANGE;
+  const options = { rangeType };
+  if (rangeType === 'custom') {
+    const customStartDate = templateInstance.ticketHistoryCustomStartDate?.get();
+    const customEndDate = templateInstance.ticketHistoryCustomEndDate?.get();
+    if (!customStartDate || !customEndDate) return null;
+    options.customStartDate = customStartDate;
+    options.customEndDate = customEndDate;
+  }
+  return options;
+}
+
+function loadTicketHistory(templateInstance) {
+  const ticketId = templateInstance.ticketIdForHistory?.get();
+  if (!ticketId) return;
+  const options = buildTicketHistoryOptions(templateInstance);
+  if (!options) return;
+
+  templateInstance.ticketHistoryLoading.set(true);
+  templateInstance.ticketHistoryError.set(null);
+  templateInstance.ticketHistoryData.set(null);
+
+  Meteor.call('getTicketTimeHistory', ticketId, options, (err, result) => {
+    templateInstance.ticketHistoryLoading.set(false);
+    if (err) {
+      templateInstance.ticketHistoryError.set(err.reason || err.message || 'Failed to load history');
+      templateInstance.ticketHistoryData.set(null);
+      return;
+    }
+
+    const selectedSessions = Array.isArray(result.selectedSessions)
+      ? result.selectedSessions.map((session) => ({
+        ...session,
+        startTimeText: formatHistoryClockTime(session.startTimestamp),
+        endTimeText: session.isOngoing ? 'Ongoing' : formatHistoryClockTime(session.endTimestamp),
+        durationText: formatDurationText(session.durationSeconds || 0)
+      }))
+      : [];
+
+    templateInstance.ticketHistoryData.set({
+      ...result,
+      selectedSessions
+    });
+  });
+}
+
+function openTicketHistoryModal(templateInstance, ticketId) {
+  if (!ticketId) return;
+  templateInstance.ticketHistoryRangeType.set(TICKET_HISTORY_DEFAULT_RANGE);
+  templateInstance.ticketHistoryCustomStartDate.set(null);
+  templateInstance.ticketHistoryCustomEndDate.set(null);
+  templateInstance.ticketIdForHistory.set(ticketId);
+  Tracker.afterFlush(() => {
+    const modal = document.getElementById('ticketHistoryModal');
+    if (modal) {
+      const onClose = () => {
+        finalizeTicketHistoryClose(templateInstance);
+        modal.removeEventListener('close', onClose);
+      };
+      modal.addEventListener('close', onClose);
+      modal.showModal();
+    }
+  });
+  loadTicketHistory(templateInstance);
+}
+
+function finalizeTicketHistoryClose(templateInstance) {
+  templateInstance.ticketIdForHistory.set(null);
+  templateInstance.ticketHistoryLoading.set(false);
+  templateInstance.ticketHistoryError.set(null);
+  templateInstance.ticketHistoryData.set(null);
+  templateInstance.ticketHistoryRangeType.set(TICKET_HISTORY_DEFAULT_RANGE);
+  templateInstance.ticketHistoryCustomStartDate.set(null);
+  templateInstance.ticketHistoryCustomEndDate.set(null);
+
+  const returnRoute = Session.get(OPEN_TICKET_HISTORY_RETURN_ROUTE_KEY);
+  if (returnRoute) {
+    Session.set(OPEN_TICKET_HISTORY_RETURN_ROUTE_KEY, null);
+    FlowRouter.go(returnRoute);
+  }
+}
+
 function processCreateTicketGithubInput(value, templateInstance) {
   const trimmed = (value || '').trim();
   const isEditing = templateInstance.editingTicket.get();
@@ -131,6 +246,9 @@ Template.tickets.onCreated(function () {
   this.ticketHistoryLoading = new ReactiveVar(false);
   this.ticketHistoryError = new ReactiveVar(null);
   this.ticketHistoryData = new ReactiveVar(null);
+  this.ticketHistoryRangeType = new ReactiveVar(TICKET_HISTORY_DEFAULT_RANGE);
+  this.ticketHistoryCustomStartDate = new ReactiveVar(null);
+  this.ticketHistoryCustomEndDate = new ReactiveVar(null);
 
   // Auto-clock-out: Check every second when timer reaches 10:00:00
   this.autorun(() => {
@@ -225,6 +343,13 @@ Template.tickets.onCreated(function () {
       setTimeout(() => this.highlightExistingTickets.set(false), HIGHLIGHT_DURATION_MS);
     }
   });
+
+  this.autorun(() => {
+    const ticketId = Session.get(OPEN_TICKET_HISTORY_SESSION_KEY);
+    if (!ticketId) return;
+    Session.set(OPEN_TICKET_HISTORY_SESSION_KEY, null);
+    openTicketHistoryModal(this, ticketId);
+  });
 });
 
 Template.tickets.helpers({
@@ -272,14 +397,14 @@ Template.tickets.helpers({
       .filter(ticket => !searchQuery || ticket.title.toLowerCase().includes(searchQuery))
       .map(ticket => {
         const isActive = !!ticket.startTimestamp;
-        const elapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
+        const sessionElapsed = isActive ? Math.max(0, Math.floor((now - ticket.startTimestamp) / 1000)) : 0;
         const assigneeId = ticket.assignedTo;
         const assigneeName = assigneeId ? getUserName(assigneeId) : 'Unassigned';
         const assigneeInitial = assigneeName === 'Unassigned' ? '—' : assigneeName.split(/\s+/).map(s => s[0]).join('').toUpperCase().slice(0, 2) || '?';
 
         return {
           ...ticket,
-          displayTime: (ticket.accumulatedTime || 0) + elapsed,
+          sessionElapsed,
           assigneeName,
           assigneeInitial
         };
@@ -328,11 +453,87 @@ Template.tickets.helpers({
   ticketHistoryData() {
     return Template.instance().ticketHistoryData?.get() || null;
   },
+  ticketHistoryDisplayTotalSeconds() {
+    const data = Template.instance().ticketHistoryData?.get();
+    if (!data) return 0;
+    const nowMs = currentTime.get();
+    const liveDelta = getLiveHistoryDeltaSeconds(data, nowMs);
+    return (data.totalSeconds || 0) + liveDelta;
+  },
+  ticketHistoryDisplayRangeSeconds() {
+    const data = Template.instance().ticketHistoryData?.get();
+    if (!data) return 0;
+    const nowMs = currentTime.get();
+    const liveDelta = getLiveRangeDeltaSeconds(data, nowMs);
+    return (data.rangeSeconds || 0) + liveDelta;
+  },
+  ticketHistoryDisplayTotalLabel() {
+    const data = Template.instance().ticketHistoryData?.get();
+    if (!data) return '0s';
+    const nowMs = currentTime.get();
+    const liveDelta = getLiveHistoryDeltaSeconds(data, nowMs);
+    return formatDurationText((data.totalSeconds || 0) + liveDelta);
+  },
+  ticketHistoryDisplayRangeLabel() {
+    const data = Template.instance().ticketHistoryData?.get();
+    if (!data) return '0s';
+    const nowMs = currentTime.get();
+    const liveDelta = getLiveRangeDeltaSeconds(data, nowMs);
+    return formatDurationText((data.rangeSeconds || 0) + liveDelta);
+  },
+  hasTicketHistorySessions() {
+    const data = Template.instance().ticketHistoryData?.get();
+    return !!(data && Array.isArray(data.selectedSessions) && data.selectedSessions.length > 0);
+  },
+  hasTicketHistoryDailyTotals() {
+    const data = Template.instance().ticketHistoryData?.get();
+    return !!(data && Array.isArray(data.dailyTotals) && data.dailyTotals.length > 0);
+  },
+  ticketHistoryRangeType() {
+    return Template.instance().ticketHistoryRangeType?.get() || TICKET_HISTORY_DEFAULT_RANGE;
+  },
+  ticketHistoryRangeOptions() {
+    const current = Template.instance().ticketHistoryRangeType?.get() || TICKET_HISTORY_DEFAULT_RANGE;
+    return TICKET_HISTORY_RANGES.map((range) => ({
+      ...range,
+      selected: range.value === current
+    }));
+  },
+  ticketHistoryCustomStartDate() {
+    return Template.instance().ticketHistoryCustomStartDate?.get() || '';
+  },
+  ticketHistoryCustomEndDate() {
+    return Template.instance().ticketHistoryCustomEndDate?.get() || '';
+  },
+  ticketHistoryRangeButtonClass(range) {
+    const current = Template.instance().ticketHistoryRangeType?.get() || TICKET_HISTORY_DEFAULT_RANGE;
+    const base = 'ticket-history-range-btn px-3 py-1.5 rounded-full border text-xs font-medium transition-colors';
+    if (current === range) {
+      return `${base} bg-blue-600 text-white border-blue-600`;
+    }
+    return `${base} text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:text-blue-600`; 
+  },
+  isTicketHistoryCustomRange() {
+    return (Template.instance().ticketHistoryRangeType?.get() || TICKET_HISTORY_DEFAULT_RANGE) === 'custom';
+  },
+  ticketHistoryCustomDateAttrs() {
+    const isCustom = (Template.instance().ticketHistoryRangeType?.get() || TICKET_HISTORY_DEFAULT_RANGE) === 'custom';
+    return isCustom ? {} : { disabled: true };
+  },
+  ticketHistoryCustomRangeInputAttrs() {
+    const isCustom = (Template.instance().ticketHistoryRangeType?.get() || TICKET_HISTORY_DEFAULT_RANGE) === 'custom';
+    return isCustom ? {} : { disabled: true };
+  },
+  isTicketHistorySingleDayRange() {
+    const rangeType = Template.instance().ticketHistoryRangeType?.get() || TICKET_HISTORY_DEFAULT_RANGE;
+    return rangeType !== 'last7';
+  },
   isActive(ticketId) {
     const ticket = Tickets.findOne(ticketId);
     return ticket && ticket.startTimestamp && !ticket.endTime;
   },
   formatTime,
+  formatDurationText,
   githubLink(github) {
     return normalizeReferenceUrl(github) || '';
   },
@@ -605,55 +806,37 @@ Template.tickets.events({
     e.stopPropagation();
     const ticketId = e.currentTarget.dataset.id;
     if (!ticketId) return;
-    t.ticketIdForHistory.set(ticketId);
-    t.ticketHistoryLoading.set(true);
-    t.ticketHistoryError.set(null);
-    t.ticketHistoryData.set(null);
-    Tracker.afterFlush(() => {
-      const modal = document.getElementById('ticketHistoryModal');
-      if (modal) {
-        const onClose = () => {
-          t.ticketIdForHistory.set(null);
-          t.ticketHistoryLoading.set(false);
-          t.ticketHistoryError.set(null);
-          t.ticketHistoryData.set(null);
-          modal.removeEventListener('close', onClose);
-        };
-        modal.addEventListener('close', onClose);
-        modal.showModal();
-      }
-    });
-    Meteor.call('getTicketTimeHistory', ticketId, (err, result) => {
-      t.ticketHistoryLoading.set(false);
-      if (err) {
-        t.ticketHistoryError.set(err.reason || err.message || 'Failed to load history');
-        t.ticketHistoryData.set(null);
-      } else {
-        t.ticketHistoryError.set(null);
-        t.ticketHistoryData.set(result);
-      }
-    });
+    openTicketHistoryModal(t, ticketId);
   },
   'click #closeTicketHistoryModal'(e, t) {
     document.getElementById('ticketHistoryModal')?.close();
-    t.ticketIdForHistory.set(null);
-    t.ticketHistoryLoading.set(false);
-    t.ticketHistoryError.set(null);
-    t.ticketHistoryData.set(null);
   },
   'click #closeTicketHistoryBtn'(e, t) {
     document.getElementById('ticketHistoryModal')?.close();
-    t.ticketIdForHistory.set(null);
-    t.ticketHistoryLoading.set(false);
-    t.ticketHistoryError.set(null);
-    t.ticketHistoryData.set(null);
   },
   'click #ticketHistoryModalBackdropClose'(e, t) {
     document.getElementById('ticketHistoryModal')?.close();
-    t.ticketIdForHistory.set(null);
-    t.ticketHistoryLoading.set(false);
-    t.ticketHistoryError.set(null);
-    t.ticketHistoryData.set(null);
+  },
+  'change #ticketHistoryRangeSelect'(e, t) {
+    const range = e.currentTarget.value;
+    if (!range) return;
+    t.ticketHistoryRangeType.set(range);
+    if (range !== 'custom') {
+      loadTicketHistory(t);
+    } else {
+      document.getElementById('ticketHistoryCustomStartDate')?.focus();
+    }
+  },
+  'change #ticketHistoryCustomStartDate, change #ticketHistoryCustomEndDate'(e, t) {
+    const startDate = document.getElementById('ticketHistoryCustomStartDate')?.value || '';
+    const endDate = document.getElementById('ticketHistoryCustomEndDate')?.value || '';
+    t.ticketHistoryCustomStartDate.set(startDate || null);
+    t.ticketHistoryCustomEndDate.set(endDate || null);
+
+    if (startDate && endDate) {
+      if (t.ticketHistoryRangeType.get() !== 'custom') t.ticketHistoryRangeType.set('custom');
+      loadTicketHistory(t);
+    }
   },
 
   async 'submit #createTicketForm'(e, t) {

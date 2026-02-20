@@ -29,3 +29,124 @@ html, body {
   max-width: 300px;
   white-space: normal;
 }
+
+/* ===== Member Activity Page Styles ===== */
+.member-activity-page {
+  background-color: #f5f7fa;
+}
+
+@media (prefers-color-scheme: dark) {
+  .member-activity-page {
+    background-color: #111827;
+  }
+}
+
+/* Profile avatar with user icon */
+.member-avatar {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+}
+
+/* Stats cards */
+.member-stat-card {
+  transition: background-color 0.2s ease;
+}
+
+/* Activity timeline */
+.activity-timeline-line {
+  background: linear-gradient(180deg, #e5e7eb 0%, #d1d5db 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .activity-timeline-line {
+    background: linear-gradient(180deg, #374151 0%, #4b5563 100%);
+  }
+}
+
+/* Activity entry dots */
+.activity-dot {
+  box-shadow: 0 0 0 3px #f5f7fa;
+}
+
+@media (prefers-color-scheme: dark) {
+  .activity-dot {
+    box-shadow: 0 0 0 3px #111827;
+  }
+}
+
+/* Ticket card styling */
+.ticket-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ticket-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .ticket-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Chat bubble styling for ticket messages */
+.ticket-messages-section {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ticket-messages-section::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ticket-messages-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ticket-messages-section::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ticket-messages-section::-webkit-scrollbar-thumb {
+    background: #4b5563;
+  }
+}
+
+/* Reply input styling */
+.member-reply-input input:focus,
+.ticket-reply-input input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Activity filter dropdown */
+.member-activity-filter select {
+  background-image: none;
+}
+
+/* Smooth transitions for interactive elements */
+.member-activity-page button,
+.member-activity-page a {
+  transition: all 0.2s ease;
+}
+
+/* Message preview scrollbar styling */
+.messages-preview::-webkit-scrollbar {
+  width: 4px;
+}
+
+.messages-preview::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-preview::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .messages-preview::-webkit-scrollbar-thumb {
+    background: #4b5563;
+  }
+}

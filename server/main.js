@@ -299,7 +299,7 @@ Meteor.publish('clockEventsForTeams', async function (teamIds) {
   return ClockEvents.find({ teamId: { $in: allowedTeamIds } });
 });
 
-Meteor.publish('messages.thread', function ({ teamId, adminId, memberId }) {
+Meteor.publish('messages.thread', async function ({ teamId, adminId, memberId }) {
   check(teamId, String);
   check(adminId, String);
   check(memberId, String);
@@ -309,7 +309,7 @@ Meteor.publish('messages.thread', function ({ teamId, adminId, memberId }) {
     return this.ready();
   }
 
-  const team = Teams.findOne({ _id: teamId });
+  const team = await Teams.findOneAsync({ _id: teamId });
   if (!team) return this.ready();
   const isAdmin = Array.isArray(team.admins) && team.admins.includes(this.userId);
   const isMember = Array.isArray(team.members) && team.members.includes(this.userId);

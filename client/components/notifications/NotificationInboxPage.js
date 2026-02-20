@@ -1,3 +1,37 @@
+/** Convert any _id (string or ObjectID) to a plain string */
+function idStr(id) {
+  if (!id) return '';
+  return typeof id === 'string' ? id : (id._str || id.toHexString?.() || String(id));
+}
+
+/** Resolve a notification document by the string value stored in data-notification-id */
+function findNotificationByDatasetId(datasetId) {
+  if (!datasetId) return null;
+  const all = Notifications.find().fetch();
+  return all.find((n) => idStr(n._id) === datasetId) || null;
+}
+
+function resolveNotificationUrl(notificationDoc) {
+  if (!notificationDoc) return null;
+
+  const data = notificationDoc.data || {};
+  if (data.url && typeof data.url === 'string') return data.url;
+
+  const teamId = data.teamId;
+  const userId = data.userId;
+  const adminId = data.adminId;
+
+  if (teamId && userId) {
+    const base = `/member/${teamId}/${userId}`;
+    return adminId ? `${base}?adminId=${adminId}` : base;
+  }
+
+  if (data.type === 'auto-clock-out') return '/tickets';
+  if (data.type === 'team-invite') return '/teams';
+
+  return null;
+}
+
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
@@ -20,10 +54,6 @@ Template.notificationInbox.helpers({
   hasUnread() {
     return Notifications.find({ read: false }).count() > 0;
   },
-  isClockIn(notification) {
-    const type = notification?.data?.type;
-    return type === 'clock-in';
-  },
   timeAgo(date) {
     if (!date) return '';
     const d = date instanceof Date ? date : new Date(date);
@@ -41,39 +71,34 @@ Template.notificationInbox.helpers({
   selectMode() {
     return Template.instance().selectMode.get();
   },
-  selectButtonLabel() {
-    return Template.instance().selectMode.get() ? 'Cancel' : 'Select';
-  },
-  isSelected(_id) {
-    return (Template.instance().selectedIds.get() || []).indexOf(_id) >= 0;
+  isSelected() {
+    const selected = Template.instance().selectedIds.get() || [];
+    return selected.includes(idStr(this._id));
   },
   hasSelected() {
-    const selected = Template.instance().selectedIds.get() || [];
-    return selected.length > 0;
+    return (Template.instance().selectedIds.get() || []).length > 0;
   },
   selectedCount() {
-    const selected = Template.instance().selectedIds.get() || [];
-    return selected.length;
+    return (Template.instance().selectedIds.get() || []).length;
   },
   allSelected() {
-    const t = Template.instance();
-    const selected = t.selectedIds.get() || [];
+    const selected = Template.instance().selectedIds.get() || [];
     const total = Notifications.find().count();
     return total > 0 && selected.length === total;
   },
-  totalNotifications() {
-    return Notifications.find().count();
-  }
+  notificationId(id) {
+    return idStr(id);
+  },
 });
 
 Template.notificationInbox.events({
   'click .notification-item-wrapper'(e, t) {
     const id = e.currentTarget.dataset.notificationId;
     if (!id) return;
-    
-    // In select mode: toggle selection when clicking anywhere on the item
+
+    // In select mode: toggle selection
     if (t.selectMode.get()) {
-      const selected = t.selectedIds.get() || [];
+      const selected = [...(t.selectedIds.get() || [])];
       const index = selected.indexOf(id);
       if (index >= 0) {
         selected.splice(index, 1);
@@ -83,12 +108,11 @@ Template.notificationInbox.events({
       t.selectedIds.set(selected);
       return;
     }
-    
-    // Normal mode: mark as read and navigate
-    const read = e.currentTarget.dataset.read === 'true';
-    const doc = Notifications.findOne(id);
-    const url = doc?.data?.url;
-    Meteor.call('notifications.markAsRead', id, (err) => {
+
+    // Normal mode: mark as read
+    const doc = findNotificationByDatasetId(id);
+    const url = resolveNotificationUrl(doc);
+    Meteor.call('notifications.markAsRead', doc?._id || id, (err) => {
       if (err) return;
       if (url) FlowRouter.go(url);
     });
@@ -97,7 +121,7 @@ Template.notificationInbox.events({
     e.stopPropagation();
     const id = e.currentTarget.dataset.notificationId;
     if (!id) return;
-    const selected = t.selectedIds.get() || [];
+    const selected = [...(t.selectedIds.get() || [])];
     const index = selected.indexOf(id);
     if (index >= 0) {
       selected.splice(index, 1);
@@ -107,47 +131,39 @@ Template.notificationInbox.events({
     t.selectedIds.set(selected);
   },
   'click #markAllReadBtn'() {
-    Meteor.call('notifications.markAllAsRead', (err) => {
-      if (err) console.error(err);
-    });
+    Meteor.call('notifications.markAllAsRead');
   },
-  'click #notificationSelectBtn'(event, t) {
+  'click #notificationSelectBtn'(e, t) {
     t.selectMode.set(true);
     t.selectedIds.set([]);
   },
-  'click #notificationCancelSelectBtn'(event, t) {
+  'click #notificationCancelSelectBtn'(e, t) {
     t.selectMode.set(false);
     t.selectedIds.set([]);
   },
-  'click #notificationSelectAllBtn'(event, t) {
-    const allIds = Notifications.find({}, { fields: { _id: 1 } }).fetch().map(n => n._id);
+  'click #notificationSelectAllBtn'(e, t) {
+    const allIds = Notifications.find({}, { fields: { _id: 1 } }).fetch().map(n => idStr(n._id));
     t.selectedIds.set(allIds);
   },
-  'click #notificationDeselectAllBtn'(event, t) {
+  'click #notificationDeselectAllBtn'(e, t) {
     t.selectedIds.set([]);
   },
-  'click #notificationClearSelection'(event, t) {
-    t.selectedIds.set([]);
-  },
-  'click #notificationDeleteBtn'(event, t) {
-    event.preventDefault();
-    event.stopPropagation();
-    const selected = t.selectedIds.get() || [];
+  'click #notificationDeleteBtn'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const selected = [...(t.selectedIds.get() || [])];
     if (selected.length === 0) return;
-    
-    if (!confirm(`Delete ${selected.length} notification${selected.length === 1 ? '' : 's'}?`)) {
-      return;
-    }
-    
-    Meteor.call('notifications.delete', selected, (err, result) => {
+
+    Meteor.call('notifications.delete', selected, (err) => {
       if (err) {
         console.error('Error deleting notifications:', err);
-        alert('Failed to delete notifications. Please try again.');
         return;
       }
-      // Clear selection and exit select mode after successful deletion
       t.selectedIds.set([]);
-      t.selectMode.set(false);
+      // Stay in select mode so user can continue selecting if desired
+      if (Notifications.find().count() === 0) {
+        t.selectMode.set(false);
+      }
     });
-  }
+  },
 });

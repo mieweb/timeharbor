@@ -115,6 +115,13 @@ Template.memberActivity.onCreated(function () {
   instance.threadAdminId = new ReactiveVar(null);
   instance.threadId = new ReactiveVar(null);
   instance.messageDraft = new ReactiveVar('');
+  
+  // Track which ticket reply sections are expanded
+  instance.expandedTickets = new ReactiveVar({});
+  // Track message drafts per ticket
+  instance.ticketMessageDrafts = new ReactiveVar({});
+  // Track which tickets show all messages vs limited
+  instance.showAllMessages = new ReactiveVar({});
 
   // Get member info
   if (instance.teamId) {
@@ -397,6 +404,10 @@ Template.memberActivity.helpers({
   eq(a, b) {
     return a === b;
   },
+  isFilterSelected(filterValue) {
+    const instance = Template.instance();
+    return instance.selectedFilter.get() === filterValue;
+  },
   
   // Mobile card view helpers
   filteredTicketsData() {
@@ -469,6 +480,7 @@ Template.memberActivity.helpers({
             endTime: end,
             isActive,
             durationSeconds,
+            ticketId: ticketEntry.ticketId,
             ticketTitle: title,
             ticketDescription: description
           });
@@ -485,6 +497,7 @@ Template.memberActivity.helpers({
             endTime: end,
             isActive,
             durationSeconds,
+            ticketId: ticketEntry.ticketId,
             ticketTitle: title,
             ticketDescription: description
           });
@@ -538,12 +551,17 @@ Template.memberActivity.helpers({
     return formatTimeHoursMinutes(seconds || 0);
   },
   hasThread() {
-    return !!Template.instance().threadId.get();
+    const instance = Template.instance();
+    const adminId = instance.threadAdminId.get();
+    return !!adminId;
   },
   messages() {
-    const threadId = Template.instance().threadId.get();
-    if (!threadId) return [];
-    return Messages.find({ threadId }, { sort: { createdAt: 1 } });
+    const instance = Template.instance();
+    const teamId = instance.teamId;
+    const memberId = instance.userId;
+    const adminId = instance.threadAdminId.get();
+    if (!teamId || !memberId || !adminId) return [];
+    return Messages.find({ teamId, adminId, memberId }, { sort: { createdAt: 1 } });
   },
   isFromCurrentUser(message) {
     return message?.fromUserId === Meteor.userId();
@@ -555,6 +573,80 @@ Template.memberActivity.helpers({
     const t = Template.instance();
     const adminId = t.threadAdminId.get();
     return !!adminId;
+  },
+  memberInitialForTicket() {
+    const instance = Template.instance();
+    const member = instance.memberData.get();
+    const name = member?.name || '';
+    if (name) {
+      return name.charAt(0).toUpperCase();
+    }
+    const email = member?.email || '';
+    return email ? email.charAt(0).toUpperCase() : 'M';
+  },
+  lessThanMinute(seconds) {
+    return (seconds || 0) < 60;
+  },
+  ticketMessages(ticketId) {
+    // Get all messages for this thread
+    const instance = Template.instance();
+    const teamId = instance.teamId;
+    const memberId = instance.userId;
+    const adminId = instance.threadAdminId.get();
+    
+    if (!teamId || !memberId || !adminId) {
+      return { hasMessages: false, messages: [], totalCount: 0, showingAll: false };
+    }
+    
+    // Query by teamId, adminId, memberId (same as server publication)
+    const allMessages = Messages.find(
+      { teamId, adminId, memberId }, 
+      { sort: { createdAt: 1 } }
+    ).fetch();
+    
+    const showAllMap = instance.showAllMessages.get();
+    const showAll = showAllMap[ticketId] || false;
+    const totalCount = allMessages.length;
+    
+    // Get the last message for collapsed preview
+    const lastMessage = allMessages.length > 0 ? allMessages[allMessages.length - 1] : null;
+    
+    // Calculate remaining count (messages not shown in collapsed view)
+    const remainingCount = Math.max(0, totalCount - 1);
+    
+    // Show all messages when expanded, or just the last one when collapsed
+    const messages = showAll ? allMessages : (lastMessage ? [lastMessage] : []);
+    
+    return { 
+      hasMessages: totalCount > 0, 
+      messages, 
+      totalCount,
+      hasMore: totalCount > 1,
+      showingAll: showAll,
+      lastMessage,
+      remainingCount
+    };
+  },
+  isTicketExpanded(ticketId) {
+    const instance = Template.instance();
+    const expanded = instance.expandedTickets.get();
+    return expanded[ticketId] || false;
+  },
+  getTicketMessageDraft(ticketId) {
+    const instance = Template.instance();
+    const drafts = instance.ticketMessageDrafts.get();
+    return drafts[ticketId] || '';
+  },
+  senderDisplayName() {
+    // Get sender name for message display
+    return this.senderName || 'Unknown';
+  },
+  getMessageSenderName(message) {
+    // Return the sender's name for display
+    return message?.senderName || 'Unknown';
+  },
+  isOwnMessage(message) {
+    return message?.fromUserId === Meteor.userId();
   }
 });
 
@@ -582,10 +674,80 @@ Template.memberActivity.events({
       t.selectedFilter.set(filter);
     }
   },
-  'click .jump-to-reply'(e) {
+  'click .jump-to-reply'(e, t) {
     e.preventDefault();
-    const input = document.getElementById('memberMessageInput');
-    if (input) input.focus();
+    const ticketId = e.currentTarget.getAttribute('data-ticket-id');
+    if (ticketId) {
+      // Toggle the expanded state for this ticket
+      const expanded = t.expandedTickets.get();
+      expanded[ticketId] = !expanded[ticketId];
+      t.expandedTickets.set(expanded);
+      
+      // Focus on the input after a small delay
+      Meteor.setTimeout(() => {
+        const input = document.querySelector(`[data-ticket-input="${ticketId}"]`);
+        if (input) input.focus();
+      }, 100);
+    }
+  },
+  'click .toggle-messages'(e, t) {
+    e.preventDefault();
+    const ticketId = e.currentTarget.getAttribute('data-ticket-id');
+    if (ticketId) {
+      const showAll = t.showAllMessages.get();
+      showAll[ticketId] = !showAll[ticketId];
+      t.showAllMessages.set(showAll);
+    }
+  },
+  'input .ticket-message-input'(e, t) {
+    const ticketId = e.currentTarget.getAttribute('data-ticket-input');
+    if (ticketId) {
+      const drafts = t.ticketMessageDrafts.get();
+      drafts[ticketId] = e.currentTarget.value;
+      t.ticketMessageDrafts.set(drafts);
+    }
+  },
+  'click .ticket-message-send'(e, t) {
+    e.preventDefault();
+    const ticketId = e.currentTarget.getAttribute('data-ticket-id');
+    if (!ticketId) return;
+    
+    const teamId = t.teamId;
+    const memberId = t.userId;
+    const currentUserId = Meteor.userId();
+    const adminId = t.threadAdminId.get();
+    if (!teamId || !memberId || !currentUserId || !adminId) return;
+
+    const drafts = t.ticketMessageDrafts.get();
+    const text = (drafts[ticketId] || '').trim();
+    if (!text) return;
+
+    const isAdmin = currentUserId === adminId;
+    const toUserId = isAdmin ? memberId : adminId;
+
+    Meteor.call('messages.send', { teamId, toUserId, text, adminId, ticketId }, (err) => {
+      if (err) {
+        alert('Failed to send message: ' + (err.reason || err.message));
+        return;
+      }
+      // Clear the draft for this ticket
+      const newDrafts = t.ticketMessageDrafts.get();
+      newDrafts[ticketId] = '';
+      t.ticketMessageDrafts.set(newDrafts);
+      
+      // Clear the input
+      const input = document.querySelector(`[data-ticket-input="${ticketId}"]`);
+      if (input) input.value = '';
+    });
+  },
+  'keypress .ticket-message-input'(e, t) {
+    // Send on Enter key
+    if (e.which === 13 && !e.shiftKey) {
+      e.preventDefault();
+      const ticketId = e.currentTarget.getAttribute('data-ticket-input');
+      const sendBtn = document.querySelector(`[data-ticket-id="${ticketId}"].ticket-message-send`);
+      if (sendBtn) sendBtn.click();
+    }
   },
   'input #memberMessageInput'(e, t) {
     t.messageDraft.set(e.currentTarget.value);
