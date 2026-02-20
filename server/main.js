@@ -164,8 +164,8 @@ Meteor.startup(async () => {
                 await notifyUser(clockEvent.userId, {
                   title: 'Time Harbor - Auto Clock Out',
                   body: `You were automatically clocked out as your timer reached 10 hours straight. Total time: ${durationText}`,
-                  icon: '/timeharbor-icon.svg',
-                  badge: '/timeharbor-icon.svg',
+                  icon: '/timeharbor-icon.png',
+                  badge: '/timeharbor-icon.png',
                   tag: `auto-clockout-user-${clockEvent.userId}-${Date.now()}`,
                   data: {
                     type: 'auto-clock-out',
@@ -188,8 +188,8 @@ Meteor.startup(async () => {
                 await notifyTeamAdmins(clockEvent.teamId, {
                   title: 'Time Harbor - Auto Clock Out',
                   body: `${userName} was automatically clocked out of ${teamName} after ${durationText} (10+ hours limit)`,
-                  icon: '/timeharbor-icon.svg',
-                  badge: '/timeharbor-icon.svg',
+                  icon: '/timeharbor-icon.png',
+                  badge: '/timeharbor-icon.png',
                   tag: `auto-clockout-admin-${clockEvent.userId}-${Date.now()}`,
                     data: {
                       type: 'clock-out',

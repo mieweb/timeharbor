@@ -36,8 +36,8 @@ export const clockEventMethods = {
       await notifyTeamAdmins(teamId, {
         title: 'Time Harbor',
         body: `${userName} clocked in to ${teamName}`,
-        icon: '/timeharbor-icon.svg',
-        badge: '/timeharbor-icon.svg',
+        icon: '/timeharbor-icon.png',
+        badge: '/timeharbor-icon.png',
         tag: `clockin-${this.userId}-${Date.now()}`,
         data: {
           type: 'clock-in',
@@ -130,8 +130,8 @@ export const clockEventMethods = {
         await notifyTeamAdmins(teamId, {
           title: 'Time Harbor',
           body: `${userName} clocked out of ${teamName} (${durationText})`,
-          icon: '/timeharbor-icon.svg',
-          badge: '/timeharbor-icon.svg',
+        icon: '/timeharbor-icon.png',
+        badge: '/timeharbor-icon.png',
           tag: `clockout-${this.userId}-${Date.now()}`,
         data: {
           type: 'clock-out',
