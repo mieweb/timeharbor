@@ -31,6 +31,22 @@ App.icons({
   'android_xxxhdpi': 'resources/icons/icon-192.png'
 });
 
+// App Launch Screens (Splash)
+App.launchScreens({
+  'iphone': 'resources/splash/iphone.png',
+  'iphone_2x': 'resources/splash/iphone_2x.png',
+  'iphone5': 'resources/splash/iphone5.png',
+  'iphone6': 'resources/splash/iphone6.png',
+  'iphone6p': 'resources/splash/iphone6p.png',
+  'ipad': 'resources/splash/ipad.png',
+  'ipad_2x': 'resources/splash/ipad_2x.png',
+  'android_mdpi': 'resources/splash/android_mdpi.png',
+  'android_hdpi': 'resources/splash/android_hdpi.png',
+  'android_xhdpi': 'resources/splash/android_xhdpi.png',
+  'android_xxhdpi': 'resources/splash/android_xxhdpi.png',
+  'android_xxxhdpi': 'resources/splash/android_xxxhdpi.png'
+});
+
 // iOS Configuration
 App.setPreference('deployment-target', '13.0', 'ios'); // Bump to 13.0 for better support
 App.setPreference('SwiftVersion', '5.0', 'ios');
