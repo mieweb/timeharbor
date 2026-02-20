@@ -69,8 +69,8 @@ export const messageMethods = {
       const notificationData = {
         title: 'Time Harbor',
         body: `${fromName}: ${trimmed}`,
-        icon: '/timeharbor-icon.svg',
-        badge: '/timeharbor-icon.svg',
+        icon: '/timeharbor-icon.png',
+        badge: '/timeharbor-icon.png',
         tag: `msg-${messageId}`,
         data: {
           type: 'message',

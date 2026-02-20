@@ -144,7 +144,7 @@ async function sendFcmNotification(token, payload) {
         notification: {
           sound: 'default',
           channelId: 'default',
-          icon: payload.icon || 'notification_icon',
+          icon: 'ic_launcher',
           color: '#4285F4'
         }
       },
