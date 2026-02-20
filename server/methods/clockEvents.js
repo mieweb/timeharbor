@@ -193,9 +193,6 @@ export const clockEventMethods = {
       const initialTime = ticket ? (ticket.accumulatedTime || 0) : 0;
       
       // Add new ticket entry with initial accumulated time
-      const clockEventData = await ClockEvents.findOneAsync(clockEventId);
-      const currentAccumulatedTime = clockEventData.accumulatedTime || 0;
-      
       await ClockEvents.updateAsync(clockEventId, {
         $push: {
           tickets: {
@@ -204,9 +201,6 @@ export const clockEventMethods = {
             accumulatedTime: initialTime, // Include initial time from ticket
             sessions: [{ startTimestamp: now, endTimestamp: null }]
           }
-        },
-        $set: {
-          accumulatedTime: currentAccumulatedTime + initialTime // Add initial time to clock event total
         }
       });
     }

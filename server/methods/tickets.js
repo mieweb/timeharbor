@@ -67,7 +67,6 @@ export const ticketMethods = {
     });
     
     if (activeClockEvent) {
-      const currentAccumulatedTime = activeClockEvent.accumulatedTime || 0;
       await ClockEvents.updateAsync(activeClockEvent._id, {
         $push: {
           tickets: {
@@ -75,9 +74,6 @@ export const ticketMethods = {
             startTimestamp: Date.now(),
             accumulatedTime // Include initial time in clock event
           }
-        },
-        $set: {
-          accumulatedTime: currentAccumulatedTime + accumulatedTime // Add initial time to clock event total
         }
       });
     }
