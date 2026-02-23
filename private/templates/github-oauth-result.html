@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GitHub — TimeHarbor</title>
+  <style>{{STYLES}}</style>
+</head>
+<body>
+  <div class="card">
+    <p class="{{STATUS_CLASS}}">{{STATUS_HEADING}}</p>
+    <p>{{MESSAGE}}</p>
+    <p class="auto-close-note">This window will close automatically.</p>
+  </div>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({{PAYLOAD}}, {{ORIGIN}});
+    }
+    setTimeout(function () { window.close(); }, 2000);
+  </script>
+</body>
+</html>

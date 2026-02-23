@@ -1,6 +1,9 @@
 // Import HTML template first
 import './main.html';
 
+// Import shared partials (must load before components that use them)
+import './components/shared/icons.html';
+
 // Import component HTML files
 import './components/auth/AuthPage.html';
 import './components/layout/MainLayout.html';

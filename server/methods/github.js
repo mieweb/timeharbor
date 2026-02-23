@@ -112,28 +112,25 @@ async function getStoredGitHubToken(userId) {
  * @param {Object} [data] - Additional data to pass
  * @returns {string} HTML page string
  */
+/** Cached OAuth result HTML template (loaded once from private/templates/). */
+const [oauthResultHtml, oauthResultCss] = await Promise.all([
+  Assets.getTextAsync('templates/github-oauth-result.html'),
+  Assets.getTextAsync('templates/github-oauth-result.css'),
+]);
+const oauthResultTemplate = oauthResultHtml.replace('{{STYLES}}', oauthResultCss);
+
 function renderOAuthResultPage(status, message, data = {}) {
-  const safeStatus = escapeHtml(status);
-  const safeMessage = escapeHtml(message);
   // Escape </script> sequences in JSON to prevent breaking out of the script block
   const payload = JSON.stringify({ type: 'github-oauth-result', status, message, ...data })
     .replace(/</g, '\\u003c');
   const origin = JSON.stringify(Meteor.absoluteUrl()).replace(/</g, '\\u003c');
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><title>GitHub — TimeHarbor</title>
-<style>body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f9fafb;color:#374151}
-.card{text-align:center;padding:2rem;border-radius:1rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.1);max-width:400px}
-.success{color:#059669}.error{color:#dc2626}p{margin:0.5rem 0}</style></head>
-<body><div class="card">
-<p class="${safeStatus}">${status === 'success' ? 'Connected!' : 'Error'}</p>
-<p>${safeMessage}</p>
-<p style="color:#9ca3af;font-size:0.875rem">This window will close automatically.</p>
-</div>
-<script>
-if(window.opener){window.opener.postMessage(${payload},${origin});}
-setTimeout(function(){window.close();},2000);
-</script></body></html>`;
+
+  return oauthResultTemplate
+    .replace('{{STATUS_CLASS}}', escapeHtml(status))
+    .replace('{{STATUS_HEADING}}', escapeHtml(status === 'success' ? 'Connected!' : 'Error'))
+    .replace('{{MESSAGE}}', escapeHtml(message))
+    .replace('{{PAYLOAD}}', payload)
+    .replace('{{ORIGIN}}', origin);
 }
 
 /* ------------------------------------------------------------------ */
