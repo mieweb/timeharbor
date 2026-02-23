@@ -20,6 +20,9 @@ Template.profilePage.onCreated(function () {
 
   // Listen for OAuth popup result via postMessage
   this._oauthListener = (event) => {
+    // Validate origin to prevent spoofed messages
+    const expectedOrigin = window.location.origin;
+    if (event.origin !== expectedOrigin) return;
     if (event.data?.type !== 'github-oauth-result') return;
     if (event.data.status === 'success') {
       this._githubConnected.set(true);
@@ -139,7 +142,16 @@ Template.profilePage.events({
       if (!popup) {
         t.githubSaving.set(false);
         alert('Popup was blocked. Please allow popups for this site and try again.');
+        return;
       }
+      // Poll to detect if the popup was closed without completing OAuth
+      const popupCheckInterval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(popupCheckInterval);
+          // Give postMessage a moment to arrive before resetting
+          setTimeout(() => { t.githubSaving.set(false); }, 500);
+        }
+      }, 500);
     });
   },
   'click #disconnectGitHubBtn'(e, t) {

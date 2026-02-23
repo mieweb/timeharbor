@@ -234,14 +234,37 @@ function resetGitHubBrowseState(t) {
   t.ghReposLoading.set(false);
   t.ghReposError.set(null);
   t.ghSelectedRepo.set(null);
-  t.ghSelectedRepoOwner.set(null);
-  t.ghSelectedRepoName.set(null);
   t.ghIssueSearchQuery.set('');
   t.ghIssueResults.set([]);
   t.ghIssuesLoading.set(false);
   t.ghIssuesError.set(null);
   if (t._ghRepoSearchTimer) { clearTimeout(t._ghRepoSearchTimer); t._ghRepoSearchTimer = null; }
   if (t._ghIssueSearchTimer) { clearTimeout(t._ghIssueSearchTimer); t._ghIssueSearchTimer = null; }
+}
+
+/** Clear issue-level state and go back to repo list. */
+function clearSelectedRepo(t) {
+  t.ghSelectedRepo.set(null);
+  t.ghIssueSearchQuery.set('');
+  t.ghIssueResults.set([]);
+  t.ghIssuesLoading.set(false);
+  t.ghIssuesError.set(null);
+}
+
+/** Parse 'owner/repo' into { owner, repo }. */
+function parseRepoFullName(fullName) {
+  const [owner, ...rest] = (fullName || '').split('/');
+  return { owner, repo: rest.join('/') };
+}
+
+/** Reset all create-ticket modal state on the template instance. */
+function resetCreateTicketModal(t) {
+  t.showCreateTicketForm.set(false);
+  t.editingTicket.set(null);
+  t.createTicketTitle.set('');
+  t.showTitleField.set(false);
+  t.createTicketFromClockInNewTicket.set(false);
+  resetGitHubBrowseState(t);
 }
 
 /** Debounced repo search */
@@ -276,8 +299,7 @@ function loadGitHubIssues(t, query) {
   if (t._ghIssueSearchTimer) clearTimeout(t._ghIssueSearchTimer);
   t.ghIssuesError.set(null);
 
-  const owner = t.ghSelectedRepoOwner.get();
-  const repo = t.ghSelectedRepoName.get();
+  const { owner, repo } = parseRepoFullName(t.ghSelectedRepo.get());
   if (!owner || !repo) return;
 
   const doFetch = () => {
@@ -328,8 +350,6 @@ Template.tickets.onCreated(function () {
   this.ghReposLoading = new ReactiveVar(false);
   this.ghReposError = new ReactiveVar(null);
   this.ghSelectedRepo = new ReactiveVar(null); // 'owner/repo' string
-  this.ghSelectedRepoOwner = new ReactiveVar(null);
-  this.ghSelectedRepoName = new ReactiveVar(null);
   this.ghIssueSearchQuery = new ReactiveVar('');
   this.ghIssueResults = new ReactiveVar([]);
   this.ghIssuesLoading = new ReactiveVar(false);
@@ -444,6 +464,11 @@ Template.tickets.onCreated(function () {
     Session.set(OPEN_TICKET_HISTORY_SESSION_KEY, null);
     openTicketHistoryModal(this, ticketId);
   });
+});
+
+Template.tickets.onDestroyed(function () {
+  if (this._ghRepoSearchTimer) clearTimeout(this._ghRepoSearchTimer);
+  if (this._ghIssueSearchTimer) clearTimeout(this._ghIssueSearchTimer);
 });
 
 Template.tickets.helpers({
@@ -759,12 +784,7 @@ Template.tickets.events({
       const modal = document.getElementById('createTicketModal');
       if (modal) {
         const onClose = () => {
-          t.showCreateTicketForm.set(false);
-          t.editingTicket.set(null);
-          t.createTicketTitle.set('');
-          t.showTitleField.set(false);
-          t.createTicketFromClockInNewTicket.set(false);
-          resetGitHubBrowseState(t);
+          resetCreateTicketModal(t);
           modal.removeEventListener('close', onClose);
         };
         modal.addEventListener('close', onClose);
@@ -776,30 +796,15 @@ Template.tickets.events({
   },
   'click #closeCreateTicketModal'(e, t) {
     document.getElementById('createTicketModal')?.close();
-    t.showCreateTicketForm.set(false);
-    t.editingTicket.set(null);
-    t.createTicketTitle.set('');
-    t.showTitleField.set(false);
-    t.createTicketFromClockInNewTicket.set(false);
-    resetGitHubBrowseState(t);
+    resetCreateTicketModal(t);
   },
   'click #createTicketModalBackdropClose'(e, t) {
     document.getElementById('createTicketModal')?.close();
-    t.showCreateTicketForm.set(false);
-    t.editingTicket.set(null);
-    t.createTicketTitle.set('');
-    t.showTitleField.set(false);
-    t.createTicketFromClockInNewTicket.set(false);
-    resetGitHubBrowseState(t);
+    resetCreateTicketModal(t);
   },
   'click #cancelCreateTicket'(e, t) {
     document.getElementById('createTicketModal')?.close();
-    t.showCreateTicketForm.set(false);
-    t.editingTicket.set(null);
-    t.createTicketTitle.set('');
-    t.showTitleField.set(false);
-    t.createTicketFromClockInNewTicket.set(false);
-    resetGitHubBrowseState(t);
+    resetCreateTicketModal(t);
   },
   'input #createTicketTitle'(e, t) {
     t.createTicketTitle.set(e.target.value);
@@ -839,20 +844,12 @@ Template.tickets.events({
     const fullName = e.currentTarget.dataset.fullName;
     if (!owner || !repo) return;
     t.ghSelectedRepo.set(fullName);
-    t.ghSelectedRepoOwner.set(owner);
-    t.ghSelectedRepoName.set(repo);
     t.ghIssueSearchQuery.set('');
     t.ghIssueResults.set([]);
     loadGitHubIssues(t, '');
   },
   'click #ghBackToRepos'(e, t) {
-    t.ghSelectedRepo.set(null);
-    t.ghSelectedRepoOwner.set(null);
-    t.ghSelectedRepoName.set(null);
-    t.ghIssueResults.set([]);
-    t.ghIssuesLoading.set(false);
-    t.ghIssuesError.set(null);
-    t.ghIssueSearchQuery.set('');
+    clearSelectedRepo(t);
   },
   'input #ghIssueSearch'(e, t) {
     const query = e.target.value;
@@ -902,11 +899,7 @@ Template.tickets.events({
         const modal = document.getElementById('createTicketModal');
         if (modal) {
           const onClose = () => {
-            t.showCreateTicketForm.set(false);
-            t.editingTicket.set(null);
-            t.createTicketTitle.set('');
-            t.showTitleField.set(false);
-            t.createTicketLoadingTitle.set(false);
+            resetCreateTicketModal(t);
             modal.removeEventListener('close', onClose);
           };
           modal.addEventListener('close', onClose);

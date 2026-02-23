@@ -7,6 +7,22 @@ import axios from 'axios';
 const GITHUB_API_BASE = 'https://api.github.com';
 const GITHUB_OAUTH_AUTHORIZE = 'https://github.com/login/oauth/authorize';
 const GITHUB_OAUTH_TOKEN = 'https://github.com/login/oauth/access_token';
+const GITHUB_NAME_PATTERN = /^[a-zA-Z0-9._-]+$/;
+
+/**
+ * Handle common GitHub API errors and throw appropriate Meteor errors.
+ * @param {Error} err - The error from axios
+ * @param {string} fallbackMessage - Fallback error message
+ */
+function handleGitHubApiError(err, fallbackMessage) {
+  if (err.response?.status === 401) {
+    throw new Meteor.Error('invalid-token', 'GitHub token expired. Please reconnect in Profile settings.');
+  }
+  if (err.response?.status === 404) {
+    throw new Meteor.Error('not-found', fallbackMessage);
+  }
+  throw new Meteor.Error('github-error', `${fallbackMessage}: ${err.message}`);
+}
 
 /**
  * In-memory store for pending OAuth state tokens.
@@ -59,6 +75,20 @@ function buildGitHubHeaders(token) {
 }
 
 /**
+ * Escape HTML special characters to prevent XSS.
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Retrieve the stored GitHub OAuth token for the current user.
  * Throws if not configured.
  * @param {string} userId
@@ -66,9 +96,9 @@ function buildGitHubHeaders(token) {
  */
 async function getStoredGitHubToken(userId) {
   const user = await Meteor.users.findOneAsync(userId, {
-    fields: { 'profile.githubToken': 1 }
+    fields: { 'githubAuth.token': 1 }
   });
-  const token = user?.profile?.githubToken;
+  const token = user?.githubAuth?.token;
   if (!token) {
     throw new Meteor.Error('github-not-configured', 'GitHub not connected. Connect via OAuth in Profile settings.');
   }
@@ -83,7 +113,12 @@ async function getStoredGitHubToken(userId) {
  * @returns {string} HTML page string
  */
 function renderOAuthResultPage(status, message, data = {}) {
-  const payload = JSON.stringify({ type: 'github-oauth-result', status, message, ...data });
+  const safeStatus = escapeHtml(status);
+  const safeMessage = escapeHtml(message);
+  // Escape </script> sequences in JSON to prevent breaking out of the script block
+  const payload = JSON.stringify({ type: 'github-oauth-result', status, message, ...data })
+    .replace(/</g, '\\u003c');
+  const origin = JSON.stringify(Meteor.absoluteUrl()).replace(/</g, '\\u003c');
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><title>GitHub — TimeHarbor</title>
@@ -91,12 +126,12 @@ function renderOAuthResultPage(status, message, data = {}) {
 .card{text-align:center;padding:2rem;border-radius:1rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.1);max-width:400px}
 .success{color:#059669}.error{color:#dc2626}p{margin:0.5rem 0}</style></head>
 <body><div class="card">
-<p class="${status}">${status === 'success' ? 'Connected!' : 'Error'}</p>
-<p>${message}</p>
+<p class="${safeStatus}">${status === 'success' ? 'Connected!' : 'Error'}</p>
+<p>${safeMessage}</p>
 <p style="color:#9ca3af;font-size:0.875rem">This window will close automatically.</p>
 </div>
 <script>
-if(window.opener){window.opener.postMessage(${payload},'*');}
+if(window.opener){window.opener.postMessage(${payload},${origin});}
 setTimeout(function(){window.close();},2000);
 </script></body></html>`;
 }
@@ -157,11 +192,11 @@ WebApp.connectHandlers.use('/api/github/callback', async (req, res) => {
       return;
     }
 
-    // Store the token on the user's profile
+    // Store the token in a private field (not under `profile` to avoid leaking via publications)
     await Meteor.users.updateAsync(pending.userId, {
       $set: {
-        'profile.githubToken': accessToken,
-        'profile.githubLogin': ghLogin
+        'githubAuth.token': accessToken,
+        'githubAuth.login': ghLogin
       }
     });
 
@@ -205,7 +240,7 @@ export const githubMethods = {
   async removeGitHubToken() {
     if (!this.userId) throw new Meteor.Error('not-authorized');
     await Meteor.users.updateAsync(this.userId, {
-      $unset: { 'profile.githubToken': '', 'profile.githubLogin': '' }
+      $unset: { 'githubAuth': '' }
     });
     return true;
   },
@@ -216,11 +251,11 @@ export const githubMethods = {
   async hasGitHubToken() {
     if (!this.userId) throw new Meteor.Error('not-authorized');
     const user = await Meteor.users.findOneAsync(this.userId, {
-      fields: { 'profile.githubToken': 1, 'profile.githubLogin': 1 }
+      fields: { 'githubAuth.token': 1, 'githubAuth.login': 1 }
     });
     return {
-      configured: !!user?.profile?.githubToken,
-      login: user?.profile?.githubLogin || null
+      configured: !!user?.githubAuth?.token,
+      login: user?.githubAuth?.login || null
     };
   },
 
@@ -277,10 +312,7 @@ export const githubMethods = {
         updatedAt: repo.updated_at
       }));
     } catch (err) {
-      if (err.response?.status === 401) {
-        throw new Meteor.Error('invalid-token', 'GitHub token expired. Please update it in Profile settings.');
-      }
-      throw new Meteor.Error('github-error', `Failed to search repositories: ${err.message}`);
+      handleGitHubApiError(err, 'Failed to search repositories');
     }
   },
 
@@ -299,6 +331,9 @@ export const githubMethods = {
       page: Match.Maybe(Number)
     })));
     if (!this.userId) throw new Meteor.Error('not-authorized');
+    if (!GITHUB_NAME_PATTERN.test(owner) || !GITHUB_NAME_PATTERN.test(repo)) {
+      throw new Meteor.Error('invalid-input', 'Invalid repository owner or name.');
+    }
 
     const token = await getStoredGitHubToken(this.userId);
     const state = options?.state || 'open';
@@ -352,13 +387,7 @@ export const githubMethods = {
           updatedAt: issue.updated_at
         }));
     } catch (err) {
-      if (err.response?.status === 401) {
-        throw new Meteor.Error('invalid-token', 'GitHub token expired. Please update it in Profile settings.');
-      }
-      if (err.response?.status === 404) {
-        throw new Meteor.Error('not-found', `Repository ${owner}/${repo} not found or not accessible.`);
-      }
-      throw new Meteor.Error('github-error', `Failed to fetch issues: ${err.message}`);
+      handleGitHubApiError(err, `Repository ${owner}/${repo} not found or not accessible`);
     }
   }
 };
