@@ -10,6 +10,8 @@ import { teamMethods } from './methods/teams.js';
 // Import ticket and clock event methods
 import { ticketMethods } from './methods/tickets.js';
 import { clockEventMethods } from './methods/clockEvents.js';
+// Import GitHub integration methods
+import { githubMethods } from './methods/github.js';
 import { messageMethods } from './methods/messages.js';
 // Import calendar methods
 import './methods/calendar.js';
@@ -391,6 +393,7 @@ Meteor.methods({
   ...clockEventMethods,
   ...notificationMethods,
   ...messageMethods,
+  ...githubMethods,
 
   'participants.create'(name) {
     check(name, String);

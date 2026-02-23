@@ -226,6 +226,76 @@ function processCreateTicketGithubInput(value, templateInstance) {
   }
 }
 
+/** Reset all GitHub browse state on the template instance. */
+function resetGitHubBrowseState(t) {
+  t.createTicketTab.set('manual');
+  t.ghRepoSearchQuery.set('');
+  t.ghRepoResults.set([]);
+  t.ghReposLoading.set(false);
+  t.ghReposError.set(null);
+  t.ghSelectedRepo.set(null);
+  t.ghSelectedRepoOwner.set(null);
+  t.ghSelectedRepoName.set(null);
+  t.ghIssueSearchQuery.set('');
+  t.ghIssueResults.set([]);
+  t.ghIssuesLoading.set(false);
+  t.ghIssuesError.set(null);
+  if (t._ghRepoSearchTimer) { clearTimeout(t._ghRepoSearchTimer); t._ghRepoSearchTimer = null; }
+  if (t._ghIssueSearchTimer) { clearTimeout(t._ghIssueSearchTimer); t._ghIssueSearchTimer = null; }
+}
+
+/** Debounced repo search */
+function searchGitHubRepos(t, query) {
+  if (t._ghRepoSearchTimer) clearTimeout(t._ghRepoSearchTimer);
+  t.ghReposError.set(null);
+
+  const trimmed = (query || '').trim();
+  if (!trimmed) {
+    // Load user's repos by default when no query
+    t.ghReposLoading.set(true);
+    Meteor.call('searchGitHubRepos', '', (err, results) => {
+      t.ghReposLoading.set(false);
+      if (err) { t.ghReposError.set(err.reason || 'Failed to load repos'); return; }
+      t.ghRepoResults.set(results || []);
+    });
+    return;
+  }
+
+  t._ghRepoSearchTimer = setTimeout(() => {
+    t.ghReposLoading.set(true);
+    Meteor.call('searchGitHubRepos', trimmed, (err, results) => {
+      t.ghReposLoading.set(false);
+      if (err) { t.ghReposError.set(err.reason || 'Search failed'); return; }
+      t.ghRepoResults.set(results || []);
+    });
+  }, 400);
+}
+
+/** Load GitHub issues for selected repo */
+function loadGitHubIssues(t, query) {
+  if (t._ghIssueSearchTimer) clearTimeout(t._ghIssueSearchTimer);
+  t.ghIssuesError.set(null);
+
+  const owner = t.ghSelectedRepoOwner.get();
+  const repo = t.ghSelectedRepoName.get();
+  if (!owner || !repo) return;
+
+  const doFetch = () => {
+    t.ghIssuesLoading.set(true);
+    Meteor.call('getGitHubIssues', owner, repo, { query: query || '', state: 'open' }, (err, results) => {
+      t.ghIssuesLoading.set(false);
+      if (err) { t.ghIssuesError.set(err.reason || 'Failed to load issues'); return; }
+      t.ghIssueResults.set(results || []);
+    });
+  };
+
+  if (query) {
+    t._ghIssueSearchTimer = setTimeout(doFetch, 400);
+  } else {
+    doFetch();
+  }
+}
+
 Template.tickets.onCreated(function () {
   this.showCreateTicketForm = new ReactiveVar(false);
   this.showEditTicketForm = new ReactiveVar(false);
@@ -249,6 +319,30 @@ Template.tickets.onCreated(function () {
   this.ticketHistoryRangeType = new ReactiveVar(TICKET_HISTORY_DEFAULT_RANGE);
   this.ticketHistoryCustomStartDate = new ReactiveVar(null);
   this.ticketHistoryCustomEndDate = new ReactiveVar(null);
+
+  // GitHub browse tab state
+  this.createTicketTab = new ReactiveVar('manual'); // 'manual' | 'github'
+  this.githubTokenConfigured = new ReactiveVar(false);
+  this.ghRepoSearchQuery = new ReactiveVar('');
+  this.ghRepoResults = new ReactiveVar([]);
+  this.ghReposLoading = new ReactiveVar(false);
+  this.ghReposError = new ReactiveVar(null);
+  this.ghSelectedRepo = new ReactiveVar(null); // 'owner/repo' string
+  this.ghSelectedRepoOwner = new ReactiveVar(null);
+  this.ghSelectedRepoName = new ReactiveVar(null);
+  this.ghIssueSearchQuery = new ReactiveVar('');
+  this.ghIssueResults = new ReactiveVar([]);
+  this.ghIssuesLoading = new ReactiveVar(false);
+  this.ghIssuesError = new ReactiveVar(null);
+  this._ghRepoSearchTimer = null;
+  this._ghIssueSearchTimer = null;
+
+  // Check if user has a GitHub token
+  Meteor.call('hasGitHubToken', (err, result) => {
+    if (!err && result) {
+      this.githubTokenConfigured.set(result.configured);
+    }
+  });
 
   // Auto-clock-out: Check every second when timer reaches 10:00:00
   this.autorun(() => {
@@ -615,6 +709,37 @@ Template.tickets.helpers({
   shortTicketId(ticketId) {
     if (!ticketId) return '';
     return ticketId.substring(0, 8);
+  },
+  // GitHub browse tab helpers
+  isManualTab() {
+    return Template.instance().createTicketTab.get() !== 'github';
+  },
+  isGithubTab() {
+    return Template.instance().createTicketTab.get() === 'github';
+  },
+  githubTokenConfigured() {
+    return Template.instance().githubTokenConfigured.get();
+  },
+  ghRepoResults() {
+    return Template.instance().ghRepoResults.get();
+  },
+  ghReposLoading() {
+    return Template.instance().ghReposLoading.get();
+  },
+  ghReposError() {
+    return Template.instance().ghReposError.get();
+  },
+  ghSelectedRepo() {
+    return Template.instance().ghSelectedRepo.get();
+  },
+  ghIssueResults() {
+    return Template.instance().ghIssueResults.get();
+  },
+  ghIssuesLoading() {
+    return Template.instance().ghIssuesLoading.get();
+  },
+  ghIssuesError() {
+    return Template.instance().ghIssuesError.get();
   }
 });
 
@@ -629,6 +754,7 @@ Template.tickets.events({
     t.showTitleField.set(false);
     t.createTicketLoadingTitle.set(false);
     t.showCreateTicketForm.set(true);
+    resetGitHubBrowseState(t);
     Tracker.afterFlush(() => {
       const modal = document.getElementById('createTicketModal');
       if (modal) {
@@ -638,6 +764,7 @@ Template.tickets.events({
           t.createTicketTitle.set('');
           t.showTitleField.set(false);
           t.createTicketFromClockInNewTicket.set(false);
+          resetGitHubBrowseState(t);
           modal.removeEventListener('close', onClose);
         };
         modal.addEventListener('close', onClose);
@@ -654,6 +781,7 @@ Template.tickets.events({
     t.createTicketTitle.set('');
     t.showTitleField.set(false);
     t.createTicketFromClockInNewTicket.set(false);
+    resetGitHubBrowseState(t);
   },
   'click #createTicketModalBackdropClose'(e, t) {
     document.getElementById('createTicketModal')?.close();
@@ -662,6 +790,7 @@ Template.tickets.events({
     t.createTicketTitle.set('');
     t.showTitleField.set(false);
     t.createTicketFromClockInNewTicket.set(false);
+    resetGitHubBrowseState(t);
   },
   'click #cancelCreateTicket'(e, t) {
     document.getElementById('createTicketModal')?.close();
@@ -670,6 +799,7 @@ Template.tickets.events({
     t.createTicketTitle.set('');
     t.showTitleField.set(false);
     t.createTicketFromClockInNewTicket.set(false);
+    resetGitHubBrowseState(t);
   },
   'input #createTicketTitle'(e, t) {
     t.createTicketTitle.set(e.target.value);
@@ -680,6 +810,76 @@ Template.tickets.events({
   'paste #createTicketGithub'(e, t) {
     setTimeout(() => processCreateTicketGithubInput(t.find('#createTicketGithub')?.value || '', t), 0);
   },
+
+  // GitHub browse tab events
+  'click .create-ticket-tab'(e, t) {
+    const tab = e.currentTarget.dataset.tab;
+    if (!tab) return;
+    t.createTicketTab.set(tab);
+    if (tab === 'github') {
+      // Re-check token status and load default repos
+      Meteor.call('hasGitHubToken', (err, result) => {
+        if (!err && result) {
+          t.githubTokenConfigured.set(result.configured);
+          if (result.configured) {
+            searchGitHubRepos(t, '');
+          }
+        }
+      });
+    }
+  },
+  'input #ghRepoSearch'(e, t) {
+    const query = e.target.value;
+    t.ghRepoSearchQuery.set(query);
+    searchGitHubRepos(t, query);
+  },
+  'click .gh-select-repo'(e, t) {
+    const owner = e.currentTarget.dataset.owner;
+    const repo = e.currentTarget.dataset.repo;
+    const fullName = e.currentTarget.dataset.fullName;
+    if (!owner || !repo) return;
+    t.ghSelectedRepo.set(fullName);
+    t.ghSelectedRepoOwner.set(owner);
+    t.ghSelectedRepoName.set(repo);
+    t.ghIssueSearchQuery.set('');
+    t.ghIssueResults.set([]);
+    loadGitHubIssues(t, '');
+  },
+  'click #ghBackToRepos'(e, t) {
+    t.ghSelectedRepo.set(null);
+    t.ghSelectedRepoOwner.set(null);
+    t.ghSelectedRepoName.set(null);
+    t.ghIssueResults.set([]);
+    t.ghIssuesLoading.set(false);
+    t.ghIssuesError.set(null);
+    t.ghIssueSearchQuery.set('');
+  },
+  'input #ghIssueSearch'(e, t) {
+    const query = e.target.value;
+    t.ghIssueSearchQuery.set(query);
+    loadGitHubIssues(t, query);
+  },
+  'click .gh-select-issue'(e, t) {
+    const issueUrl = e.currentTarget.dataset.url;
+    const issueTitle = e.currentTarget.dataset.title;
+    const issueNumber = e.currentTarget.dataset.number;
+    if (!issueUrl || !issueTitle) return;
+
+    // Switch to manual tab with the issue pre-filled
+    t.createTicketTab.set('manual');
+    t.createTicketTitle.set(issueTitle);
+    t.showTitleField.set(true);
+    t.createTicketLoadingTitle.set(false);
+
+    // Pre-fill the form fields after DOM updates
+    Tracker.afterFlush(() => {
+      const githubInput = document.getElementById('createTicketGithub');
+      const titleInput = document.getElementById('createTicketTitle');
+      if (githubInput) githubInput.value = issueUrl;
+      if (titleInput) titleInput.value = issueTitle;
+    });
+  },
+
   'click .ticket-row'(e, t) {
     if (e.target.closest('.activate-ticket') || e.target.closest('.dropdown')) return;
     const row = e.currentTarget;
