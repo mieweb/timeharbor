@@ -1,12 +1,52 @@
 import { Meteor } from 'meteor/meteor';
 import { check, Match } from 'meteor/check';
+import { WebApp } from 'meteor/webapp';
+import { Random } from 'meteor/random';
 import axios from 'axios';
 
 const GITHUB_API_BASE = 'https://api.github.com';
+const GITHUB_OAUTH_AUTHORIZE = 'https://github.com/login/oauth/authorize';
+const GITHUB_OAUTH_TOKEN = 'https://github.com/login/oauth/access_token';
+
+/**
+ * In-memory store for pending OAuth state tokens.
+ * Maps state → { userId, createdAt }
+ * Entries expire after 10 minutes.
+ */
+const pendingOAuthStates = new Map();
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
+/** Purge expired OAuth states (called lazily). */
+function purgeExpiredStates() {
+  const now = Date.now();
+  for (const [state, entry] of pendingOAuthStates) {
+    if (now - entry.createdAt > OAUTH_STATE_TTL_MS) {
+      pendingOAuthStates.delete(state);
+    }
+  }
+}
+
+/**
+ * Read GitHub OAuth credentials from Meteor.settings.
+ * Expected in settings.json under private.github.clientId / clientSecret.
+ * @returns {{ clientId: string, clientSecret: string }}
+ */
+function getOAuthCredentials() {
+  const gh = Meteor.settings?.private?.github;
+  const clientId = gh?.clientId;
+  const clientSecret = gh?.clientSecret;
+  if (!clientId || !clientSecret) {
+    throw new Meteor.Error(
+      'github-oauth-not-configured',
+      'GitHub OAuth is not configured. Set private.github.clientId and private.github.clientSecret in settings.json.'
+    );
+  }
+  return { clientId, clientSecret };
+}
 
 /**
  * Build authorization headers for GitHub API requests.
- * @param {string} token - GitHub Personal Access Token
+ * @param {string} token - GitHub OAuth access token
  * @returns {Object} Headers object
  */
 function buildGitHubHeaders(token) {
@@ -19,7 +59,7 @@ function buildGitHubHeaders(token) {
 }
 
 /**
- * Retrieve the stored GitHub PAT for the current user.
+ * Retrieve the stored GitHub OAuth token for the current user.
  * Throws if not configured.
  * @param {string} userId
  * @returns {Promise<string>}
@@ -30,55 +70,137 @@ async function getStoredGitHubToken(userId) {
   });
   const token = user?.profile?.githubToken;
   if (!token) {
-    throw new Meteor.Error('github-not-configured', 'GitHub token not configured. Add your Personal Access Token in Profile settings.');
+    throw new Meteor.Error('github-not-configured', 'GitHub not connected. Connect via OAuth in Profile settings.');
   }
   return token;
 }
 
+/**
+ * Render a minimal HTML page that posts a message to the opener and closes.
+ * @param {string} status - 'success' or 'error'
+ * @param {string} message - Display message
+ * @param {Object} [data] - Additional data to pass
+ * @returns {string} HTML page string
+ */
+function renderOAuthResultPage(status, message, data = {}) {
+  const payload = JSON.stringify({ type: 'github-oauth-result', status, message, ...data });
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>GitHub — TimeHarbor</title>
+<style>body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f9fafb;color:#374151}
+.card{text-align:center;padding:2rem;border-radius:1rem;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.1);max-width:400px}
+.success{color:#059669}.error{color:#dc2626}p{margin:0.5rem 0}</style></head>
+<body><div class="card">
+<p class="${status}">${status === 'success' ? 'Connected!' : 'Error'}</p>
+<p>${message}</p>
+<p style="color:#9ca3af;font-size:0.875rem">This window will close automatically.</p>
+</div>
+<script>
+if(window.opener){window.opener.postMessage(${payload},'*');}
+setTimeout(function(){window.close();},2000);
+</script></body></html>`;
+}
+
+/* ------------------------------------------------------------------ */
+/*  GitHub OAuth callback — handles GET /api/github/callback          */
+/* ------------------------------------------------------------------ */
+WebApp.connectHandlers.use('/api/github/callback', async (req, res) => {
+  try {
+    const url = new URL(req.url, Meteor.absoluteUrl());
+    const code = url.searchParams.get('code');
+    const state = url.searchParams.get('state');
+
+    if (!code || !state) {
+      res.writeHead(400, { 'Content-Type': 'text/html' });
+      res.end(renderOAuthResultPage('error', 'Missing code or state parameter.'));
+      return;
+    }
+
+    purgeExpiredStates();
+    const pending = pendingOAuthStates.get(state);
+    if (!pending) {
+      res.writeHead(400, { 'Content-Type': 'text/html' });
+      res.end(renderOAuthResultPage('error', 'Invalid or expired OAuth state. Please try again.'));
+      return;
+    }
+    pendingOAuthStates.delete(state);
+
+    const { clientId, clientSecret } = getOAuthCredentials();
+
+    // Exchange code for access token
+    const tokenRes = await axios.post(GITHUB_OAUTH_TOKEN, {
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+      state
+    }, {
+      headers: { Accept: 'application/json' },
+      timeout: 10000
+    });
+
+    const accessToken = tokenRes.data?.access_token;
+    if (!accessToken) {
+      res.writeHead(400, { 'Content-Type': 'text/html' });
+      res.end(renderOAuthResultPage('error', 'Failed to obtain access token from GitHub.'));
+      return;
+    }
+
+    // Fetch the GitHub user profile
+    const userRes = await axios.get(`${GITHUB_API_BASE}/user`, {
+      headers: buildGitHubHeaders(accessToken),
+      timeout: 8000
+    });
+    const ghLogin = userRes.data?.login;
+    if (!ghLogin) {
+      res.writeHead(400, { 'Content-Type': 'text/html' });
+      res.end(renderOAuthResultPage('error', 'Could not retrieve GitHub username.'));
+      return;
+    }
+
+    // Store the token on the user's profile
+    await Meteor.users.updateAsync(pending.userId, {
+      $set: {
+        'profile.githubToken': accessToken,
+        'profile.githubLogin': ghLogin
+      }
+    });
+
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(renderOAuthResultPage('success', `Connected as ${ghLogin}`, { login: ghLogin }));
+  } catch (err) {
+    console.error('GitHub OAuth callback error:', err);
+    res.writeHead(500, { 'Content-Type': 'text/html' });
+    res.end(renderOAuthResultPage('error', 'An unexpected error occurred. Please try again.'));
+  }
+});
+
 export const githubMethods = {
   /**
-   * Save a GitHub Personal Access Token for the logged-in user.
-   * Validates the token against the GitHub API before storing.
+   * Start the GitHub OAuth flow.
+   * Returns the authorization URL to open in a popup.
    */
-  async saveGitHubToken(token) {
-    check(token, String);
+  async startGitHubOAuth() {
     if (!this.userId) throw new Meteor.Error('not-authorized');
 
-    const trimmed = token.trim();
-    if (!trimmed) {
-      // Clear the token
-      await Meteor.users.updateAsync(this.userId, {
-        $unset: { 'profile.githubToken': '' }
-      });
-      return { cleared: true };
-    }
+    const { clientId } = getOAuthCredentials();
+    const state = Random.secret(32);
 
-    // Validate token by calling the GitHub user endpoint
-    try {
-      const res = await axios.get(`${GITHUB_API_BASE}/user`, {
-        headers: buildGitHubHeaders(trimmed),
-        timeout: 8000
-      });
-      const ghLogin = res.data?.login;
-      if (!ghLogin) throw new Error('Invalid response');
+    purgeExpiredStates();
+    pendingOAuthStates.set(state, { userId: this.userId, createdAt: Date.now() });
 
-      await Meteor.users.updateAsync(this.userId, {
-        $set: {
-          'profile.githubToken': trimmed,
-          'profile.githubLogin': ghLogin
-        }
-      });
-      return { login: ghLogin };
-    } catch (err) {
-      if (err.response?.status === 401) {
-        throw new Meteor.Error('invalid-token', 'GitHub token is invalid or expired. Please generate a new one.');
-      }
-      throw new Meteor.Error('github-error', 'Failed to verify GitHub token. Please try again.');
-    }
+    const callbackUrl = Meteor.absoluteUrl('api/github/callback');
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: callbackUrl,
+      scope: 'repo',
+      state
+    });
+
+    return { url: `${GITHUB_OAUTH_AUTHORIZE}?${params.toString()}` };
   },
 
   /**
-   * Remove the GitHub token for the logged-in user.
+   * Remove the GitHub OAuth token for the logged-in user.
    */
   async removeGitHubToken() {
     if (!this.userId) throw new Meteor.Error('not-authorized');
