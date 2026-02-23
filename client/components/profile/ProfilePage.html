@@ -57,6 +57,37 @@
           </div>
         </div>
       </div>
+
+      <!-- GitHub Integration -->
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-4 mb-6 mt-8">
+        GitHub Integration
+      </h2>
+
+      <div class="space-y-4">
+        <div class="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+          <div class="p-3 bg-gray-100 dark:bg-gray-800 rounded-full shrink-0">
+            {{> githubIcon class="w-6 h-6 text-gray-700 dark:text-gray-300"}}
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm text-gray-500 dark:text-gray-400">GitHub Account</p>
+            {{#if githubConnected}}
+              <p class="font-medium text-gray-900 dark:text-white">Connected as <span class="text-blue-600 dark:text-blue-400">{{githubLogin}}</span></p>
+              <div class="flex gap-2 mt-2">
+                <button type="button" id="disconnectGitHubBtn" class="px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors {{#if githubSaving}}opacity-70 pointer-events-none{{/if}}" aria-label="Disconnect GitHub">
+                  {{#if githubSaving}}Removing…{{else}}Disconnect{{/if}}
+                </button>
+              </div>
+            {{else}}
+              <p class="font-medium text-gray-900 dark:text-gray-400">Not connected</p>
+              <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">Connect your GitHub account to browse and import issues directly when creating tickets.</p>
+              <button type="button" id="connectGitHubBtn" class="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors {{#if githubSaving}}opacity-70 pointer-events-none{{/if}}" aria-label="Connect with GitHub">
+                {{> githubIcon class="w-4 h-4"}}
+                {{#if githubSaving}}Connecting…{{else}}Connect with GitHub{{/if}}
+              </button>
+            {{/if}}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

@@ -6,6 +6,39 @@ import { unsubscribeFromPushNotifications } from '../../utils/NotificationUtils.
 Template.profilePage.onCreated(function () {
   this.showEditName = new ReactiveVar(false);
   this.pushDisabling = new ReactiveVar(false);
+  this.githubSaving = new ReactiveVar(false);
+  this._githubConnected = new ReactiveVar(false);
+  this._githubLogin = new ReactiveVar('');
+
+  // Check if GitHub is already connected
+  Meteor.call('hasGitHubToken', (err, result) => {
+    if (!err && result) {
+      this._githubConnected.set(result.configured);
+      this._githubLogin.set(result.login || '');
+    }
+  });
+
+  // Listen for OAuth popup result via postMessage
+  this._oauthListener = (event) => {
+    // Validate origin to prevent spoofed messages
+    const expectedOrigin = window.location.origin;
+    if (event.origin !== expectedOrigin) return;
+    if (event.data?.type !== 'github-oauth-result') return;
+    if (event.data.status === 'success') {
+      this._githubConnected.set(true);
+      this._githubLogin.set(event.data.login || '');
+    } else {
+      alert('GitHub connection failed: ' + (event.data.message || 'Unknown error'));
+    }
+    this.githubSaving.set(false);
+  };
+  window.addEventListener('message', this._oauthListener);
+});
+
+Template.profilePage.onDestroyed(function () {
+  if (this._oauthListener) {
+    window.removeEventListener('message', this._oauthListener);
+  }
 });
 
 Template.profilePage.helpers({
@@ -39,6 +72,15 @@ Template.profilePage.helpers({
   editLastName() {
     const user = Meteor.user();
     return (user?.profile?.lastName || '').trim();
+  },
+  githubConnected() {
+    return Template.instance()._githubConnected?.get() || false;
+  },
+  githubLogin() {
+    return Template.instance()._githubLogin?.get() || '';
+  },
+  githubSaving() {
+    return Template.instance().githubSaving.get();
   }
 });
 
@@ -77,5 +119,52 @@ Template.profilePage.events({
     } finally {
       t.pushDisabling.set(false);
     }
+  },
+  'click #connectGitHubBtn'(e, t) {
+    t.githubSaving.set(true);
+    Meteor.call('startGitHubOAuth', (err, result) => {
+      if (err) {
+        t.githubSaving.set(false);
+        alert('Failed to start GitHub connection: ' + (err.reason || err.message));
+        return;
+      }
+      // Open the GitHub authorization page in a popup
+      const width = 600;
+      const height = 700;
+      const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
+      const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
+      const popup = window.open(
+        result.url,
+        'github-oauth',
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      );
+      // If popup was blocked, reset state
+      if (!popup) {
+        t.githubSaving.set(false);
+        alert('Popup was blocked. Please allow popups for this site and try again.');
+        return;
+      }
+      // Poll to detect if the popup was closed without completing OAuth
+      const popupCheckInterval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(popupCheckInterval);
+          // Give postMessage a moment to arrive before resetting
+          setTimeout(() => { t.githubSaving.set(false); }, 500);
+        }
+      }, 500);
+    });
+  },
+  'click #disconnectGitHubBtn'(e, t) {
+    if (!confirm('Disconnect GitHub? You will need to re-authorize to browse issues again.')) return;
+    t.githubSaving.set(true);
+    Meteor.call('removeGitHubToken', (err) => {
+      t.githubSaving.set(false);
+      if (err) {
+        alert('Failed to disconnect: ' + (err.reason || err.message));
+        return;
+      }
+      t._githubConnected.set(false);
+      t._githubLogin.set('');
+    });
   }
 });

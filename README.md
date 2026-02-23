@@ -482,10 +482,20 @@ Create or update `settings.json` in the project root:
     "VAPID_PUBLIC_KEY": "YOUR_VAPID_PUBLIC_KEY",
     "project_id": "YOUR_FIREBASE_PROJECT_ID",
     "private_key": "YOUR_FIREBASE_PRIVATE_KEY",
-    "client_email": "YOUR_FIREBASE_CLIENT_EMAIL"
+    "client_email": "YOUR_FIREBASE_CLIENT_EMAIL",
+    "github": {
+      "clientId": "YOUR_GITHUB_OAUTH_CLIENT_ID",
+      "clientSecret": "YOUR_GITHUB_OAUTH_CLIENT_SECRET"
+    }
   }
 }
 ```
+
+#### GitHub OAuth Setup
+
+1. Go to [GitHub Developer Settings → OAuth Apps](https://github.com/settings/developers) and create a new OAuth App.
+2. Set the **Authorization callback URL** to `http://localhost:3000/api/github/callback` (or your production URL).
+3. Copy the **Client ID** and **Client Secret** into `settings.json` under `private.github`.
 
 ---
 

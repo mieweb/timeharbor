@@ -1,0 +1,17 @@
+{
+  "public": {
+    "vapidPublicKey": "YOUR_VAPID_PUBLIC_KEY",
+    "fcmSenderId": "YOUR_FCM_SENDER_ID"
+  },
+  "private": {
+    "VAPID_PRIVATE_KEY": "YOUR_VAPID_PRIVATE_KEY",
+    "VAPID_PUBLIC_KEY": "YOUR_VAPID_PUBLIC_KEY",
+    "project_id": "YOUR_FIREBASE_PROJECT_ID",
+    "private_key": "YOUR_FIREBASE_PRIVATE_KEY",
+    "client_email": "YOUR_FIREBASE_CLIENT_EMAIL",
+    "github": {
+      "clientId": "YOUR_GITHUB_OAUTH_CLIENT_ID",
+      "clientSecret": "YOUR_GITHUB_OAUTH_CLIENT_SECRET"
+    }
+  }
+}

@@ -113,30 +113,142 @@
         </button>
       </div>
       <p class="text-gray-500 dark:text-gray-400 mt-1 mb-4 flex items-center gap-2 text-sm">
-        <span class="text-green-500">●</span> {{#if editingTicket}}Update ticket details.{{else}}Create a new ticket to track your work.{{/if}}
+        <span class="text-green-500">&#x25CF;</span> {{#if editingTicket}}Update ticket details.{{else}}Create a new ticket to track your work.{{/if}}
       </p>
-      <form id="createTicketForm" class="flex flex-col gap-4">
-        {{#if editingTicket}}
-          <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
-        {{/if}}
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="createTicketGithub">GitHub issue link</label>
-          <input type="text" id="createTicketGithub" name="github" value="{{#if editingTicket}}{{editingTicket.github}}{{/if}}" placeholder="https://..." class="w-full px-3 py-2 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white placeholder-gray-500 text-sm" autocomplete="off" />
-          {{#if createTicketLoadingTitle}}
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Fetching title…</p>
-          {{/if}}
+
+      {{#unless editingTicket}}
+        <!-- Tab switcher: Manual / Browse GitHub -->
+        <div class="flex rounded-lg border border-gray-200 dark:border-gray-700 mb-4 overflow-hidden" role="tablist" aria-label="Ticket creation method">
+          <button type="button" class="create-ticket-tab flex-1 px-3 py-2 text-sm font-medium transition-colors {{#if isManualTab}}bg-blue-600 text-white{{else}}text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{{/if}}" data-tab="manual" role="tab" id="tabManual" aria-selected="{{isManualTab}}" aria-controls="createTicketManualPane">
+            Manual
+          </button>
+          <button type="button" class="create-ticket-tab flex-1 px-3 py-2 text-sm font-medium transition-colors {{#if isGithubTab}}bg-blue-600 text-white{{else}}text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{{/if}}" data-tab="github" role="tab" id="tabGithub" aria-selected="{{isGithubTab}}" aria-controls="createTicketGithubPane">
+            <span class="inline-flex items-center gap-1.5">
+              {{> githubIcon class="w-4 h-4"}}
+              Browse GitHub
+            </span>
+          </button>
         </div>
-        {{#if showTitleField}}
+      {{/unless}}
+
+      <!-- Manual tab pane -->
+      <div id="createTicketManualPane" role="tabpanel" aria-labelledby="tabManual" class="{{#if isGithubTab}}hidden{{/if}}">
+        <form id="createTicketForm" class="flex flex-col gap-4">
+          {{#if editingTicket}}
+            <input type="hidden" name="ticketId" value="{{editingTicket._id}}" />
+          {{/if}}
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="createTicketTitle">Title</label>
-            <input type="text" id="createTicketTitle" name="title" value="{{createTicketTitle}}" placeholder="Enter ticket title" class="w-full px-3 py-2 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white placeholder-gray-500 text-sm" required />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="createTicketGithub">GitHub issue link</label>
+            <input type="text" id="createTicketGithub" name="github" value="{{#if editingTicket}}{{editingTicket.github}}{{/if}}" placeholder="https://..." class="w-full px-3 py-2 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white placeholder-gray-500 text-sm" autocomplete="off" />
+            {{#if createTicketLoadingTitle}}
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Fetching title&hellip;</p>
+            {{/if}}
+          </div>
+          {{#if showTitleField}}
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="createTicketTitle">Title</label>
+              <input type="text" id="createTicketTitle" name="title" value="{{createTicketTitle}}" placeholder="Enter ticket title" class="w-full px-3 py-2 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white placeholder-gray-500 text-sm" required />
+            </div>
+          {{/if}}
+          <div class="flex gap-3 mt-2">
+            <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">{{#if editingTicket}}Update{{else}}Create Ticket{{/if}}</button>
+            <button type="button" id="cancelCreateTicket" class="px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- GitHub browse tab pane -->
+      <div id="createTicketGithubPane" role="tabpanel" aria-labelledby="tabGithub" class="{{#unless isGithubTab}}hidden{{/unless}}">
+        {{#if githubTokenConfigured}}
+          <!-- Step 1: Repo search -->
+          {{#unless ghSelectedRepo}}
+            <div class="flex flex-col gap-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="ghRepoSearch">Search repositories</label>
+              <input type="text" id="ghRepoSearch" placeholder="Type to search repos..." class="w-full px-3 py-2 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white placeholder-gray-500 text-sm" autocomplete="off" aria-label="Search GitHub repositories" />
+              {{#if ghReposLoading}}
+                <p class="text-sm text-gray-500 dark:text-gray-400">Searching&hellip;</p>
+              {{/if}}
+              {{#if ghReposError}}
+                <p class="text-sm text-red-600 dark:text-red-400">{{ghReposError}}</p>
+              {{/if}}
+              <div class="max-h-[240px] overflow-y-auto space-y-1">
+                {{#each ghRepoResults}}
+                  <button type="button" class="gh-select-repo w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" data-owner="{{owner}}" data-repo="{{name}}" data-full-name="{{fullName}}" aria-label="Select repository {{fullName}}">
+                    <div class="flex items-center gap-2">
+                      {{#if isPrivate}}
+                        <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                      {{else}}
+                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                      {{/if}}
+                      <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{fullName}}</span>
+                    </div>
+                    {{#if description}}
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">{{description}}</p>
+                    {{/if}}
+                  </button>
+                {{/each}}
+              </div>
+              <div class="flex justify-end mt-2">
+                <button type="button" id="cancelCreateTicket" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Cancel</button>
+              </div>
+            </div>
+          {{/unless}}
+
+          <!-- Step 2: Issue list -->
+          {{#if ghSelectedRepo}}
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-2">
+                <button type="button" id="ghBackToRepos" class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Back to repositories">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ghSelectedRepo}}</span>
+              </div>
+              <input type="text" id="ghIssueSearch" placeholder="Filter issues..." class="w-full px-3 py-2 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700/50 dark:text-white placeholder-gray-500 text-sm" autocomplete="off" aria-label="Filter GitHub issues" />
+              {{#if ghIssuesLoading}}
+                <p class="text-sm text-gray-500 dark:text-gray-400">Loading issues&hellip;</p>
+              {{/if}}
+              {{#if ghIssuesError}}
+                <p class="text-sm text-red-600 dark:text-red-400">{{ghIssuesError}}</p>
+              {{/if}}
+              <div class="max-h-[280px] overflow-y-auto space-y-1">
+                {{#each ghIssueResults}}
+                  <button type="button" class="gh-select-issue w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" data-url="{{url}}" data-title="{{title}}" data-number="{{number}}" aria-label="Select issue #{{number}} {{title}}">
+                    <div class="flex items-start gap-2">
+                      <svg class="w-4 h-4 text-green-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/><path fill-rule="evenodd" d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"/></svg>
+                      <div class="min-w-0 flex-1">
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{title}}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">#{{number}}</span>
+                        {{#if labels.length}}
+                          <div class="flex flex-wrap gap-1 mt-1">
+                            {{#each labels}}
+                              <span class="text-[10px] px-1.5 py-0.5 rounded-full border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300">{{name}}</span>
+                            {{/each}}
+                          </div>
+                        {{/if}}
+                      </div>
+                    </div>
+                  </button>
+                {{else}}
+                  {{#unless ghIssuesLoading}}
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No open issues found.</p>
+                  {{/unless}}
+                {{/each}}
+              </div>
+              <div class="flex justify-end mt-2">
+                <button type="button" id="cancelCreateTicket" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Cancel</button>
+              </div>
+            </div>
+          {{/if}}
+        {{else}}
+          <!-- No GitHub token configured -->
+          <div class="text-center py-6">
+            {{> githubIcon class="w-10 h-10 mx-auto text-gray-400 dark:text-gray-500 mb-3"}}
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-1">GitHub not connected</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Connect your GitHub account via OAuth in <strong>Profile</strong> to browse issues.</p>
+            <button type="button" id="cancelCreateTicket" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Cancel</button>
           </div>
         {{/if}}
-        <div class="flex gap-3 mt-2">
-          <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm">{{#if editingTicket}}Update{{else}}Create Ticket{{/if}}</button>
-          <button type="button" id="cancelCreateTicket" class="px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Cancel</button>
-        </div>
-      </form>
+      </div>
     </div>
     <form method="dialog" class="modal-backdrop bg-black/50">
       <button type="button" id="createTicketModalBackdropClose">close</button>
