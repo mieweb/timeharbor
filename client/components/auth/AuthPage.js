@@ -43,6 +43,24 @@ Template.authPage.helpers({
 });
 
 Template.authPage.events({
+  'click .toggle-password'(event) {
+    event.preventDefault();
+    const button = event.currentTarget;
+    const targetId = button.dataset.target;
+    const input = document.getElementById(targetId);
+    const eyeClosed = button.querySelector('.eye-closed');
+    const eyeOpen = button.querySelector('.eye-open');
+
+    if (input.type === 'password') {
+      input.type = 'text';
+      eyeClosed.classList.add('hidden');
+      eyeOpen.classList.remove('hidden');
+    } else {
+      input.type = 'password';
+      eyeClosed.classList.remove('hidden');
+      eyeOpen.classList.add('hidden');
+    }
+  },
   'click .show-login'(event, template) {
     event.preventDefault();
     template.loginError.set('');

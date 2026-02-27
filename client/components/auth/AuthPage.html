@@ -30,14 +30,20 @@
             </div>
             <div>
               <label for="loginPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
-              <input
-                id="loginPassword"
-                type="password"
-                name="password"
-                placeholder="Enter password"
-                required
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              />
+              <div class="password-input-wrapper relative">
+                <input
+                  id="loginPassword"
+                  type="password"
+                  name="password"
+                  placeholder="Enter password"
+                  required
+                  class="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+                <button type="button" class="toggle-password absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none" aria-label="Toggle password visibility" data-target="loginPassword">
+                  {{> eyeClosedIcon class="w-5 h-5 eye-closed"}}
+                  {{> eyeOpenIcon class="w-5 h-5 eye-open hidden"}}
+                </button>
+              </div>
             </div>
             <button type="submit" disabled="{{isLoading}}" class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-lg transition duration-200 shadow-lg hover:shadow-xl">
               {{#if isLoading}}Logging in...{{else}}Log In{{/if}}
@@ -92,25 +98,37 @@
             </div>
             <div>
               <label for="signupPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
-              <input
-                id="signupPassword"
-                type="password"
-                name="password"
-                placeholder="Choose password"
-                required
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              />
+              <div class="password-input-wrapper relative">
+                <input
+                  id="signupPassword"
+                  type="password"
+                  name="password"
+                  placeholder="Choose password"
+                  required
+                  class="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+                <button type="button" class="toggle-password absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none" aria-label="Toggle password visibility" data-target="signupPassword">
+                  {{> eyeClosedIcon class="w-5 h-5 eye-closed"}}
+                  {{> eyeOpenIcon class="w-5 h-5 eye-open hidden"}}
+                </button>
+              </div>
             </div>
             <div>
               <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password</label>
-              <input
-                id="confirmPassword"
-                type="password"
-                name="confirmPassword"
-                placeholder="Confirm password"
-                required
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              />
+              <div class="password-input-wrapper relative">
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm password"
+                  required
+                  class="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+                <button type="button" class="toggle-password absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none" aria-label="Toggle password visibility" data-target="confirmPassword">
+                  {{> eyeClosedIcon class="w-5 h-5 eye-closed"}}
+                  {{> eyeOpenIcon class="w-5 h-5 eye-open hidden"}}
+                </button>
+              </div>
             </div>
             <button type="submit" disabled="{{isLoading}}" class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-lg transition duration-200 shadow-lg hover:shadow-xl">
               {{#if isLoading}}Creating account...{{else}}Create Account{{/if}}
@@ -149,25 +167,37 @@
             </div>
             <div>
               <label for="resetNewPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password</label>
-              <input
-                id="resetNewPassword"
-                type="password"
-                name="newPassword"
-                placeholder="Enter new password"
-                required
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              />
+              <div class="password-input-wrapper relative">
+                <input
+                  id="resetNewPassword"
+                  type="password"
+                  name="newPassword"
+                  placeholder="Enter new password"
+                  required
+                  class="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+                <button type="button" class="toggle-password absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none" aria-label="Toggle password visibility" data-target="resetNewPassword">
+                  {{> eyeClosedIcon class="w-5 h-5 eye-closed"}}
+                  {{> eyeOpenIcon class="w-5 h-5 eye-open hidden"}}
+                </button>
+              </div>
             </div>
             <div>
               <label for="resetConfirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password</label>
-              <input
-                id="resetConfirmPassword"
-                type="password"
-                name="confirmPassword"
-                placeholder="Confirm new password"
-                required
-                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              />
+              <div class="password-input-wrapper relative">
+                <input
+                  id="resetConfirmPassword"
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm new password"
+                  required
+                  class="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+                <button type="button" class="toggle-password absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none" aria-label="Toggle password visibility" data-target="resetConfirmPassword">
+                  {{> eyeClosedIcon class="w-5 h-5 eye-closed"}}
+                  {{> eyeOpenIcon class="w-5 h-5 eye-open hidden"}}
+                </button>
+              </div>
             </div>
             <button type="submit" disabled="{{isLoading}}" class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-lg transition duration-200 shadow-lg hover:shadow-xl">
               {{#if isLoading}}Updating...{{else}}Update Password{{/if}}
