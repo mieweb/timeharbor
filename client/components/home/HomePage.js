@@ -381,13 +381,20 @@ Template.home.onDestroyed(function () {
 });
 
 Template.home.helpers({
-  // User role helpers
-  isTeamAdmin() {
-    return Teams.findOne({ admins: Meteor.userId() });
+  // Show team dashboard only for admins of non-personal (real) teams
+  showTeamDashboard() {
+    // Check if user is admin of any non-personal team
+    return !!Teams.findOne({ admins: Meteor.userId(), isPersonal: { $ne: true } });
   },
-  // Show push notification card only for team admins who haven't enabled push yet
+  // Check if user is currently using a personal workspace
+  isPersonalWorkspace() {
+    const id = selectedTeamId.get();
+    const team = id ? Teams.findOne(id) : null;
+    return team?.isPersonal === true;
+  },
+  // Show push notification card only for team admins who haven't enabled push yet (not for personal workspace)
   showPushNotificationCardOnHome() {
-    const isAdmin = !!Teams.findOne({ admins: Meteor.userId() });
+    const isAdmin = !!Teams.findOne({ admins: Meteor.userId(), isPersonal: { $ne: true } });
     if (!isAdmin) return false;
     const user = Meteor.user();
     const pushEnabled = !!(user?.profile?.pushSubscription);
@@ -712,11 +719,41 @@ Template.home.events({
   },
   
   'click #joinTeam': (e, t) => {
+    // Set session to open join modal on teams page
+    Session.set('openJoinTeamModal', true);
+    FlowRouter.go('/teams');
+  },
+  
+  'click #createTeam': (e, t) => {
+    // Set session to open create modal on teams page
+    Session.set('openCreateTeamModal', true);
     FlowRouter.go('/teams');
   },
   
   'click #viewGuide': (e, t) => {
     FlowRouter.go('/guide');
+  },
+
+  'click #startPersonalTracking': (e, t) => {
+    // Ensure personal workspace exists, select it, and navigate to home to clock in
+    Meteor.call('ensurePersonalWorkspace', (err, personalTeamId) => {
+      if (err) {
+        console.error('Failed to ensure personal workspace:', err);
+        alert('Failed to set up personal workspace. Please try again.');
+        return;
+      }
+      if (personalTeamId) {
+        // Import and set the selected team to personal workspace
+        import('../layout/MainLayout.js').then(({ selectedTeamId }) => {
+          selectedTeamId.set(personalTeamId);
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('selectedTeamId', personalTeamId);
+          }
+          // Navigate to tickets page to start creating tickets and tracking
+          FlowRouter.go('/tickets');
+        });
+      }
+    });
   },
 
   'click .ticket-history-btn': (e) => {

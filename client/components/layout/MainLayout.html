@@ -43,11 +43,15 @@
     </div>
     <div class="flex items-center gap-3">
       <label for="teamSwitcherSelect" class="sr-only">Switch team</label>
-      <select id="teamSwitcherSelect" class="main-layout-team-switcher flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors text-sm font-medium border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer" title="Switch Team" aria-label="Switch team">
-        {{#each userTeamsList}}
-          <option {{optionAttrs this._id}}>{{this.name}}</option>
-        {{/each}}
-      </select>
+      {{#if hasNoTeams}}
+        <span class="px-4 py-2 text-gray-400 dark:text-gray-500 text-sm">No workspace</span>
+      {{else}}
+        <select id="teamSwitcherSelect" class="main-layout-team-switcher flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors text-sm font-medium border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer" title="Switch Team" aria-label="Switch team">
+          {{#each userTeamsList}}
+            <option {{optionAttrs this._id}}>{{#if this.isPersonal}}👤 {{/if}}{{this.name}}</option>
+          {{/each}}
+        </select>
+      {{/if}}
       <button id="themeToggle" type="button" class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" title="Toggle theme" aria-label="Toggle dark mode">
         <i id="themeIcon" class="fa-solid fa-moon" aria-hidden="true"></i>
       </button>
@@ -75,10 +79,12 @@
       {{/if}}
     </div>
     <div class="relative flex items-center gap-2">
-      <div class="flex flex-col items-end">
-        <span class="text-[10px] leading-tight text-gray-400 dark:text-gray-500">Team</span>
-        <span class="text-sm font-bold text-gray-900 dark:text-white leading-tight">{{currentTeamName}}</span>
-      </div>
+      {{#unless hasNoTeams}}
+        <div class="flex flex-col items-end">
+          <span class="text-[10px] leading-tight text-gray-400 dark:text-gray-500">{{#if isPersonalWorkspace}}Workspace{{else}}Team{{/if}}</span>
+          <span class="text-sm font-bold text-gray-900 dark:text-white leading-tight">{{#if isPersonalWorkspace}}👤 {{/if}}{{currentTeamName}}</span>
+        </div>
+      {{/unless}}
       <button id="mobileProfileBtn" type="button" class="relative flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-semibold shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="Profile and options" aria-expanded="{{profileDropdownOpen}}">
         {{userInitials}}
         {{#if unreadNotificationCount}}<span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full">{{unreadNotificationBadge}}</span>{{/if}}
