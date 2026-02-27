@@ -1,0 +1,200 @@
+name: Deploy Production - Server & Mobile
+
+on:
+
+  push:
+    branches:
+      - main
+      - master
+
+
+permissions:
+  contents: write
+
+jobs:
+
+  deploy-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Deploy to Proxmox Container
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ vars.DEPLOY_PORT || '22' }} -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }} << 'DEPLOY_SCRIPT'
+            set -e
+
+            echo "=== Pulling latest code ==="
+            cd ~/app
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
+
+            echo "=== Resetting Meteor local cache ==="
+            export PATH="$HOME/.meteor:$PATH"
+            meteor reset --allow-superuser
+
+            echo "=== Installing project dependencies ==="
+            meteor npm install --allow-superuser
+
+            echo "=== Building Meteor server ==="
+            BUILD_DIR="$HOME/Builds/Webserver-build-$(date +%m-%d-%Y-%H%M%S)"
+            meteor build "${BUILD_DIR}" \
+              --directory \
+              --server-only \
+              --server=${{ vars.SERVER_URL }} \
+              --allow-superuser
+
+            echo "=== Installing dependencies ==="
+            cd "${BUILD_DIR}/bundle/programs/server"
+            npm install
+
+            echo "=== Installing bundle-level dependencies ==="
+            cd "${BUILD_DIR}/bundle"
+            npm install @babel/runtime
+
+            echo "=== Updating symlink ==="
+            ln -sfn "${BUILD_DIR}/bundle" "$HOME/Builds/current"
+
+            echo "=== Restarting service ==="
+            sudo systemctl restart app
+
+            echo "=== Health check ==="
+            sleep 10
+            if sudo systemctl is-active --quiet app; then
+              echo "Server deployed and running successfully"
+            else
+              echo "Server failed to start"
+              sudo journalctl -u app --no-pager -n 50
+              exit 1
+            fi
+          DEPLOY_SCRIPT
+
+
+
+
+
+
+  build-and-publish-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Meteor
+        run: |
+          curl https://install.meteor.com/ | sh
+          echo "$HOME/.meteor" >> $GITHUB_PATH
+
+      - name: Install Dependencies
+        run: meteor npm install
+
+      - name: Decode GoogleService-Info.plist
+        run: |
+          mkdir -p private/ios
+          echo "${{ secrets.FIREBASE_IOS_PLIST_BASE64 }}" | base64 -d > private/ios/GoogleService-Info.plist
+
+      - name: Build iOS
+        run: |
+          meteor build ./ios-build \
+            --platforms ios \
+            --server=${{ vars.SERVER_URL }}
+
+      - name: Install Apple Certificate & Provisioning Profile
+        env:
+          CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          PROV_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          echo "$CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          security import "$CERT_PATH" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
+          echo "$PROV_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | grep -A1 UUID | grep string | sed 's/.*<string>\(.*\)<\/string>/\1/')
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
+
+          echo "KEYCHAIN_PATH=${KEYCHAIN_PATH}" >> $GITHUB_ENV
+          echo "PROFILE_UUID=${PROFILE_UUID}" >> $GITHUB_ENV
+
+      - name: Archive iOS App
+        run: |
+          WORKSPACE_PATH=$(find ios-build -name "*.xcworkspace" -type d | head -1)
+          SCHEME="${{ vars.IOS_SCHEME_NAME }}"
+          
+          xcodebuild archive \
+            -workspace "$WORKSPACE_PATH" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            -allowProvisioningUpdates \
+            OTHER_CODE_SIGN_FLAGS="--keychain ${{ env.KEYCHAIN_PATH }}" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+            PROVISIONING_PROFILE_SPECIFIER="${{ env.PROFILE_UUID }}"
+
+      - name: Export iOS App
+        run: |
+          cat > $RUNNER_TEMP/ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store-connect</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>${{ vars.IOS_BUNDLE_ID }}</key>
+                  <string>${{ env.PROFILE_UUID }}</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APPLE_API_KEY_P8_BASE64 }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
+
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            -exportPath $RUNNER_TEMP/export \
+            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
+
+      - name: Upload to TestFlight
+        run: |
+          xcrun altool --upload-app -f $RUNNER_TEMP/export/*.ipa -t ios --apiKey ${{ secrets.APPLE_API_KEY_ID }} --apiIssuer ${{ secrets.APPLE_API_ISSUER_ID }}
+

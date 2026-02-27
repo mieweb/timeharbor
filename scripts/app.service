@@ -1,0 +1,27 @@
+[Unit]
+Description=Node.js Application Server
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=navyaprabharajappa
+WorkingDirectory=/home/navyaprabharajappa/Builds/current
+ExecStart=/home/navyaprabharajappa/scripts/start-app.sh
+Restart=on-failure
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=app
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
