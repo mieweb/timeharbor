@@ -1,0 +1,58 @@
+{
+  "manifest_version": 2,
+  "name": "TimeHarbor",
+  "version": "1.0.0",
+  "description": "Capture tab screenshots for TimeHarbor visual diary",
+  
+  "permissions": [
+    "activeTab",
+    "storage",
+    "nativeMessaging"
+  ],
+  
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["../shared/storage-manager.js", "content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_title": "TimeHarbor - Capture Screenshot",
+    "default_icon": {
+      "16": "icons/timeharbor-16.png",
+      "32": "icons/timeharbor-32.png",
+      "48": "icons/timeharbor-48.png",
+      "128": "icons/timeharbor-128.png"
+    }
+  },
+  
+  "icons": {
+    "16": "icons/timeharbor-16.png",
+    "32": "icons/timeharbor-32.png",
+    "48": "icons/timeharbor-48.png",
+    "128": "icons/timeharbor-128.png"
+  },
+  
+  "commands": {
+    "capture-screenshot": {
+      "suggested_key": {
+        "default": "Cmd+Shift+H",
+        "mac": "Command+Shift+H"
+      },
+      "description": "Capture current tab screenshot"
+    }
+  },
+  
+  "web_accessible_resources": [
+    "templates/activity-log.html",
+    "../shared/*.js"
+  ]
+}

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeHarbor Settings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 24px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        .section {
+            margin-bottom: 32px;
+        }
+
+        .section h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1e293b;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 4px;
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .mode-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-card:hover {
+            border-color: #cbd5e1;
+        }
+
+        .mode-card.selected {
+            border-color: #3498db;
+            background: #eff6ff;
+        }
+
+        .mode-card input[type="radio"] {
+            display: none;
+        }
+
+        .mode-card .mode-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+
+        .mode-card .mode-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .mode-card .mode-description {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-error {
+            background: #fecaca;
+            color: #dc2626;
+        }
+
+        .status-warning {
+            background: #fed7aa;
+            color: #c2410c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏰 TimeHarbor Settings</h1>
+            <p>Configure your screenshot capture preferences and storage options</p>
+        </div>
+
+        <div class="content">
+            <form id="settingsForm">
+                <!-- Storage Mode Section -->
+                <div class="section">
+                    <h2>Storage Mode</h2>
+                    <div class="mode-selector">
+                        <label class="mode-card" for="modeLocal">
+                            <input type="radio" id="modeLocal" name="storageMode" value="local">
+                            <div class="mode-icon">💾</div>
+                            <div class="mode-title">Local Only</div>
+                            <div class="mode-description">
+                                Save screenshots to your computer with HTML activity log. 
+                                No internet required.
+                            </div>
+                        </label>
+
+                        <label class="mode-card" for="modeServer">
+                            <input type="radio" id="modeServer" name="storageMode" value="server">
+                            <div class="mode-icon">☁️</div>
+                            <div class="mode-title">Server Only</div>
+                            <div class="mode-description">
+                                Upload screenshots to TimeHarbor server. 
+                                Access from anywhere.
+                            </div>
+                        </label>
+
+                        <label class="mode-card" for="modeBoth">
+                            <input type="radio" id="modeBoth" name="storageMode" value="both">
+                            <div class="mode-icon">📦</div>
+                            <div class="mode-title">Both</div>
+                            <div class="mode-description">
+                                Save locally AND upload to server. 
+                                Best of both worlds.
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Local Storage Settings -->
+                <div class="section" id="localSettings">
+                    <h2>Local Storage</h2>
+                    <div class="form-group">
+                        <label for="storagePath">Storage Location</label>
+                        <input type="text" id="storagePath" name="storagePath" 
+                               placeholder="~/Documents/TimeHarbor/">
+                        <small>Path where screenshots and activity log will be saved</small>
+                    </div>
+                </div>
+
+                <!-- Server Settings -->
+                <div class="section" id="serverSettings" style="display: none;">
+                    <h2>Server Configuration</h2>
+                    <div class="form-group">
+                        <label for="serverUrl">TimeHarbor Server URL</label>
+                        <input type="url" id="serverUrl" name="serverUrl" 
+                               placeholder="https://your-timeharbor-server.com">
+                        <small>URL of your TimeHarbor server instance</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="authToken">Authentication Token</label>
+                        <input type="password" id="authToken" name="authToken" 
+                               placeholder="Enter your authentication token">
+                        <small>Token for authenticating with the server</small>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" id="testConnectionBtn" class="btn btn-secondary">
+                            Test Connection
+                        </button>
+                        <span id="connectionStatus" class="status-indicator" style="display: none;">
+                            <span class="dot"></span>
+                            <span class="text">Testing...</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Capture Settings -->
+                <div class="section">
+                    <h2>Capture Settings</h2>
+                    <div class="form-group">
+                        <label for="imageQuality">Image Quality</label>
+                        <select id="imageQuality" name="imageQuality">
+                            <option value="0.6">High Compression (60%)</option>
+                            <option value="0.8" selected>Balanced (80%)</option>
+                            <option value="0.9">High Quality (90%)</option>
+                            <option value="1.0">Maximum Quality (100%)</option>
+                        </select>
+                        <small>Higher quality means larger file sizes</small>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="autoCloseTab" name="autoCloseTab">
+                            <label for="autoCloseTab">Automatically close tab after capture</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="autoSync" name="autoSync">
+                            <label for="autoSync">Auto-sync queued captures when online</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Log Settings -->
+                <div class="section">
+                    <h2>Activity Log</h2>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="autoOpenLog" name="autoOpenLog">
+                            <label for="autoOpenLog">Auto-open activity log after capture</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="logRetention">Log Retention</label>
+                        <select id="logRetention" name="logRetention">
+                            <option value="30">30 days</option>
+                            <option value="90">90 days</option>
+                            <option value="365" selected>1 year</option>
+                            <option value="0">Never delete</option>
+                        </select>
+                        <small>How long to keep captures in the activity log</small>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" id="resetBtn" class="btn btn-secondary">
+                        Reset to Defaults
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Settings management
+        class TimeHarborSettings {
+            constructor() {
+                this.form = document.getElementById('settingsForm');
+                this.setupEventListeners();
+                this.loadSettings();
+            }
+
+            setupEventListeners() {
+                // Storage mode selection
+                document.querySelectorAll('input[name="storageMode"]').forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        this.updateModeUI();
+                    });
+                });
+
+                // Test connection button
+                document.getElementById('testConnectionBtn').addEventListener('click', () => {
+                    this.testConnection();
+                });
+
+                // Form submission
+                this.form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.saveSettings();
+                });
+
+                // Reset button
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.resetSettings();
+                });
+            }
+
+            updateModeUI() {
+                const mode = document.querySelector('input[name="storageMode"]:checked').value;
+                const serverSettings = document.getElementById('serverSettings');
+                const localSettings = document.getElementById('localSettings');
+
+                // Update card selections
+                document.querySelectorAll('.mode-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                document.querySelector(`input[value="${mode}"]`).closest('.mode-card').classList.add('selected');
+
+                // Show/hide relevant sections
+                if (mode === 'server' || mode === 'both') {
+                    serverSettings.style.display = 'block';
+                } else {
+                    serverSettings.style.display = 'none';
+                }
+
+                if (mode === 'local' || mode === 'both') {
+                    localSettings.style.display = 'block';
+                } else {
+                    localSettings.style.display = 'none';
+                }
+            }
+
+            async testConnection() {
+                const status = document.getElementById('connectionStatus');
+                const btn = document.getElementById('testConnectionBtn');
+                
+                status.style.display = 'inline-flex';
+                status.className = 'status-indicator';
+                status.querySelector('.text').textContent = 'Testing...';
+                btn.disabled = true;
+
+                try {
+                    // Send test message to background script
+                    const response = await this.sendMessage({ action: 'testConnection' });
+                    
+                    if (response.success) {
+                        status.className = 'status-indicator status-success';
+                        status.querySelector('.text').textContent = 'Connected successfully';
+                    } else {
+                        status.className = 'status-indicator status-error';
+                        status.querySelector('.text').textContent = 'Connection failed';
+                    }
+                } catch (error) {
+                    status.className = 'status-indicator status-error';
+                    status.querySelector('.text').textContent = 'Connection error';
+                }
+
+                btn.disabled = false;
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
+
+            async loadSettings() {
+                try {
+                    const response = await this.sendMessage({ action: 'getStatus' });
+                    if (response.settings) {
+                        this.populateForm(response.settings);
+                        this.updateModeUI();
+                    }
+                } catch (error) {
+                    console.error('Failed to load settings:', error);
+                }
+            }
+
+            populateForm(settings) {
+                // Set storage mode
+                const modeRadio = document.querySelector(`input[value="${settings.storageMode || 'local'}"]`);
+                if (modeRadio) modeRadio.checked = true;
+
+                // Set form values
+                document.getElementById('storagePath').value = settings.storagePath || '~/Documents/TimeHarbor/';
+                document.getElementById('serverUrl').value = settings.serverUrl || '';
+                document.getElementById('authToken').value = settings.authToken || '';
+                document.getElementById('imageQuality').value = settings.imageQuality || 0.8;
+                document.getElementById('autoCloseTab').checked = settings.autoCloseTab || false;
+                document.getElementById('autoSync').checked = settings.autoSync !== false;
+                document.getElementById('autoOpenLog').checked = settings.autoOpenLog || false;
+                document.getElementById('logRetention').value = settings.logRetention || 365;
+            }
+
+            async saveSettings() {
+                const formData = new FormData(this.form);
+                const settings = {};
+
+                for (const [key, value] of formData.entries()) {
+                    if (key === 'autoCloseTab' || key === 'autoSync' || key === 'autoOpenLog') {
+                        settings[key] = true;
+                    } else if (key === 'imageQuality' || key === 'logRetention') {
+                        settings[key] = parseFloat(value);
+                    } else {
+                        settings[key] = value;
+                    }
+                }
+
+                // Handle unchecked checkboxes
+                ['autoCloseTab', 'autoSync', 'autoOpenLog'].forEach(key => {
+                    if (!settings[key]) settings[key] = false;
+                });
+
+                try {
+                    await this.sendMessage({ 
+                        action: 'updateSettings', 
+                        settings: settings 
+                    });
+                    
+                    // Show success feedback
+                    alert('Settings saved successfully!');
+                } catch (error) {
+                    console.error('Failed to save settings:', error);
+                    alert('Failed to save settings: ' + error.message);
+                }
+            }
+
+            resetSettings() {
+                if (confirm('Reset all settings to defaults?')) {
+                    this.populateForm({
+                        storageMode: 'local',
+                        storagePath: '~/Documents/TimeHarbor/',
+                        serverUrl: '',
+                        authToken: '',
+                        imageQuality: 0.8,
+                        autoCloseTab: false,
+                        autoSync: true,
+                        autoOpenLog: false,
+                        logRetention: 365
+                    });
+                    this.updateModeUI();
+                }
+            }
+
+            sendMessage(message) {
+                return new Promise((resolve, reject) => {
+                    chrome.runtime.sendMessage(message, (response) => {
+                        if (chrome.runtime.lastError) {
+                            reject(new Error(chrome.runtime.lastError.message));
+                        } else {
+                            resolve(response);
+                        }
+                    });
+                });
+            }
+        }
+
+        // Initialize settings page
+        document.addEventListener('DOMContentLoaded', () => {
+            new TimeHarborSettings();
+        });
+    </script>
+</body>
+</html>

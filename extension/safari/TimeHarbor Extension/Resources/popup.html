@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeHarbor</title>
+    <link rel="stylesheet" href="styles/popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <span class="icon">🏰</span>
+                <span class="title">TimeHarbor</span>
+            </div>
+            <div class="status" id="status">
+                <span class="status-dot" id="statusDot"></span>
+                <span class="status-text" id="statusText">Ready</span>
+            </div>
+        </div>
+
+        <!-- Main Action -->
+        <div class="main-action">
+            <button class="capture-btn" id="captureBtn">
+                <span class="capture-icon">📸</span>
+                <span class="capture-text">Capture Screenshot</span>
+            </button>
+            <div class="capture-info" id="captureInfo">
+                Click to capture current tab screenshot
+            </div>
+        </div>
+
+        <!-- Storage Mode Selection -->
+        <div class="section">
+            <h3>Storage Mode</h3>
+            <div class="mode-selector">
+                <div class="mode-option">
+                    <input type="radio" id="modeLocal" name="storageMode" value="local">
+                    <label for="modeLocal">
+                        <span class="mode-icon">💾</span>
+                        <div class="mode-details">
+                            <div class="mode-title">Local Only</div>
+                            <div class="mode-description">Save to computer with HTML log</div>
+                        </div>
+                    </label>
+                </div>
+                <div class="mode-option">
+                    <input type="radio" id="modeServer" name="storageMode" value="server">
+                    <label for="modeServer">
+                        <span class="mode-icon">☁️</span>
+                        <div class="mode-details">
+                            <div class="mode-title">Server Only</div>
+                            <div class="mode-description">Upload to TimeHarbor server</div>
+                        </div>
+                    </label>
+                </div>
+                <div class="mode-option">
+                    <input type="radio" id="modeBoth" name="storageMode" value="both">
+                    <label for="modeBoth">
+                        <span class="mode-icon">📦</span>
+                        <div class="mode-details">
+                            <div class="mode-title">Both</div>
+                            <div class="mode-description">Save locally AND upload to server</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section">
+            <h3>Quick Actions</h3>
+            <div class="quick-actions">
+                <button class="action-btn" id="openLogBtn">
+                    <span>📋</span>
+                    <span>View Activity Log</span>
+                </button>
+                <button class="action-btn" id="settingsBtn">
+                    <span>⚙️</span>
+                    <span>Settings</span>
+                </button>
+                <button class="action-btn" id="syncBtn">
+                    <span>🔄</span>
+                    <span>Sync Queue</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Server Status (shown when server mode is active) -->
+        <div class="section server-section" id="serverSection" style="display: none;">
+            <h3>Server Connection</h3>
+            <div class="server-status">
+                <div class="connection-indicator">
+                    <span class="connection-dot" id="connectionDot"></span>
+                    <span class="connection-text" id="connectionText">Checking...</span>
+                </div>
+                <button class="test-connection-btn" id="testConnectionBtn">Test Connection</button>
+            </div>
+        </div>
+
+        <!-- Current Tab Info -->
+        <div class="section">
+            <h3>Current Tab</h3>
+            <div class="tab-info" id="tabInfo">
+                <div class="tab-url" id="tabUrl">Loading...</div>
+                <div class="tab-title" id="tabTitle">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="shortcuts">
+                <kbd>⌘⇧H</kbd> to capture
+            </div>
+            <div class="version">v1.0.0</div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Capturing...</div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../shared/storage-manager.js"></script>
+    <script src="../shared/api-client.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>
