@@ -661,8 +661,8 @@ Template.tickets.helpers({
     return github.trim().length > 0;
   },
   ticketRowRefClass(github) {
-    if (!github || typeof github !== 'string') return '';
-    return github.trim().length > 0 ? 'cursor-pointer' : '';
+    // No longer making row clickable - use the open-in-new-tab button instead
+    return '';
   },
   isClockedIn() {
     return Template.instance().clockedIn.get();
@@ -877,11 +877,14 @@ Template.tickets.events({
     });
   },
 
-  'click .ticket-row'(e, t) {
-    if (e.target.closest('.activate-ticket') || e.target.closest('.dropdown')) return;
-    const row = e.currentTarget;
-    const url = row.getAttribute('data-github-url');
-    if (url) openExternalUrl(url);
+  'click .open-ticket-newtab-btn'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = e.currentTarget.dataset.url;
+    if (url) {
+      // Always open in new tab, never fallback to same tab
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   },
   'click .edit-ticket-btn'(e, t) {
     e.preventDefault();

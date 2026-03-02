@@ -53,6 +53,12 @@
                   <span class="text-xs text-gray-500 dark:text-gray-400 truncate">{{assigneeName}}</span>
                 </div>
               </div>
+              <!-- Open in new tab button -->
+              {{#if github}}
+                <button type="button" class="open-ticket-newtab-btn shrink-0 p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" data-url="{{githubLink github}}" title="Open in new tab" aria-label="Open ticket in new tab">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </button>
+              {{/if}}
               <!-- Actions menu -->
               <div class="dropdown dropdown-end flex-shrink-0">
                 <button type="button" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" tabindex="0" aria-label="Ticket actions">
