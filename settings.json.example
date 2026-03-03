@@ -12,6 +12,7 @@
     "github": {
       "clientId": "YOUR_GITHUB_OAUTH_CLIENT_ID",
       "clientSecret": "YOUR_GITHUB_OAUTH_CLIENT_SECRET"
-    }
+    },
+    "PULSE_PRIVATE_KEY": "YOUR_PULSEVAULT_API_KEY"
   }
 }
