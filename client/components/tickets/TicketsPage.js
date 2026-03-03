@@ -10,6 +10,7 @@ import { sessionManager } from '../../utils/clockSession.js';
 import { extractUrlTitle, openExternalUrl, normalizeReferenceUrl } from '../../utils/UrlUtils.js';
 import { getUserTeams, getUserName } from '../../utils/UserTeamUtils.js';
 import { OPEN_TICKET_HISTORY_SESSION_KEY, OPEN_TICKET_HISTORY_RETURN_ROUTE_KEY } from '../../utils/UiStateKeys.js';
+import { openPulseUploadForTicket } from '../pulseVault/PulseUpload.js';
 
 // Utility functions
 const utils = {
@@ -959,6 +960,17 @@ Template.tickets.events({
   'click #deleteTicketModalBackdropClose'(e, t) {
     document.getElementById('deleteTicketModal')?.close();
     t.ticketToDelete.set(null);
+  },
+
+  // PulseVault upload button
+  'click .pulse-upload-btn'(e, t) {
+    e.preventDefault();
+    e.stopPropagation();
+    const ticketId = e.currentTarget.dataset.id;
+    const ticketTitle = e.currentTarget.dataset.title;
+    if (ticketId) {
+      openPulseUploadForTicket(ticketId, ticketTitle);
+    }
   },
 
   'click .assign-ticket-btn'(e, t) {
