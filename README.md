@@ -918,7 +918,7 @@ See [LICENSE](LICENSE) file for full details.
 - **Repository**: [github.com/mieweb/timeharbor](https://github.com/mieweb/timeharbor)
 - **Organization**: Medical Informatics Engineering, Inc.
 - **Website**: [mieweb.com](https://mieweb.com)
-- **Quick Start**: [Watch the video](https://youtube.com/shorts/uuosLqHDHRQ?feature=share)
+- **Quick Start**: [Watch the video](https://youtube.com/shorts/Wb87cz8SHDg?si=1NK-xK8fQzR00GXw)
 
 ### Related Resources
 
