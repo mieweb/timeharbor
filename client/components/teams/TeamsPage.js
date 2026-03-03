@@ -97,7 +97,13 @@ Template.teams.helpers({
       members: membersWithRoles,
       admins,
       createdAt: queriedTeam.createdAt,
+      isPersonal: queriedTeam.isPersonal || false,
     };
+  },
+  isPersonalWorkspace() {
+    const id = selectedTeamId.get();
+    const team = id ? Teams.findOne(id) : null;
+    return team?.isPersonal === true;
   },
   isAdmin(teamId) {
     const team = Teams.findOne(teamId);
@@ -112,6 +118,9 @@ Template.teams.helpers({
   },
   isCurrentUser(userId) {
     return userId === Meteor.userId();
+  },
+  currentUserId() {
+    return Meteor.userId();
   },
   memberInitial(member) {
     if (!member) return '?';

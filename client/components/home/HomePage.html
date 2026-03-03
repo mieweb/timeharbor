@@ -31,20 +31,52 @@
     <!-- First Time User / No Data State -->
     {{#if isFirstTimeUser}}
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6">
-        <div class="text-center py-6 md:py-8">
+        <div class="text-center py-4 md:py-6">
           <div class="text-5xl md:text-6xl mb-4">🚀</div>
-          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3">Welcome to TimeHarbor!</h2>
-          <p class="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto text-sm md:text-base">
-            Get started by joining a team or creating your first project. Your time tracking journey begins here!
+          <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome to TimeHarbor!</h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 max-w-lg mx-auto text-sm md:text-base">
+            How would you like to get started? Choose an option below:
           </p>
-          <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <button id="joinTeam" type="button" class="px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base">
-              Join a Team
+          
+          <!-- Three option cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            <!-- Track Individually -->
+            <button id="startPersonalTracking" type="button" class="flex flex-col items-center gap-3 p-4 md:p-6 rounded-xl border-2 border-green-200 dark:border-green-800 hover:border-green-500 dark:hover:border-green-500 bg-green-50 dark:bg-green-900/20 transition-all group text-left">
+              <div class="p-3 bg-green-100 dark:bg-green-800 rounded-full group-hover:bg-green-200 dark:group-hover:bg-green-700 transition-colors">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              </div>
+              <div class="text-center">
+                <h3 class="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Track Individually</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Personal time tracking for yourself</p>
+              </div>
             </button>
-            <button id="viewGuide" type="button" class="px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm md:text-base">
-              View Guide
+
+            <!-- Join a Team -->
+            <button id="joinTeam" type="button" class="flex flex-col items-center gap-3 p-4 md:p-6 rounded-xl border-2 border-blue-200 dark:border-blue-800 hover:border-blue-500 dark:hover:border-blue-500 bg-blue-50 dark:bg-blue-900/20 transition-all group text-left">
+              <div class="p-3 bg-blue-100 dark:bg-blue-800 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-700 transition-colors">
+                <svg class="w-6 h-6 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              </div>
+              <div class="text-center">
+                <h3 class="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Join a Team</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Collaborate with an existing team</p>
+              </div>
+            </button>
+
+            <!-- Create a Team -->
+            <button id="createTeam" type="button" class="flex flex-col items-center gap-3 p-4 md:p-6 rounded-xl border-2 border-purple-200 dark:border-purple-800 hover:border-purple-500 dark:hover:border-purple-500 bg-purple-50 dark:bg-purple-900/20 transition-all group text-left">
+              <div class="p-3 bg-purple-100 dark:bg-purple-800 rounded-full group-hover:bg-purple-200 dark:group-hover:bg-purple-700 transition-colors">
+                <svg class="w-6 h-6 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+              </div>
+              <div class="text-center">
+                <h3 class="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Create a Team</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Start a new team workspace</p>
+              </div>
             </button>
           </div>
+
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-6">
+            Need help? <a href="/guide" class="text-blue-600 dark:text-blue-400 hover:underline">View the user guide</a>
+          </p>
         </div>
       </div>
     {{/if}}
@@ -54,8 +86,8 @@
       {{> notificationSettings}}
     {{/if}}
 
-    <!-- Team Dashboard (Admins) -->
-    {{#if isTeamAdmin}}
+    <!-- Team Dashboard (Admins of real teams only, not personal workspace) -->
+    {{#if showTeamDashboard}}
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 md:p-6">
         <h2 class="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6">Team Dashboard</h2>
 
@@ -166,7 +198,7 @@
       </div>
 
       <!-- Quick Stats (TimeharborApp-style colored cards) -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6">
+      <div class="grid grid-cols-2 {{#unless isPersonalWorkspace}}md:grid-cols-4{{else}}md:grid-cols-3{{/unless}} gap-3 md:gap-6 mb-6">
         <div class="p-3 md:p-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 flex flex-col justify-between">
           <div>
             <h3 class="text-xs md:text-base font-semibold text-blue-900 dark:text-blue-100 mb-1 md:mb-2 truncate">Today</h3>
@@ -188,6 +220,7 @@
           </div>
           <p class="text-[10px] md:text-sm text-purple-600/60 dark:text-purple-400/60 mt-1 truncate">Sessions</p>
         </div>
+        {{#unless isPersonalWorkspace}}
         <div class="p-3 md:p-6 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800 flex flex-col justify-between">
           <div>
             <h3 class="text-xs md:text-base font-semibold text-green-900 dark:text-green-100 mb-1 md:mb-2 truncate">Teams</h3>
@@ -195,6 +228,7 @@
           </div>
           <p class="text-[10px] md:text-sm text-green-600/60 dark:text-green-400/60 mt-1 truncate">Your teams</p>
         </div>
+        {{/unless}}
       </div>
 
       <!-- Recent Activity (TimeharborApp-style list) -->

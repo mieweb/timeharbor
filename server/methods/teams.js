@@ -10,7 +10,51 @@ function generateTeamCode() {
   return Math.random().toString(36).substr(2, 8).toUpperCase();
 }
 
+/**
+ * Create or retrieve the personal workspace for a user.
+ * Personal workspaces allow users to track time without joining any team.
+ * @param {string} userId - The user ID to create/get personal workspace for
+ * @returns {Promise<string>} - The personal workspace team ID
+ */
+async function ensurePersonalWorkspace(userId) {
+  // Check if user already has a personal workspace
+  const existingPersonal = await Teams.findOneAsync({
+    isPersonal: true,
+    members: userId,
+    admins: userId
+  });
+  
+  if (existingPersonal) {
+    return existingPersonal._id;
+  }
+  
+  // Create a new personal workspace
+  const code = generateTeamCode();
+  const teamId = await Teams.insertAsync({
+    name: 'Personal',
+    members: [userId],
+    admins: [userId],
+    code,
+    isPersonal: true, // Mark as personal workspace
+    createdAt: new Date(),
+  });
+  
+  return teamId;
+}
+
 export const teamMethods = {
+  /**
+   * Ensure the current user has a personal workspace.
+   * Creates one if it doesn't exist.
+   * @returns {Promise<string>} - The personal workspace team ID
+   */
+  async ensurePersonalWorkspace() {
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized');
+    }
+    return await ensurePersonalWorkspace(this.userId);
+  },
+
   async joinTeamWithCode(teamCode) {
     check(teamCode, String);
     if (!this.userId) {

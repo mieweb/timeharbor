@@ -123,11 +123,19 @@ if (Template.mainLayout) {
         if (!currentRouteTemplate.get()) {
           currentRouteTemplate.set('home');
         }
-        const teams = Teams.find({}).fetch();
-        if (teams.length > 0 && !selectedTeamId.get()) {
-          const first = teams[0]._id;
-          selectedTeamId.set(first);
-          if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_TEAM_ID, first);
+        
+        // When teams subscription is ready, auto-select first team if none selected
+        if (teamsHandle.ready()) {
+          const teams = Teams.find({}).fetch();
+          
+          // If user has teams but none selected, select the first one
+          if (teams.length > 0 && !selectedTeamId.get()) {
+            const first = teams[0]._id;
+            selectedTeamId.set(first);
+            if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_TEAM_ID, first);
+          }
+          // If no teams, user will see first-time user flow on home page
+          // They can choose to join/create team or track individually
         }
       }
     });
@@ -208,7 +216,8 @@ if (Template.mainLayout) {
       return isLogoutLoading.get() ? { disabled: true } : {};
     },
     isTeamAdmin() {
-      return !!Teams.findOne({ admins: Meteor.userId() });
+      // Only show admin features for non-personal (real) teams
+      return !!Teams.findOne({ admins: Meteor.userId(), isPersonal: { $ne: true } });
     },
     currentPath() {
       const route = FlowRouter.current();
@@ -233,7 +242,21 @@ if (Template.mainLayout) {
       return getSectionMeta(getCurrentPath()).icon || null;
     },
     userTeamsList() {
-      return Teams.find({}).fetch();
+      const teams = Teams.find({}).fetch();
+      // Sort personal workspace first, then alphabetically
+      return teams.sort((a, b) => {
+        if (a.isPersonal && !b.isPersonal) return -1;
+        if (!a.isPersonal && b.isPersonal) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    },
+    isPersonalWorkspace() {
+      const id = selectedTeamId.get();
+      const team = id ? Teams.findOne(id) : null;
+      return team?.isPersonal === true;
+    },
+    hasNoTeams() {
+      return Teams.find({}).count() === 0;
     },
     unreadNotificationCount() {
       return Notifications.find({ userId: Meteor.userId(), read: false }).count();
@@ -408,7 +431,27 @@ if (Template.mainLayout) {
       event.preventDefault();
       const teamId = selectedTeamId.get();
       if (!teamId) {
-        alert('Please select a team first.');
+        // No team selected - offer to create personal workspace or go to teams page
+        const createPersonal = confirm('You need a workspace to clock in.\n\nClick OK to create a personal workspace, or Cancel to join/create a team.');
+        if (createPersonal) {
+          Meteor.call('ensurePersonalWorkspace', (err, personalTeamId) => {
+            if (err) {
+              console.error('Failed to create personal workspace:', err);
+              alert('Failed to set up personal workspace. Please try again.');
+              return;
+            }
+            if (personalTeamId) {
+              selectedTeamId.set(personalTeamId);
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(STORAGE_TEAM_ID, personalTeamId);
+              }
+              // Now they can clock in - trigger click again
+              alert('Personal workspace created! You can now clock in.');
+            }
+          });
+        } else {
+          FlowRouter.go('/teams');
+        }
         return;
       }
       const active = ClockEvents.findOne({ userId: Meteor.userId(), teamId, endTime: null });
