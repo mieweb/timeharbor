@@ -273,12 +273,10 @@ Template.teams.events({
         .then(() => {
           const btn = e.currentTarget;
           const originalHTML = btn.innerHTML;
-          const originalClasses = btn.className;
-          btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Copied!';
-          btn.className = 'copy-team-code-btn flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 dark:bg-green-500 rounded-lg border-0';
+          // Replace with checkmark icon only (same size as copy icon)
+          btn.innerHTML = '<svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
           setTimeout(() => {
             btn.innerHTML = originalHTML;
-            btn.className = originalClasses;
           }, 2000);
         })
         .catch(err => {
