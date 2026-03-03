@@ -186,12 +186,30 @@ if (Template.mainLayout) {
         if (this.midnightAutoClockOut.has(event._id)) return;
         this.midnightAutoClockOut.add(event._id);
 
+        // Calculate session duration for notification
+        const sessionDurationSeconds = Math.floor((nowMs - event.startTimestamp) / 1000);
+        const totalSeconds = (event.accumulatedTime || 0) + sessionDurationSeconds;
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const durationText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        
+        // Get team name for notification
+        const team = Teams.findOne(event.teamId);
+        const teamName = team?.name || 'your team';
+
         Meteor.call('clockEventStop', event.teamId, (err) => {
           if (err) {
             console.error('Midnight auto clock-out failed:', err);
             this.midnightAutoClockOut.delete(event._id);
             return;
           }
+
+          // Send push notification for midnight auto clock-out
+          Meteor.call('notifyMidnightClockOut', durationText, teamName, (notifyErr) => {
+            if (notifyErr) {
+              console.error('Failed to send midnight clock-out notification:', notifyErr);
+            }
+          });
 
           alert('Your session was automatically clocked out at midnight. If you are still working, please clock in again.');
         });

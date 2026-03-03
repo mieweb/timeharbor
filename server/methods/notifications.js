@@ -124,7 +124,7 @@ export const notificationMethods = {
 
 
   /**
-   * Send auto-clock-out notification to the current user
+   * Send auto-clock-out notification to the current user (10-hour limit)
    */
   async 'notifyAutoClockOut'(durationText, teamName) {
     if (!this.userId) {
@@ -135,12 +135,13 @@ export const notificationMethods = {
     try {
       const result = await notifyUser(this.userId, {
         title: 'Time Harbor - Auto Clock Out',
-        body: `You were automatically clocked out as your timer reached 10 hours straight. Total time: ${durationText}`,
+        body: `You were automatically clocked out after 10 hours of continuous work. Total time: ${durationText}`,
         icon: '/timeharbor-icon.svg',
         badge: '/timeharbor-icon.svg',
-        tag: `auto-clockout-user-${this.userId}-${Date.now()}`,
+        tag: `auto-clockout-10hr-${this.userId}-${Date.now()}`,
         data: {
           type: 'auto-clock-out',
+          reason: '10-hour-limit',
           userId: this.userId,
           duration: durationText,
           teamName: teamName,
@@ -153,6 +154,39 @@ export const notificationMethods = {
       return result;
     } catch (error) {
       console.error('Error sending auto-clock-out notification to user:', error);
+      throw new Meteor.Error('notification-failed', 'Failed to send notification');
+    }
+  },
+
+  /**
+   * Send midnight auto-clock-out notification to the current user
+   */
+  async 'notifyMidnightClockOut'(durationText, teamName) {
+    if (!this.userId) {
+      throw new Meteor.Error('not-authorized', 'You must be logged in');
+    }
+
+    try {
+      const result = await notifyUser(this.userId, {
+        title: 'Time Harbor - Midnight Clock Out',
+        body: `You were automatically clocked out at midnight. Total time: ${durationText}. If you are still working, please clock in again.`,
+        icon: '/timeharbor-icon.svg',
+        badge: '/timeharbor-icon.svg',
+        tag: `auto-clockout-midnight-${this.userId}-${Date.now()}`,
+        data: {
+          type: 'auto-clock-out',
+          reason: 'midnight',
+          userId: this.userId,
+          duration: durationText,
+          teamName: teamName,
+          autoClockOut: true,
+          url: '/tickets'
+        }
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error sending midnight clock-out notification to user:', error);
       throw new Meteor.Error('notification-failed', 'Failed to send notification');
     }
   },
