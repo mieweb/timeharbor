@@ -86,7 +86,7 @@ Meteor.startup(async () => {
   }
 
   // Auto-clock-out: Server-side backup check (runs every minute as backup to client-side check)
-  const TEN_HOURS_MS = 10 * 60 * 60 * 1000; // 10 hours in milliseconds
+  const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000; // 8 hours in milliseconds (prevent burnout)
   const CHECK_INTERVAL_MS = 60 * 1000; // Check every 1 minute (backup check)
 
   Meteor.setInterval(async () => {
@@ -100,16 +100,16 @@ Meteor.startup(async () => {
       if (activeEvents.length > 0) {
         const longRunningEvents = [];
 
-        // Check each active event to see if it has been running for 10+ hours continuously
+        // Check each active event to see if it has been running for 8+ hours continuously (prevent burnout)
         for (const clockEvent of activeEvents) {
           const sessionDuration = now - clockEvent.startTimestamp;
-          if (sessionDuration >= TEN_HOURS_MS) {
+          if (sessionDuration >= EIGHT_HOURS_MS) {
             longRunningEvents.push(clockEvent);
           }
         }
 
         if (longRunningEvents.length > 0) {
-          console.log(`Auto-clock-out: Found ${longRunningEvents.length} clock event(s) running for 10+ hours`);
+          console.log(`Auto-clock-out: Found ${longRunningEvents.length} clock event(s) running for 8+ hours`);
 
           for (const clockEvent of longRunningEvents) {
             try {
@@ -161,13 +161,13 @@ Meteor.startup(async () => {
               const team = await Teams.findOneAsync(clockEvent.teamId);
               const teamName = team?.name || 'a team';
 
-              console.log(`Auto-clock-out: Clocked out ${userName} from ${teamName} after ${durationText} (10+ hours continuous session)`);
+              console.log(`Auto-clock-out: Clocked out ${userName} from ${teamName} after ${durationText} (8+ hours continuous session - burnout prevention)`);
 
               // Send notification to the user who was auto-clock-out
               try {
                 await notifyUser(clockEvent.userId, {
                   title: 'Time Harbor - Auto Clock Out',
-                  body: `You were automatically clocked out as your timer reached 10 hours straight. Total time: ${durationText}`,
+                  body: `You were automatically clocked out after 8 hours of continuous work to prevent burnout. Total time: ${durationText}`,
                   icon: '/timeharbor-icon.png',
                   badge: '/timeharbor-icon.png',
                   tag: `auto-clockout-user-${clockEvent.userId}-${Date.now()}`,
@@ -191,7 +191,7 @@ Meteor.startup(async () => {
               try {
                 await notifyTeamAdmins(clockEvent.teamId, {
                   title: 'Time Harbor - Auto Clock Out',
-                  body: `${userName} was automatically clocked out of ${teamName} after ${durationText} (10+ hours limit)`,
+                  body: `${userName} was automatically clocked out of ${teamName} after ${durationText} (8-hour burnout prevention)`,
                   icon: '/timeharbor-icon.png',
                   badge: '/timeharbor-icon.png',
                   tag: `auto-clockout-admin-${clockEvent.userId}-${Date.now()}`,

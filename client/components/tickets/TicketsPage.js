@@ -376,10 +376,10 @@ Template.tickets.onCreated(function () {
       if (activeSession && !this.autoClockOutTriggered.get()) {
         // Calculate continuous session duration in seconds
         const sessionDurationSeconds = Math.floor((now - activeSession.startTimestamp) / 1000);
-        const TEN_HOURS_SECONDS = 10 * 60 * 60; // 36000 seconds
+        const EIGHT_HOURS_SECONDS = 8 * 60 * 60; // 28800 seconds
         
-        // Auto-clock-out when timer reaches exactly 10:00:00 or above
-        if (sessionDurationSeconds >= TEN_HOURS_SECONDS) {
+        // Auto-clock-out when timer reaches exactly 8:00:00 or above (prevent burnout)
+        if (sessionDurationSeconds >= EIGHT_HOURS_SECONDS) {
           this.autoClockOutTriggered.set(true);
           
           // Calculate total duration for notification (using utility function)
@@ -398,7 +398,7 @@ Template.tickets.onCreated(function () {
               // Don't fail if notification fails, just log it
             });
             
-            alert('You have been automatically clocked out after 10 hours of continuous work.');
+            alert('You have been automatically clocked out after 8 hours of continuous work to prevent burnout.');
           }).catch((error) => {
             console.error('Auto-clock-out failed:', error);
             this.autoClockOutTriggered.set(false); // Reset flag if it failed

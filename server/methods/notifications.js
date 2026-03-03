@@ -124,7 +124,7 @@ export const notificationMethods = {
 
 
   /**
-   * Send auto-clock-out notification to the current user (10-hour limit)
+   * Send auto-clock-out notification to the current user (8-hour limit)
    */
   async 'notifyAutoClockOut'(durationText, teamName) {
     if (!this.userId) {
@@ -135,13 +135,13 @@ export const notificationMethods = {
     try {
       const result = await notifyUser(this.userId, {
         title: 'Time Harbor - Auto Clock Out',
-        body: `You were automatically clocked out after 10 hours of continuous work. Total time: ${durationText}`,
+        body: `You were automatically clocked out after 8 hours of continuous work to prevent burnout. Total time: ${durationText}`,
         icon: '/timeharbor-icon.svg',
         badge: '/timeharbor-icon.svg',
-        tag: `auto-clockout-10hr-${this.userId}-${Date.now()}`,
+        tag: `auto-clockout-8hr-${this.userId}-${Date.now()}`,
         data: {
           type: 'auto-clock-out',
-          reason: '10-hour-limit',
+          reason: '8-hour-limit',
           userId: this.userId,
           duration: durationText,
           teamName: teamName,

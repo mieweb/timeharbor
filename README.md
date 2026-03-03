@@ -61,7 +61,7 @@ Traditional time tracking solutions treat individuals as subjects to be monitore
 
 ### Time Tracking & Session Management
 - **Clock In/Clock Out**: Simple, intuitive interface for starting and ending work sessions
-- **Auto-Clock-Out**: Automatic safety feature prevents sessions from running indefinitely (10-hour limit with server-side backup)
+- **Auto-Clock-Out**: Automatic safety feature prevents sessions from running indefinitely (8-hour limit to prevent burnout, with server-side backup)
 - **Multiple Teams**: Join and track time across different teams simultaneously
 - **Session Persistence**: All sessions are recorded and timestamped for historical analysis
 - **Real-Time Updates**: Live session status across all connected devices
@@ -142,7 +142,7 @@ A **session** represents a continuous period of tracked time. When you "clock in
 - Add Tickets → Allocate session time to specific work items
 - Pause/Resume → Can be paused within an active session
 - Clock Out → Session ends with `endTime`, accumulating total time
-- Auto-Stop → Automatic safety stop after 10 continuous hours
+- Auto-Stop → Automatic safety stop after 8 continuous hours (burnout prevention)
 
 ### Tickets (Activities)
 **Tickets** are work items that exist within sessions. They represent specific, named pieces of work. Multiple tickets can be active within a single session, with time being allocated across them.
