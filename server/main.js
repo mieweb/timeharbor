@@ -2,7 +2,7 @@ import { Meteor } from 'meteor/meteor';
 import { Accounts } from 'meteor/accounts-base';
 import 'meteor/accounts-password';
 import { check } from 'meteor/check';
-import { Tickets, Teams, Sessions, ClockEvents, Notifications, Messages } from '../collections.js';
+import { Tickets, Teams, Sessions, ClockEvents, Notifications, Messages, PulseDrafts } from '../collections.js';
 // Import authentication methods
 import { authMethods } from './methods/auth.js';
 // Import team methods
@@ -17,6 +17,8 @@ import { messageMethods } from './methods/messages.js';
 import './methods/calendar.js';
 // Import notification methods
 import { notificationMethods } from './methods/notifications.js';
+// Import PulseVault integration methods
+import './methods/pulseVault.js';
 // Import clock event helpers for auto-clock-out
 import { stopTicketInClockEvent, formatDurationText } from './utils/ClockEventHelpers.js';
 import { notifyTeamAdmins, notifyUser } from './utils/pushNotifications.js';

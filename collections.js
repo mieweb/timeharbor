@@ -11,3 +11,6 @@ export const Notifications = new Mongo.Collection('notifications');
 
 /** One-to-one admin/member messages */
 export const Messages = new Mongo.Collection('messages');
+
+/** PulseVault draft records - links draftIds to tickets/sessions for media uploads */
+export const PulseDrafts = new Mongo.Collection('pulsedrafts');
