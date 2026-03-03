@@ -8,7 +8,8 @@ Meteor MongoDB Blaze Tailwind Firebase Real-Time Notifications
 
 TimeHarbor is a comprehensive time tracking and institutional knowledge management platform designed specifically for teams, organizations, and communities that prioritize privacy and user empowerment. Unlike traditional employee monitoring solutions, TimeHarbor operates on the principle that **individuals own their time data** and control exactly what gets shared with whom.
 
-**Watch the quick start video:** [https://youtube.com/shorts/uuosLqHDHRQ?feature=share](https://youtube.com/shorts/uuosLqHDHRQ?feature=share)
+**Watch the quick start video:** 
+https://youtube.com/shorts/Wb87cz8SHDg?si=rrKVZC7ZjuGeUasF
 
 ---
 
