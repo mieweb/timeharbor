@@ -5,6 +5,12 @@
 App.accessRule('https://*', { type: 'intent' });
 App.accessRule('http://*', { type: 'intent' });
 
+// Allow PulseCam deep link to open the PulseCam app
+App.accessRule('pulsecam://*', { type: 'intent' });
+
+// Allow App Store links for downloading PulseCam
+App.accessRule('itms-apps://*', { type: 'intent' });
+
 // App Metadata
 App.info({
   id: 'com.mieweb.timeharbor',
