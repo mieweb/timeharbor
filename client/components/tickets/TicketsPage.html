@@ -59,6 +59,10 @@
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                 </button>
               {{/if}}
+              <!-- PulseCam button -->
+              <button type="button" class="pulse-upload-btn shrink-0 p-2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" data-id="{{_id}}" data-title="{{title}}" title="Upload with PulseCam" aria-label="Upload media with PulseCam">
+                {{> pulseIcon class="w-5 h-5"}}
+              </button>
               <!-- Actions menu -->
               <div class="dropdown dropdown-end flex-shrink-0">
                 <button type="button" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" tabindex="0" aria-label="Ticket actions">
@@ -77,12 +81,6 @@
                     <button type="button" class="show-ticket-history-btn flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left" data-id="{{_id}}">
                       <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       History
-                    </button>
-                  </li>
-                  <li>
-                    <button type="button" class="pulse-upload-btn flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left" data-id="{{_id}}" data-title="{{title}}">
-                      {{> pulseVaultIcon class="w-4 h-4 text-purple-600 dark:text-purple-400"}}
-                      PulseCam
                     </button>
                   </li>
                   <li>
