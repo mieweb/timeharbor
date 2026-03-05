@@ -332,6 +332,12 @@
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
+      {{#with ticketPulseDraft}}
+      <div class="flex items-center gap-2 mt-2 p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
+        {{> pulseIcon class="w-5 h-5 text-purple-600 dark:text-purple-400"}}
+        <a href="{{watchUrl}}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline">Pulse Short</a>
+      </div>
+      {{/with}}
       {{#if ticketIdForHistory}}
         {{#if ticketHistoryLoading}}
           <p class="text-sm text-gray-500 dark:text-gray-400 py-4">Loading…</p>
