@@ -104,3 +104,9 @@ export const pulseVaultMethods = {
 Meteor.methods({
   createPulseUploadForTicket: pulseVaultMethods.createPulseUploadForTicket
 });
+
+// Publish user's pulse drafts so they can see video links
+Meteor.publish('userPulseDrafts', function () {
+  if (!this.userId) return this.ready();
+  return PulseDrafts.find({ userId: this.userId });
+});

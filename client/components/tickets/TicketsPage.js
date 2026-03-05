@@ -3,7 +3,7 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Tracker } from 'meteor/tracker';
 import { Session } from 'meteor/session';
 import { FlowRouter } from 'meteor/ostrio:flow-router-extra';
-import { Teams, Tickets, ClockEvents } from '../../../collections.js';
+import { Teams, Tickets, ClockEvents, PulseDrafts } from '../../../collections.js';
 import { currentTime, selectedTeamId } from '../layout/MainLayout.js';
 import { formatTime, formatDurationText } from '../../utils/TimeUtils.js';
 import { sessionManager } from '../../utils/clockSession.js';
@@ -416,6 +416,7 @@ Template.tickets.onCreated(function () {
     const teamIds = teams.map(t => t._id);
     this.subscribe('teamTickets', teamIds);
     this.subscribe('teamMembers', teamIds);
+    this.subscribe('userPulseDrafts');
     let teamId = selectedTeamId.get();
     if (teams.length > 0 && (!teamId || !teams.some(t => t._id === teamId))) {
       teamId = teams[0]._id;
@@ -557,6 +558,16 @@ Template.tickets.helpers({
   },
   ticketIdForHistory() {
     return Template.instance().ticketIdForHistory?.get() || null;
+  },
+  ticketPulseDraft() {
+    const ticketId = Template.instance().ticketIdForHistory?.get();
+    if (!ticketId) return null;
+    const draft = PulseDrafts.findOne({ ticketId });
+    if (!draft?.draftId) return null;
+    return {
+      draftId: draft.draftId,
+      watchUrl: `https://pulse-vault.opensource.mieweb.org/watch/${draft.draftId}`
+    };
   },
   ticketTitleForHistory() {
     const id = Template.instance().ticketIdForHistory?.get();
